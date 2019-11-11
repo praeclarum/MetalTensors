@@ -8,7 +8,7 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
-        public ZeroTensor (int[] shape)
+        public ZeroTensor (params int[] shape)
         {
             ValidateShape (shape);
             this.shape = shape;
