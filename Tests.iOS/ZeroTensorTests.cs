@@ -13,6 +13,7 @@ namespace Tests.iOS
             var t = new ZeroTensor (1);
             Assert.AreEqual (1, t.Shape.Length);
             Assert.AreEqual (1, t.Shape[0]);
+            Assert.AreEqual (0.0f, t.Item);
         }
     }
 }
