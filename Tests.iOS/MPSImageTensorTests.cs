@@ -30,18 +30,15 @@ namespace Tests.iOS
         }
 
         [Test]
-        public void CorrectColors ()
+        public void Slice2 ()
         {
             var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
-            Assert.AreEqual (2, image.Shape[0]);
-            Assert.AreEqual (3, image.Shape[1]);
-            Assert.AreEqual (3, image.Shape[2]);
 
-            AssertColor (255,   0,   0, image.Slice (0, 0));
-            AssertColor (  0, 255,   0, image.Slice (0, 1));
-            AssertColor (  0,   0, 255, image.Slice (0, 2));
-            AssertColor (255, 255,   0, image.Slice (1, 0));
-            AssertColor (255, 255, 255, image.Slice (1, 1));
+            AssertColor (  1,   0,   0, image.Slice (0, 0));
+            AssertColor (  0,   1,   0, image.Slice (0, 1));
+            AssertColor (  0,   0,   1, image.Slice (0, 2));
+            AssertColor (  1,   1,   0, image.Slice (1, 0));
+            AssertColor (  1,   1,   1, image.Slice (1, 1));
             AssertColor (  0,   0,   0, image.Slice (1, 2));
         }
 
@@ -52,6 +49,28 @@ namespace Tests.iOS
             Assert.AreEqual (r, color[0]);
             Assert.AreEqual (g, color[1]);
             Assert.AreEqual (b, color[2]);
+        }
+
+        [Test]
+        public void Slice3 ()
+        {
+            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+
+            // Primaries
+            Assert.AreEqual (1, image.Slice (0, 0, 0)[0]);
+            Assert.AreEqual (1, image.Slice (0, 1, 1)[0]);
+            Assert.AreEqual (1, image.Slice (0, 2, 2)[0]);
+        }
+
+        [Test]
+        public void Slice2Index1 ()
+        {
+            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+
+            // Yellow
+            Assert.AreEqual (1, image.Slice (1, 0)[0]);
+            Assert.AreEqual (1, image.Slice (1, 0)[1]);
+            Assert.AreEqual (0, image.Slice (1, 0)[2]);
         }
 
         [Test]

@@ -51,6 +51,7 @@
     <Compile Include="Tensors\ZeroTensor.cs" />
     <Compile Include="Tensors\MPSImageTensor.cs" />
     <Compile Include="MetalExtensions.cs" />
+    <Compile Include="Tensors\ArrayTensor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

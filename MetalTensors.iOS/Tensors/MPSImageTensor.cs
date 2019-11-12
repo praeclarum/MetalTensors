@@ -82,5 +82,48 @@ namespace MetalTensors.Tensors
 
             throw new NotImplementedException ();
         }
+
+        public unsafe override Tensor Slice (params int[] indexes)
+        {
+            var pixelFormat = image.PixelFormat;
+            //Console.WriteLine ("Pixel Format = " + pixelFormat);
+
+            if (indexes.Length >= 2) {
+                // Single pixel or channel
+                var y = (nuint)indexes[0];
+                var x = (nuint)indexes[1];
+                var numChannels = (int)image.FeatureChannels;
+                var numImages = (numChannels + 3) / 4;
+                var region = MTLRegion.Create3D (x, y, 0, 1, 1, (nuint)numImages);
+                var imageIndex = 0;
+                var featureChannelInfo = new MPSImageReadWriteParams {
+                    NumberOfFeatureChannelsToReadWrite = (nuint)numChannels
+                };
+                var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
+
+                switch (pixelFormat) {
+                    case MTLPixelFormat.BGRA8Unorm_sRGB when numChannels == 3: {
+                            var dtypeSize = sizeof (byte);
+                            var bytesPerRow = (nuint)(numChannels * dtypeSize);
+                            var bytesPerImage = bytesPerRow;
+                            var dataPtr = stackalloc byte[numChannels];
+                            //var rawData = new byte[(int)(numImages * bytesPerImage)];
+                            //fixed (byte* dataPtr = rawData) {
+                                image.ReadBytes ((IntPtr)dataPtr, dataLayout, bytesPerRow, bytesPerImage, region, featureChannelInfo, (nuint)imageIndex);
+                            //}
+                            var floatScale = 1.0f / 255.0f;
+                            if (indexes.Length == 2) {
+                                var floatData = new float[numChannels];
+                                for (var i = 0; i < numChannels; i++) {
+                                    floatData[i] = dataPtr[2 - i] * floatScale;
+                                }
+                                return Tensor.Array (floatData);
+                            }
+                            return Tensor.Array (new float[] { dataPtr[2 - indexes[2]] * floatScale });
+                        }
+                }
+            }
+            return base.Slice (indexes);
+        }
     }
 }
