@@ -2,24 +2,11 @@
 
 namespace MetalTensors.Tensors
 {
-    public class ZeroTensor : Tensor
+    public class ZeroTensor : ConstantTensor
     {
-        readonly int[] shape;
-
-        public override int[] Shape => shape;
-
         public ZeroTensor (params int[] shape)
+            : base (0.0f, shape)
         {
-            ValidateShape (shape);
-            this.shape = shape;
-        }
-
-        public override void Copy (Span<float> destination)
-        {
-            var n = ValidateCopyDestination (destination);
-            for (var i = 0; i < n; i++) {
-                destination[i] = 0.0f;
-            }
         }
     }
 }

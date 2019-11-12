@@ -1,6 +1,8 @@
 ﻿using System;
 using Foundation;
 using Metal;
+using MetalPerformanceShaders;
+using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
@@ -33,7 +35,26 @@ namespace MetalTensors
             }
         }
 
-        protected static Tensor Array (float[] array)
+        public static Tensor Constant (float constant, params int[] shape)
+        {
+            if (constant == 0.0f)
+                return Zeros (shape);
+            if (constant == 1.0f)
+                return Ones (shape);
+            return new ConstantTensor (constant, shape);
+        }
+
+        public static Tensor Zeros (params int[] shape)
+        {
+            return new ZeroTensor (shape);
+        }
+
+        public static Tensor Ones (params int[] shape)
+        {
+            return new OnesTensor (shape);
+        }
+
+        public static Tensor Array (float[] array)
         {
             return new ArrayTensor (array);
         }
@@ -62,8 +83,27 @@ namespace MetalTensors
             throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
         }
 
+        public static Tensor operator + (Tensor a, Tensor b)
+        {
+            return a.Add (b);
+        }
+
+        public virtual Tensor Add (Tensor other)
+        {
+            return new AddLayer ().Output (this, other);
+        }
+
+        public virtual MPSNNImageNode ToImageNode ()
+        {
+            throw new NotSupportedException ($"Cannot convert {GetType ().Name} to neural network graph image node");
+        }
+
         public static void ValidateShape (params int[] shape)
         {
+            if (shape is null) {
+                throw new ArgumentNullException (nameof (shape));
+            }
+
             for (var i = 0; i < shape.Length; i++) {
                 if (shape[i] <= 0)
                     throw new ArgumentOutOfRangeException (nameof (shape), $"Shape dimension must be > 0");

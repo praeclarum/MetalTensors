@@ -44,6 +44,7 @@
   <ItemGroup>
     <Folder Include="Resources\" />
     <Folder Include="Tensors\" />
+    <Folder Include="Layers\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Tensor.cs" />
@@ -52,6 +53,11 @@
     <Compile Include="Tensors\MPSImageTensor.cs" />
     <Compile Include="MetalExtensions.cs" />
     <Compile Include="Tensors\ArrayTensor.cs" />
+    <Compile Include="Layer.cs" />
+    <Compile Include="Layers\AddLayer.cs" />
+    <Compile Include="Tensors\LayerOutputTensor.cs" />
+    <Compile Include="Tensors\OnesTensor.cs" />
+    <Compile Include="Tensors\ConstantTensor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

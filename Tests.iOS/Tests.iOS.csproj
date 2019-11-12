@@ -103,6 +103,7 @@
     <Compile Include="UnitTestAppDelegate.cs" />
     <Compile Include="ZeroTensorTests.cs" />
     <Compile Include="MPSImageTensorTests.cs" />
+    <Compile Include="AddLayerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">
