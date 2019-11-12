@@ -105,6 +105,7 @@
     <Compile Include="MPSImageTensorTests.cs" />
     <Compile Include="BinaryArithmeticLayerTests.cs" />
     <Compile Include="UpsampleLayerTests.cs" />
+    <Compile Include="Conv2LayerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

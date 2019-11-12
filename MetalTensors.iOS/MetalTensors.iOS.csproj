@@ -72,6 +72,7 @@
     <Compile Include="Layers\SubtractLayer.cs" />
     <Compile Include="Layers\MultiplyLayer.cs" />
     <Compile Include="Layers\DivideLayer.cs" />
+    <Compile Include="Layers\Conv2Layer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

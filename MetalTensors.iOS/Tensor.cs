@@ -142,6 +142,11 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
+        public virtual Tensor Conv2 (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
+        {
+            return new Conv2Layer (featureChannels, size, stride, padding).GetOutput (this);
+        }
+
         public virtual Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
