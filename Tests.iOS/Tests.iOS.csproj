@@ -106,6 +106,7 @@
     <Compile Include="BinaryArithmeticLayerTests.cs" />
     <Compile Include="UpsampleLayerTests.cs" />
     <Compile Include="Conv2LayerTests.cs" />
+    <Compile Include="DenseLayerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

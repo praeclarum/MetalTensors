@@ -147,6 +147,11 @@ namespace MetalTensors
             return new Conv2Layer (featureChannels, size, stride, padding).GetOutput (this);
         }
 
+        public virtual Tensor Dense (int featureChannels)
+        {
+            return new DenseLayer (featureChannels).GetOutput (this);
+        }
+
         public virtual Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);

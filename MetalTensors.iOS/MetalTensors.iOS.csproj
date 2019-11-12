@@ -73,6 +73,8 @@
     <Compile Include="Layers\MultiplyLayer.cs" />
     <Compile Include="Layers\DivideLayer.cs" />
     <Compile Include="Layers\Conv2Layer.cs" />
+    <Compile Include="Layers\DenseLayer.cs" />
+    <Compile Include="Layers\ConvWeights.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

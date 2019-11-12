@@ -19,12 +19,10 @@ namespace MetalTensors
             return new LayerOutputTensor (this, inputs);
         }
 
-        public Task<Tensor> PredictAsync (Tensor[] inputs)
+        public Task<Tensor> PredictAsync (Tensor[] inputs, IMTLDevice device)
         {
             if (inputs.Length != InputCount)
                 throw new ArgumentException (nameof (inputs));
-
-            var device = MetalExtensions.Current (FindDevice (inputs));
 
             var inputImageNodes = inputs.Select (x => (x.ImageNode, x.Shape)).ToArray ();
             var node = CreateFilterNode (inputImageNodes, device);

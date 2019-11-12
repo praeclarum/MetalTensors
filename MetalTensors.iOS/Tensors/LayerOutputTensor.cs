@@ -17,7 +17,8 @@ namespace MetalTensors.Tensors
 
         public override void Copy (Span<float> destination)
         {
-            var computed = Layer.PredictAsync (LayerInputs).Result;
+            var device = MetalExtensions.Current (null);
+            var computed = Layer.PredictAsync (LayerInputs, device).Result;
             computed.Copy (destination);
         }
     }
