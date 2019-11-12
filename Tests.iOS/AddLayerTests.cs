@@ -27,5 +27,19 @@ namespace Tests
             Assert.AreEqual (1, y.Shape[0]);
             Assert.AreEqual (2, y[0]);
         }
+
+        [Test]
+        public void FortyPlusTwo ()
+        {
+            var x0 = Tensor.Constant (40.0f, 4);
+            var x1 = Tensor.Constant (2.0f, 4);
+            var y = x0 + x1;
+            Assert.AreEqual (1, y.Shape.Length);
+            Assert.AreEqual (4, y.Shape[0]);
+            Assert.AreEqual (42.0f, y[0]);
+            Assert.AreEqual (42.0f, y[1]);
+            Assert.AreEqual (42.0f, y[2]);
+            Assert.AreEqual (42.0f, y[3]);
+        }
     }
 }

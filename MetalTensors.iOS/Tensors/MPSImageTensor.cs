@@ -14,6 +14,8 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
+        public MPSImage Image => image;
+
         public MPSImageTensor (MPSImage image)
         {
             this.image = image;
@@ -31,7 +33,7 @@ namespace MetalTensors.Tensors
         }
 
         public MPSImageTensor (int height, int width, int featureChannels = 3, IMTLDevice? device = null)
-            : this (new MPSImage (device, MPSImageDescriptor.GetImageDescriptor (
+            : this (new MPSImage (device.Current (), MPSImageDescriptor.GetImageDescriptor (
                 MPSImageFeatureChannelFormat.Float32, (nuint)width, (nuint)height, (nuint)featureChannels)))
         {
         }
@@ -75,12 +77,17 @@ namespace MetalTensors.Tensors
         {
             ValidateCopyDestination (destination);
             var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
-
-            fixed (float* dest = destination) {
-                image.ReadBytes ((IntPtr)dest, dataLayout, 0);
+            var dtype = image.PixelFormat;
+            switch (dtype) {
+                case MTLPixelFormat.R32Float: {
+                        fixed (float* dataPtr = destination) {
+                            image.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);
+                        }
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException ($"Cannot copy image with pixel format {dtype}");
             }
-
-            throw new NotImplementedException ();
         }
 
         public unsafe override Tensor Slice (params int[] indexes)
@@ -124,6 +131,11 @@ namespace MetalTensors.Tensors
                 }
             }
             return base.Slice (indexes);
+        }
+
+        public override MPSImage GetImage ()
+        {
+            return image;
         }
     }
 }

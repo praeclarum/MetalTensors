@@ -9,9 +9,24 @@ namespace MetalTensors
 {
     public abstract class Tensor
     {
+        readonly Lazy<TensorHandle> handle;
+        public TensorHandle Handle => handle.Value;
+
         public abstract int[] Shape { get; }
 
+        protected Tensor ()
+        {
+            handle = new Lazy<TensorHandle> (() => new TensorHandle (this), true);
+        }
+
         public abstract void Copy (Span<float> destination);
+
+        public float[] GetData ()
+        {
+            var r = new float[Shape.GetShapeLength ()];
+            Copy (r);
+            return r;
+        }
 
         public virtual float this[params int[] indexes] {
             get {
@@ -19,7 +34,7 @@ namespace MetalTensors
 
                 // This is pretty slow since the whole tensor is copied
                 // Hopefully derived classes overide this property.
-                var len = GetShapeLength (shape);
+                var len = shape.GetShapeLength ();
                 Span<float> elements = len < 1024 ?
                     stackalloc float[len] :
                     new float[len];
@@ -93,9 +108,14 @@ namespace MetalTensors
             return new AddLayer ().Output (this, other);
         }
 
-        public virtual MPSNNImageNode ToImageNode ()
+        public virtual MPSNNImageNode GetImageNode ()
         {
-            throw new NotSupportedException ($"Cannot convert {GetType ().Name} to neural network graph image node");
+            throw new NotSupportedException ($"Cannot get image node for {GetType ().Name}");
+        }
+
+        public virtual MPSImage GetImage ()
+        {
+            throw new NotSupportedException ($"Cannot get image for {GetType ().Name}");
         }
 
         public static void ValidateShape (params int[] shape)
@@ -112,20 +132,11 @@ namespace MetalTensors
 
         protected int ValidateCopyDestination (Span<float> destination)
         {
-            var neededLength = GetShapeLength (Shape);
+            var neededLength = Shape.GetShapeLength ();
             if (neededLength > destination.Length) {
                 throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
             }
             return neededLength;
-        }
-
-        public static int GetShapeLength (params int[] shape)
-        {
-            var r = 1;
-            for (var i = 0; i < shape.Length; i++) {
-                r *= shape[i];
-            }
-            return r;
         }
     }
 }

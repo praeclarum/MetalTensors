@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Foundation;
 using MetalPerformanceShaders;
+using MetalTensors.Tensors;
 
 namespace MetalTensors.Layers
 {
@@ -16,23 +19,26 @@ namespace MetalTensors.Layers
             if (inputs.Length != 2)
                 throw new ArgumentException (nameof (inputs));
 
-            var inputImageNodes = inputs.Select (x => x.ToImageNode ()).ToArray ();
-
+            var inputImageNodes = inputs.Select (x => x.GetImageNode ()).ToArray ();
             var node = new MPSNNAdditionNode (inputImageNodes);
-            Console.WriteLine (node.DebugDescription);
 
             var device = MetalExtensions.Current (null);
-            var graph = new MPSNNGraph (device, node.ResultImage, true);
-            Console.WriteLine (graph.DebugDescription);
+            using var graph = new MPSNNGraph (device, node.ResultImage, true) {
+                Format = MPSImageFeatureChannelFormat.Float32,
+            };
+            //Console.WriteLine (graph.DebugDescription);
 
             var sourceHandles = graph.SourceImageHandles;
-            Console.WriteLine (sourceHandles);
-            var sourceImages = 0;
+            var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetImage ()).ToArray ();
 
-            //var result = graph.Execute (sourceImages, null);
-            //Console.WriteLine (result.DebugDescription);
+            var tcs = new TaskCompletionSource<NSError?> ();
+            var result = graph.Execute (sources, (image, error) => {
+                tcs.SetResult (error);
+            });
+            var exeError = tcs.Task.Result;
+            exeError.ValidateNoError ();
 
-            throw new NotImplementedException ();
+            return new MPSImageTensor (result);
         }
     }
 }

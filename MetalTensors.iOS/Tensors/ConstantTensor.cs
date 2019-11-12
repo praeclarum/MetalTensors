@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using Foundation;
 using MetalPerformanceShaders;
@@ -10,8 +11,9 @@ namespace MetalTensors.Tensors
         static int nextId = 1;
 
         readonly int[] shape;
-        readonly ImageNodeHandle imageNodeHandle;
         readonly Lazy<MPSNNImageNode> imageNode;
+
+        readonly Lazy<MPSImage> constantImage;
 
         public override int[] Shape => shape;
 
@@ -23,8 +25,8 @@ namespace MetalTensors.Tensors
             ValidateShape (shape);
             this.shape = shape;
             var id = Interlocked.Increment (ref nextId);
-            imageNodeHandle = new ImageNodeHandle ("Constant" + id);
-            imageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (imageNodeHandle), true);
+            imageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
+            constantImage = new Lazy<MPSImage> (CreateImage, true);
         }
 
         public override void Copy (Span<float> destination)
@@ -36,26 +38,30 @@ namespace MetalTensors.Tensors
             }
         }
 
-        public override MPSNNImageNode ToImageNode ()
+        public override MPSNNImageNode GetImageNode ()
         {
             return imageNode.Value;
         }
 
-        public class ImageNodeHandle : NSObject, IMPSHandle
+        public override MPSImage GetImage () => constantImage.Value;
+
+        MPSImage CreateImage ()
         {
-            readonly string label;
-
-            public string Label => label;
-
-            public ImageNodeHandle (string label)
+            var imageTensor = shape.Length switch
             {
-                this.label = label;
-            }
-
-            public void EncodeTo (NSCoder encoder)
-            {
-                throw new NotImplementedException ();
-            }
+                0 => new MPSImageTensor (1, 1, 1),
+                1 => new MPSImageTensor (shape[0], 1, 1),
+                2 => new MPSImageTensor (shape[0], shape[1], 1),
+                3 => new MPSImageTensor (shape[0], shape[1], shape[2]),
+                var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
+            };
+            var image = imageTensor.Image;
+            image.Fill (ConstantValue);
+#if DEBUG
+            var data = imageTensor.GetData ();
+            Debug.Assert (data[0] == ConstantValue);
+#endif
+            return image;
         }
     }
 }

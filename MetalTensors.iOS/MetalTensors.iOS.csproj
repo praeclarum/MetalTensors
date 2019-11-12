@@ -23,15 +23,23 @@
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
+    <MtouchDebug></MtouchDebug>
+    <MtouchNoSymbolStrip></MtouchNoSymbolStrip>
+    <MtouchFastDev></MtouchFastDev>
+    <MtouchExtraArgs></MtouchExtraArgs>
+    <IpaPackageName></IpaPackageName>
+    <CrashReportingApiKey></CrashReportingApiKey>
+    <OnDemandResourcesPrefetchOrder></OnDemandResourcesPrefetchOrder>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
@@ -58,6 +66,7 @@
     <Compile Include="Tensors\LayerOutputTensor.cs" />
     <Compile Include="Tensors\OnesTensor.cs" />
     <Compile Include="Tensors\ConstantTensor.cs" />
+    <Compile Include="TensorHandle.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>
