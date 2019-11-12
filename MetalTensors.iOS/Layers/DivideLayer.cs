@@ -4,7 +4,7 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public class DivideLayer : BinaryArithmeticLayer
+    public class DivideLayer : BinopLayer
     {
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {

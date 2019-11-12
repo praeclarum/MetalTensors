@@ -1,7 +1,7 @@
 ﻿using System;
 namespace MetalTensors.Layers
 {
-    public abstract class BinaryArithmeticLayer : Layer
+    public abstract class BinopLayer : Layer
     {
         public override int InputCount => 2;
 

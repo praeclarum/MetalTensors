@@ -152,6 +152,11 @@ namespace MetalTensors
             return new DenseLayer (featureChannels).GetOutput (this);
         }
 
+        public virtual Tensor ReLU (float alpha)
+        {
+            return new ReLULayer (alpha).GetOutput (this);
+        }
+
         public virtual Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
