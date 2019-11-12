@@ -1,7 +1,9 @@
 ﻿using System;
 using Foundation;
-using MetalTensors.Tensors;
 using NUnit.Framework;
+
+using MetalTensors;
+using MetalTensors.Tensors;
 
 namespace Tests.iOS
 {
@@ -16,6 +18,14 @@ namespace Tests.iOS
             Assert.AreEqual (512, image.Shape[0]);
             Assert.AreEqual (512, image.Shape[1]);
             Assert.AreEqual (3, image.Shape[2]);
+        }
+
+        [Test]
+        public void ReadImageIsMPSImage ()
+        {
+            var path = NSBundle.MainBundle.PathForResource ("elephant", "jpg");
+            var image = Tensor.ReadImage (path);
+            Assert.IsInstanceOfType (typeof (MPSImageTensor), image);
         }
     }
 }

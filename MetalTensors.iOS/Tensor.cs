@@ -1,4 +1,7 @@
 ﻿using System;
+using Foundation;
+using Metal;
+using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
@@ -39,6 +42,16 @@ namespace MetalTensors
                 r *= shape[i];
             }
             return r;
+        }
+
+        public static Tensor ReadImage (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (url, featureChannels, device);
+        }
+
+        public static Tensor ReadImage (string path, int featureChannels = 3, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (path, featureChannels, device);
         }
     }
 }
