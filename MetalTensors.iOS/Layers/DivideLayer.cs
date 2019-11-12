@@ -2,11 +2,11 @@
 
 namespace MetalTensors.Layers
 {
-    public class AddLayer : BinaryArithmeticLayer
+    public class DivideLayer : BinaryArithmeticLayer
     {
         protected override MPSNNFilterNode CreateFilterNode (MPSNNImageNode[] inputImageNodes)
         {
-            return new MPSNNAdditionNode (inputImageNodes);
+            return new MPSNNDivisionNode (inputImageNodes);
         }
     }
 }

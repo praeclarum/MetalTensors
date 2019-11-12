@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Foundation;
+using Metal;
 using MetalPerformanceShaders;
 using MetalTensors.Tensors;
 
@@ -26,7 +27,7 @@ namespace MetalTensors
             var inputImageNodes = inputs.Select (x => x.ImageNode).ToArray ();
             var node = CreateFilterNode (inputImageNodes);
 
-            var device = MetalExtensions.Current (null);
+            var device = MetalExtensions.Current (FindDevice (inputs));
             using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                 Format = MPSImageFeatureChannelFormat.Float32,
             };
@@ -47,6 +48,12 @@ namespace MetalTensors
             });
 
             return tcs.Task;
+        }
+
+        static IMTLDevice? FindDevice (Tensor[] tensors)
+        {
+            // TODO: Scan inputs for the correct device to use
+            return null;
         }
 
         protected abstract MPSNNFilterNode CreateFilterNode (MPSNNImageNode[] inputImageNodes);

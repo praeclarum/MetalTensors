@@ -112,6 +112,36 @@ namespace MetalTensors
             return new AddLayer ().GetOutput (this, other);
         }
 
+        public static Tensor operator - (Tensor a, Tensor b)
+        {
+            return a.Subtract (b);
+        }
+
+        public virtual Tensor Subtract (Tensor other)
+        {
+            return new SubtractLayer ().GetOutput (this, other);
+        }
+
+        public static Tensor operator * (Tensor a, Tensor b)
+        {
+            return a.Multiply (b);
+        }
+
+        public virtual Tensor Multiply (Tensor other)
+        {
+            return new MultiplyLayer ().GetOutput (this, other);
+        }
+
+        public static Tensor operator / (Tensor a, Tensor b)
+        {
+            return a.Divide (b);
+        }
+
+        public virtual Tensor Divide (Tensor other)
+        {
+            return new DivideLayer ().GetOutput (this, other);
+        }
+
         public virtual Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
