@@ -16,7 +16,7 @@ namespace MetalTensors.Tensors
 
         public override void Copy (Span<float> destination)
         {
-            var n = Math.Min (GetShapeLength (shape), destination.Length);
+            var n = ValidateCopyDestination (destination);
             for (var i = 0; i < n; i++) {
                 destination[i] = 0.0f;
             }
