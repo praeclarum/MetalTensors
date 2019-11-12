@@ -18,7 +18,7 @@ namespace MetalTensors
             return new LayerOutputTensor (this, inputs);
         }
 
-        public Task<Tensor> OutputAsync (Tensor[] inputs)
+        public Task<Tensor> PredictAsync (Tensor[] inputs)
         {
             if (inputs.Length != InputCount)
                 throw new ArgumentException (nameof (inputs));
