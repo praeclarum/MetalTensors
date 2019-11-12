@@ -100,12 +100,19 @@
     <Compile Include="Main.cs" />
     <Compile Include="UnitTestAppDelegate.cs" />
     <Compile Include="ZeroTensorTests.cs" />
+    <Compile Include="MPSImageTensorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">
       <Project>{06BAB14A-A97E-44D4-BABC-ED0EBB5771AD}</Project>
       <Name>MetalTensors.iOS</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\elephant.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

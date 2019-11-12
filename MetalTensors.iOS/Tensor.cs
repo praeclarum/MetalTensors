@@ -20,7 +20,15 @@ namespace MetalTensors
         {
             for (var i = 0; i < shape.Length; i++) {
                 if (shape[i] <= 0)
-                    throw new ArgumentOutOfRangeException (nameof(shape), $"Shape dimension must be > 0");
+                    throw new ArgumentOutOfRangeException (nameof (shape), $"Shape dimension must be > 0");
+            }
+        }
+
+        protected void ValidateCopyDestination (Span<float> destination)
+        {
+            var neededLength = GetShapeLength (Shape);
+            if (neededLength > destination.Length) {
+                throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
             }
         }
 
