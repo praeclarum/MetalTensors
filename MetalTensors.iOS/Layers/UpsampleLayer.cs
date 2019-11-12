@@ -1,4 +1,5 @@
 ﻿using System;
+using Metal;
 using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
@@ -30,9 +31,9 @@ namespace MetalTensors.Layers
             return outShape;
         }
 
-        protected override MPSNNFilterNode CreateFilterNode (MPSNNImageNode[] inputImageNodes)
+        protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
-            return new MPSCnnUpsamplingNearestNode (inputImageNodes[0], (nuint)ScaleX, (nuint)ScaleY);
+            return new MPSCnnUpsamplingNearestNode (inputs[0].ImageNode, (nuint)ScaleX, (nuint)ScaleY);
         }
     }
 }

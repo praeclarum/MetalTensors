@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Foundation;
 using Metal;
@@ -74,5 +75,67 @@ namespace MetalTensors
                     throw new NotSupportedException ($"Cannot fill images with pixel format {dtype}");
             }
         }
+
+        public static MPSVectorDescriptor VectorDescriptor (int length, MPSDataType dataType = MPSDataType.Float32) =>
+            MPSVectorDescriptor.Create ((nuint)length, dataType);
+
+        public static MPSVector Vector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)
+        {
+            if (descriptor.Length <= 0)
+                throw new ArgumentOutOfRangeException (nameof (descriptor), "Vector lengths must be > 0");
+
+            var v = new MPSVector (device, descriptor);
+            if (v.Data == null)
+                throw new Exception ($"Failed to create vector with length {descriptor.Length}");
+            var vectorByteSize = GetByteSize (descriptor);
+            if (vectorByteSize > 0) {
+                unsafe {
+                    float biasInit = initialValue;
+                    var biasInitPtr = (IntPtr)(float*)&biasInit;
+                    memset_pattern4 (v.Data.Contents, biasInitPtr, vectorByteSize);
+                }
+            }
+            return v;
+        }
+        [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
+        static extern void memset_pattern4 (IntPtr b, IntPtr pattern4, nint len);
+
+        public static float[] ToArray (this MPSVector vector)
+        {
+            var ar = new float[vector.Length];
+            Marshal.Copy (vector.Data.Contents, ar, 0, ar.Length);
+            return ar;
+        }
+
+        public static bool IsValid (this MPSVector vector)
+        {
+            var ar = vector.ToArray ();
+            for (var i = 0; i < ar.Length; i++) {
+                var v = ar[i];
+                if (float.IsNaN (v))
+                    return false;
+                if (float.IsInfinity (v))
+                    return false;
+                if (float.IsNegativeInfinity (v))
+                    return false;
+            }
+            return true;
+        }
+
+        public static int GetByteSize (this MPSVectorDescriptor descriptor) =>
+            (int)descriptor.Length * GetByteSize (descriptor.DataType);
+
+        public static int GetByteSize (this MPSDataType dataType) =>
+            dataType switch
+            {
+                MPSDataType.Unorm8 => 1,
+                MPSDataType.Float32 => 4,
+                var x => throw new NotSupportedException ($"Cannot get size of {x}")
+            };
+#if __IOS__
+        public static void DidModify (this IMTLBuffer buffer, NSRange range)
+        {
+        }
+#endif
     }
 }

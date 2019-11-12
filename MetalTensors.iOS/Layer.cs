@@ -24,10 +24,11 @@ namespace MetalTensors
             if (inputs.Length != InputCount)
                 throw new ArgumentException (nameof (inputs));
 
-            var inputImageNodes = inputs.Select (x => x.ImageNode).ToArray ();
-            var node = CreateFilterNode (inputImageNodes);
-
             var device = MetalExtensions.Current (FindDevice (inputs));
+
+            var inputImageNodes = inputs.Select (x => (x.ImageNode, x.Shape)).ToArray ();
+            var node = CreateFilterNode (inputImageNodes, device);
+
             using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                 Format = MPSImageFeatureChannelFormat.Float32,
             };
@@ -56,6 +57,6 @@ namespace MetalTensors
             return null;
         }
 
-        protected abstract MPSNNFilterNode CreateFilterNode (MPSNNImageNode[] inputImageNodes);
+        protected abstract MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device);
     }
 }
