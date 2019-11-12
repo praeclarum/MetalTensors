@@ -14,9 +14,13 @@ namespace MetalTensors
 
         public abstract int[] Shape { get; }
 
+        readonly Lazy<MPSNNImageNode> imageNode;
+        public MPSNNImageNode ImageNode => imageNode.Value;
+
         protected Tensor ()
         {
             handle = new Lazy<TensorHandle> (() => new TensorHandle (this), true);
+            imageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
 
         public abstract void Copy (Span<float> destination);
@@ -105,12 +109,17 @@ namespace MetalTensors
 
         public virtual Tensor Add (Tensor other)
         {
-            return new AddLayer ().Output (this, other);
+            return new AddLayer ().GetOutput (this, other);
         }
 
-        public virtual MPSNNImageNode GetImageNode ()
+        public virtual Tensor Upsample (int scaleX, int scaleY)
         {
-            throw new NotSupportedException ($"Cannot get image node for {GetType ().Name}");
+            return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
+        }
+
+        public virtual Tensor Upsample (int scale)
+        {
+            return Upsample (scale, scale);
         }
 
         public virtual MPSImage GetImage ()

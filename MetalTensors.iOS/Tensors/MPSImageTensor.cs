@@ -85,6 +85,12 @@ namespace MetalTensors.Tensors
                         }
                     }
                     break;
+                case MTLPixelFormat.RGBA32Float: {
+                        fixed (float* dataPtr = destination) {
+                            image.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);
+                        }
+                    }
+                    break;
                 default:
                     throw new NotSupportedException ($"Cannot copy image with pixel format {dtype}");
             }

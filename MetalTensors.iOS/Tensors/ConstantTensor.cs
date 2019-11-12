@@ -11,7 +11,6 @@ namespace MetalTensors.Tensors
         static int nextId = 1;
 
         readonly int[] shape;
-        readonly Lazy<MPSNNImageNode> imageNode;
 
         readonly Lazy<MPSImage> constantImage;
 
@@ -25,7 +24,6 @@ namespace MetalTensors.Tensors
             ValidateShape (shape);
             this.shape = shape;
             var id = Interlocked.Increment (ref nextId);
-            imageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
             constantImage = new Lazy<MPSImage> (CreateImage, true);
         }
 
@@ -36,11 +34,6 @@ namespace MetalTensors.Tensors
             for (var i = 0; i < n; i++) {
                 destination[i] = c;
             }
-        }
-
-        public override MPSNNImageNode GetImageNode ()
-        {
-            return imageNode.Value;
         }
 
         public override MPSImage GetImage () => constantImage.Value;

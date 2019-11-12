@@ -67,6 +67,7 @@
     <Compile Include="Tensors\OnesTensor.cs" />
     <Compile Include="Tensors\ConstantTensor.cs" />
     <Compile Include="TensorHandle.cs" />
+    <Compile Include="Layers\UpsampleLayer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>
