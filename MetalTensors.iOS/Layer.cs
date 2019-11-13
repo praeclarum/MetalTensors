@@ -39,7 +39,7 @@ namespace MetalTensors
 
         public Tensor GetOutput (params Tensor[] inputs)
         {
-            return new LayerOutputTensor (this, inputs);
+            return new LayerTensor (this, inputs);
         }
 
         public Task<Tensor> ExecuteAsync (Tensor[] inputs, IMTLDevice device)

@@ -63,7 +63,7 @@
     <Compile Include="Tensors\ArrayTensor.cs" />
     <Compile Include="Layer.cs" />
     <Compile Include="Layers\AddLayer.cs" />
-    <Compile Include="Tensors\LayerOutputTensor.cs" />
+    <Compile Include="Tensors\LayerTensor.cs" />
     <Compile Include="Tensors\OnesTensor.cs" />
     <Compile Include="Tensors\ConstantTensor.cs" />
     <Compile Include="TensorHandle.cs" />
