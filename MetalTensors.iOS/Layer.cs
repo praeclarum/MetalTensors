@@ -59,7 +59,7 @@ namespace MetalTensors
                     using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
                     };
-                    Console.WriteLine (graph.DebugDescription);
+                    //Console.WriteLine (graph.DebugDescription);
 
                     var sourceHandles = graph.SourceImageHandles;
                     var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetMetalImage ()).ToArray ();
