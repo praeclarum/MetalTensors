@@ -6,7 +6,7 @@ using static MetalTensors.MetalExtensions;
 
 namespace MetalTensors.Layers
 {
-    public class Conv2Layer : Layer
+    public class ConvLayer : Layer
     {
         public override int InputCount => 1;
 
@@ -17,7 +17,7 @@ namespace MetalTensors.Layers
         public int StrideY { get; }
         public ConvPadding Padding { get; }
 
-        public Conv2Layer (int featureChannels, int sizeY, int sizeX, int strideY, int strideX, ConvPadding padding)
+        public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
             if (featureChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (featureChannels), "Convolution 2D feature channels must be > 0");
@@ -30,7 +30,7 @@ namespace MetalTensors.Layers
             Padding = padding;
         }
 
-        public Conv2Layer (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
+        public ConvLayer (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
             : this (featureChannels, size, size, stride, stride, padding)
         {
         }
@@ -49,7 +49,7 @@ namespace MetalTensors.Layers
             return new[] { kh, kw, FeatureChannels };
         }
 
-        static int ConvOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation)
+        public static int ConvOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation)
         {
             if (inputLength < 0)
                 throw new ArgumentOutOfRangeException (nameof (inputLength), "Convolution input dimension must be >= 0");
@@ -73,7 +73,7 @@ namespace MetalTensors.Layers
 
         ConvWeights GetWeights (int inChannels, IMTLDevice device)
         {
-            var w = new ConvWeights (inChannels, FeatureChannels, SizeY, SizeX, StrideY, StrideX, true, "MEMEMEMEME", device);
+            var w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, true, "MEMEMEMEME", device);
             return w;
         }
     }

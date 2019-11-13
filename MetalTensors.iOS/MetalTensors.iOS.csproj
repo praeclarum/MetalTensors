@@ -72,11 +72,13 @@
     <Compile Include="Layers\SubtractLayer.cs" />
     <Compile Include="Layers\MultiplyLayer.cs" />
     <Compile Include="Layers\DivideLayer.cs" />
-    <Compile Include="Layers\Conv2Layer.cs" />
+    <Compile Include="Layers\ConvLayer.cs" />
     <Compile Include="Layers\DenseLayer.cs" />
     <Compile Include="Layers\ConvWeights.cs" />
     <Compile Include="Layers\ReLULayer.cs" />
     <Compile Include="Layers\UnopLayer.cs" />
+    <Compile Include="Layers\MaxPoolLayer.cs" />
+    <Compile Include="Layers\PoolLayer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

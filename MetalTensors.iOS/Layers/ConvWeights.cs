@@ -37,43 +37,43 @@ namespace MetalTensors.Layers
 
         public override IntPtr BiasTerms => biasVectors.ValuePointer;
 
-        public ConvWeights(int inChannels, int outChannels, int kernelSizeY, int kernelSizeX, int strideY, int strideX, bool bias, string label, IMTLDevice device)
+        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, string label, IMTLDevice device)
         {
             this.device = device;
 
             if (inChannels <= 0)
-                throw new ArgumentOutOfRangeException(nameof(inChannels), "Number of convolution input channels must be > 0");
+                throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution input channels must be > 0");
             if (outChannels <= 0)
-                throw new ArgumentOutOfRangeException(nameof(inChannels), "Number of convolution output channels must be > 0");
+                throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution output channels must be > 0");
 
-            descriptor = MPSCnnConvolutionDescriptor.CreateCnnConvolutionDescriptor(
+            descriptor = MPSCnnConvolutionDescriptor.CreateCnnConvolutionDescriptor (
                 (System.nuint)kernelSizeX, (System.nuint)kernelSizeY,
                 (System.nuint)inChannels,
                 (System.nuint)outChannels);
             descriptor.StrideInPixelsX = (nuint)strideX;
             descriptor.StrideInPixelsY = (nuint)strideY;
             this.bias = bias;
-            this.label = string.IsNullOrEmpty(label) ? Guid.NewGuid().ToString() : label;
+            this.label = string.IsNullOrEmpty (label) ? Guid.NewGuid ().ToString () : label;
 
             var lenWeights = inChannels * kernelSizeX * kernelSizeY * outChannels;
 
-            var vDescWeights = VectorDescriptor(lenWeights);
-            weightVectors = new OptimizableVector(device, vDescWeights, 0.0f);
+            var vDescWeights = VectorDescriptor (lenWeights);
+            weightVectors = new OptimizableVector (device, vDescWeights, 0.0f);
 
-            var vDescBiases = VectorDescriptor(outChannels);
-            biasVectors = new OptimizableVector(device, vDescBiases, 0.1f);
+            var vDescBiases = VectorDescriptor (outChannels);
+            biasVectors = new OptimizableVector (device, vDescBiases, 0.1f);
 
-            convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState(weightVectors.Value.Data, biasVectors.Value.Data);
-            momentumVectors = NSArray<MPSVector>.FromNSObjects(weightVectors.Momentum, biasVectors.Momentum);
-            velocityVectors = NSArray<MPSVector>.FromNSObjects(weightVectors.Velocity, biasVectors.Velocity);
+            convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, biasVectors.Value.Data);
+            momentumVectors = NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, biasVectors.Momentum);
+            velocityVectors = NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity);
 
-            SetOptimizationOptions(learningRate: 0.0002f);
+            SetOptimizationOptions (learningRate: 0.0002f);
         }
 
-        void SetOptimizationOptions(float learningRate)
+        void SetOptimizationOptions (float learningRate)
         {
-            var odesc = new MPSNNOptimizerDescriptor(learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
-            updater = new MPSNNOptimizerAdam(
+            var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
+            updater = new MPSNNOptimizerAdam (
                 device,
                 beta1: 0.9f, beta2: 0.999f, epsilon: 1e-8f,
                 timeStep: 0,
@@ -81,32 +81,28 @@ namespace MetalTensors.Layers
         }
 
         [DebuggerHidden]
-        public override bool Load
-        {
-            get
-            {
+        public override bool Load {
+            get {
                 //Console.WriteLine ($"Load Conv2dDataSource {this.Label}");
                 return true;
             }
         }
 
-        public override void Purge()
+        public override void Purge ()
         {
             //Console.WriteLine ($"Purge Conv2dDataSource {this.Label}");
         }
 
-        public override MPSCnnConvolutionWeightsAndBiasesState Update(IMTLCommandBuffer commandBuffer, MPSCnnConvolutionGradientState gradientState, MPSCnnConvolutionWeightsAndBiasesState sourceState)
+        public override MPSCnnConvolutionWeightsAndBiasesState Update (IMTLCommandBuffer commandBuffer, MPSCnnConvolutionGradientState gradientState, MPSCnnConvolutionWeightsAndBiasesState sourceState)
         {
             var u = updater;
-            if (u != null)
-            {
+            if (u != null) {
                 updateCount++;
 
-                u.Encode(commandBuffer, gradientState, sourceState, momentumVectors, velocityVectors, convWtsAndBias);
+                u.Encode (commandBuffer, gradientState, sourceState, momentumVectors, velocityVectors, convWtsAndBias);
 
-                if (updateCount != u.TimeStep)
-                {
-                    throw new Exception($"Update time step is out of synch");
+                if (updateCount != u.TimeStep) {
+                    throw new Exception ($"Update time step is out of synch");
                 }
 
                 //Console.WriteLine ($"UpdateWeights of Conv2dDataSource {this.Label}");
@@ -115,43 +111,42 @@ namespace MetalTensors.Layers
             return convWtsAndBias;
         }
 
-        public Dictionary<string, float[]> GetWeights() => new Dictionary<string, float[]>
-        {
-            [label + ".Weights.Value"] = weightVectors.Value.ToArray(),
+        public Dictionary<string, float[]> GetWeights () => new Dictionary<string, float[]> {
+            [label + ".Weights.Value"] = weightVectors.Value.ToArray (),
             //[label + ".Weights.Momentum"] = weightVectors.Momentum.ToArray(),
             //[label + ".Weights.Velocity"] = weightVectors.Velocity.ToArray(),
-            [label + ".Biases.Value"] = biasVectors.Value.ToArray(),
+            [label + ".Biases.Value"] = biasVectors.Value.ToArray (),
             //[label + ".Biases.Momentum"] = biasVectors.Momentum.ToArray(),
             //[label + ".Biases.Velocity"] = biasVectors.Velocity.ToArray(),
         };
 
-        public void RandomizeWeights(nuint seed, IMTLCommandQueue queue)
+        public void RandomizeWeights (nuint seed, IMTLCommandQueue queue)
         {
-            var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateUniform(-0.2f, 0.2f);
-            var randomKernel = new MPSMatrixRandomMTGP32(device, MPSDataType.Float32, seed, randomDesc);
+            var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateUniform (-0.2f, 0.2f);
+            var randomKernel = new MPSMatrixRandomMTGP32 (device, MPSDataType.Float32, seed, randomDesc);
 
             // Run on its own buffer so as not to bother others
-            using var commandBuffer = MPSCommandBuffer.Create(queue);
-            randomKernel.EncodeToCommandBuffer(commandBuffer, weightVectors.Value);
-            commandBuffer.Commit();
-            commandBuffer.WaitUntilCompleted();
+            using var commandBuffer = MPSCommandBuffer.Create (queue);
+            randomKernel.EncodeToCommandBuffer (commandBuffer, weightVectors.Value);
+            commandBuffer.Commit ();
+            commandBuffer.WaitUntilCompleted ();
 
-            SetVectorsModified();
+            SetVectorsModified ();
         }
 
-        public bool WeightsAreValid()
+        public bool WeightsAreValid ()
         {
-            return weightVectors.WeightsAreValid() && biasVectors.WeightsAreValid();
+            return weightVectors.WeightsAreValid () && biasVectors.WeightsAreValid ();
         }
 
-        void SetVectorsModified()
+        void SetVectorsModified ()
         {
-            weightVectors.Value.Data.DidModify(new NSRange(0, weightVectors.VectorByteSize));
-            weightVectors.Momentum.Data.DidModify(new NSRange(0, weightVectors.VectorByteSize));
-            weightVectors.Velocity.Data.DidModify(new NSRange(0, weightVectors.VectorByteSize));
-            biasVectors.Value.Data.DidModify(new NSRange(0, biasVectors.VectorByteSize));
-            biasVectors.Momentum.Data.DidModify(new NSRange(0, biasVectors.VectorByteSize));
-            biasVectors.Velocity.Data.DidModify(new NSRange(0, biasVectors.VectorByteSize));
+            weightVectors.Value.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
+            weightVectors.Momentum.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
+            weightVectors.Velocity.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
+            biasVectors.Value.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
+            biasVectors.Momentum.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
+            biasVectors.Velocity.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
         }
 
 #if PB_SERIALIZATION

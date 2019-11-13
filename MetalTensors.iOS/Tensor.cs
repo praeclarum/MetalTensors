@@ -142,9 +142,14 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public virtual Tensor Conv2 (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
+        public virtual Tensor Conv (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
         {
-            return new Conv2Layer (featureChannels, size, stride, padding).GetOutput (this);
+            return new ConvLayer (featureChannels, size, stride, padding).GetOutput (this);
+        }
+
+        public virtual Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding = ConvPadding.Same)
+        {
+            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
         public virtual Tensor Dense (int featureChannels)
@@ -152,9 +157,19 @@ namespace MetalTensors
             return new DenseLayer (featureChannels).GetOutput (this);
         }
 
-        public virtual Tensor ReLU (float alpha)
+        public virtual Tensor ReLU (float alpha = 0.2f)
         {
             return new ReLULayer (alpha).GetOutput (this);
+        }
+
+        public virtual Tensor MaxPool (int size = 2, int stride = 2)
+        {
+            return new MaxPoolLayer (size, stride).GetOutput (this);
+        }
+
+        public virtual Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY)
+        {
+            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
         }
 
         public virtual Tensor Upsample (int scaleX, int scaleY)

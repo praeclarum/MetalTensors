@@ -4,13 +4,13 @@ using NUnit.Framework;
 
 namespace Tests
 {
-    public class Conv2LayerTests
+    public class ConvLayerTests
     {
         [Test]
         public void Defaults ()
         {
             var image = Tensor.ReadImageResource ("elephant", "jpg");
-            var conv = image.Conv2 (32, 3);
+            var conv = image.Conv (32, 3);
 
             Assert.AreEqual (3, conv.Shape.Length);
             Assert.AreEqual (512, conv.Shape[0]);
