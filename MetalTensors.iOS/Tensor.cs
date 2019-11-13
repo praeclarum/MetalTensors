@@ -190,6 +190,18 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
+        public virtual History Train (Func<Tensor, Tensor> trainingData, IMTLDevice? device = null)
+        {
+            var d = device.Current ();
+            var h = new History ();
+
+            using var graph = new MPSNNGraph (device, this.ImageNode, true) {
+                Format = MPSImageFeatureChannelFormat.Float32,
+            };
+
+            return h;
+        }
+
         public virtual MPSImage GetImage ()
         {
             throw new NotSupportedException ($"Cannot get image for {GetType ().Name}");

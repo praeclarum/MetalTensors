@@ -81,6 +81,7 @@
     <Compile Include="Layers\PoolLayer.cs" />
     <Compile Include="Layers\LossLayer.cs" />
     <Compile Include="LossType.cs" />
+    <Compile Include="History.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>
