@@ -1,4 +1,6 @@
 ﻿using System;
+using Metal;
+using MetalPerformanceShaders;
 
 namespace MetalTensors.Tensors
 {
@@ -20,6 +22,11 @@ namespace MetalTensors.Tensors
             var device = MetalExtensions.Current (null);
             var computed = Layer.PredictAsync (LayerInputs, device).Result;
             computed.Copy (destination);
+        }
+
+        public override MPSNNImageNode GetMetalImageNode (IMTLDevice device)
+        {
+            return Layer.GetMetalImageNode (LayerInputs, device);
         }
     }
 }

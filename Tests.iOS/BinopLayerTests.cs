@@ -107,5 +107,15 @@ namespace Tests
             Assert.AreEqual (42.0f, y[2]);
             Assert.AreEqual (42.0f, y[3]);
         }
+
+        [Test]
+        public void MinusDivide ()
+        {
+            var x3 = Tensor.Constant (3.0f, 1);
+            var x5 = Tensor.Constant (5.0f, 1);
+            var x7 = Tensor.Constant (7.0f, 1);
+            var y = (x3 - x5) / x7;
+            Assert.AreEqual (-0.2857142857f, y[0]);
+        }
     }
 }

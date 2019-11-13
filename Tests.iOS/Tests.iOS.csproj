@@ -103,7 +103,7 @@
     <Compile Include="UnitTestAppDelegate.cs" />
     <Compile Include="ZeroTensorTests.cs" />
     <Compile Include="MPSImageTensorTests.cs" />
-    <Compile Include="BinaryArithmeticLayerTests.cs" />
+    <Compile Include="BinopLayerTests.cs" />
     <Compile Include="UpsampleLayerTests.cs" />
     <Compile Include="ConvLayerTests.cs" />
     <Compile Include="DenseLayerTests.cs" />

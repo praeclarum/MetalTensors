@@ -36,7 +36,7 @@ namespace MetalTensors.Tensors
             }
         }
 
-        public override MPSImage GetImage () => constantImage.Value;
+        public override MPSImage GetMetalImage () => constantImage.Value;
 
         MPSImage CreateImage ()
         {

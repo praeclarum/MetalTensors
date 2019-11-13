@@ -15,7 +15,7 @@ namespace MetalTensors
         public abstract int[] Shape { get; }
 
         readonly Lazy<MPSNNImageNode> imageNode;
-        public MPSNNImageNode ImageNode => imageNode.Value;
+        public virtual MPSNNImageNode GetMetalImageNode (IMTLDevice device) => imageNode.Value;
 
         protected Tensor ()
         {
@@ -195,16 +195,16 @@ namespace MetalTensors
             var d = device.Current ();
             var h = new History ();
 
-            using var graph = new MPSNNGraph (device, this.ImageNode, true) {
+            using var graph = new MPSNNGraph (d, GetMetalImageNode (d), true) {
                 Format = MPSImageFeatureChannelFormat.Float32,
             };
 
             return h;
         }
 
-        public virtual MPSImage GetImage ()
+        public virtual MPSImage GetMetalImage ()
         {
-            throw new NotSupportedException ($"Cannot get image for {GetType ().Name}");
+            throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
         }
 
         public static void ValidateShape (params int[] shape)

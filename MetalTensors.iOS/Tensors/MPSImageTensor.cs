@@ -140,7 +140,7 @@ namespace MetalTensors.Tensors
             return base.Slice (indexes);
         }
 
-        public override MPSImage GetImage ()
+        public override MPSImage GetMetalImage ()
         {
             return image;
         }
