@@ -51,7 +51,7 @@ namespace MetalTensors.Tensors
             var image = imageTensor.Image;
             image.Fill (ConstantValue);
 #if DEBUG
-            var data = imageTensor.GetData ();
+            var data = imageTensor.ToArray ();
             Debug.Assert (data[0] == ConstantValue);
 #endif
             return image;

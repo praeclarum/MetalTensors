@@ -25,7 +25,7 @@ namespace MetalTensors
 
         public abstract void Copy (Span<float> destination);
 
-        public float[] GetData ()
+        public float[] ToArray ()
         {
             var r = new float[Shape.GetShapeLength ()];
             Copy (r);
