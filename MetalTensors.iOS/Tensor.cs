@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
@@ -87,9 +89,11 @@ namespace MetalTensors
         public static Tensor ReadImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
         {
             var b = bundle ?? NSBundle.MainBundle;
-            var url = string.IsNullOrEmpty (subpath) ?
+            NSUrl? url = string.IsNullOrEmpty (subpath) ?
                 b.GetUrlForResource (name, extension) :
                 b.GetUrlForResource (name, extension, subpath);
+            if (url == null)
+                throw new ArgumentException ("Resource not found", nameof (name));
             return new MPSImageTensor (url, featureChannels, device);
         }
 
@@ -186,16 +190,49 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public virtual History Train (Func<Tensor, Tensor> trainingData, IMTLDevice? device = null)
+        public virtual TrainingHistory Train (Func<TensorHandle[], Tensor[]> trainingData, int batchSize = 32, int numBatches = 1, IMTLDevice? device = null)
         {
             var d = device.Current ();
-            var h = new History ();
+            var h = new List<Tensor[]> ();
 
-            using var graph = new MPSNNGraph (d, GetMetalImageNode (d), true) {
+            var thisImageNode = GetMetalImageNode (d);
+
+            var grad = new MPSNNInitialGradientNode (thisImageNode);
+
+            var trainingGraphNodes = grad.GetTrainingGraph (grad.ResultImage, (x, y, z, w) => {
+                Console.WriteLine ($"{x}, {y}, {z}, {w}");
+            });
+
+            using var graph = new MPSNNGraph (d, thisImageNode, true) {
                 Format = MPSImageFeatureChannelFormat.Float32,
-            };
+            };            
 
-            return h;
+            var sourceHandles = graph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
+
+            var batch = GetBatch (sourceHandles, trainingData, batchSize);
+
+            var queue = d.CreateCommandQueue ();
+            var commandBuffer = queue.CommandBuffer ();
+
+            var returnBatch = graph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> ());
+
+            MPSImageBatch.Synchronize (returnBatch, commandBuffer);
+            commandBuffer.Commit ();
+            commandBuffer.WaitUntilCompleted ();
+
+            return new TrainingHistory (h.ToArray ());
+        }
+
+        NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], Tensor[]> trainingData, int batchSize)
+        {
+            var batch = new List<NSArray<MPSImage>> (batchSize);
+            for (var i = 0; i < batchSize; i++) {
+                var data = trainingData (sourceHandles);
+                var sources = data.Select (x => x.GetMetalImage ()).ToArray ();
+                var sourcesArray = NSArray<MPSImage>.FromNSObjects (sources);
+                batch.Add (sourcesArray);
+            }
+            return batch.ToArray ();
         }
 
         public virtual MPSImage GetMetalImage ()
