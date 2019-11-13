@@ -109,6 +109,7 @@
     <Compile Include="DenseLayerTests.cs" />
     <Compile Include="ReLULayerTests.cs" />
     <Compile Include="MaxPoolLayerTests.cs" />
+    <Compile Include="LossLayerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

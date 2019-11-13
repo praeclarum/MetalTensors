@@ -182,6 +182,14 @@ namespace MetalTensors
             return Upsample (scale, scale);
         }
 
+        public virtual Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
+        {
+            var layer = new LossLayer (lossType, reductionType);
+            return weights != null ?
+                layer.GetOutput (this, labels, weights) :
+                layer.GetOutput (this, labels);
+        }
+
         public virtual MPSImage GetImage ()
         {
             throw new NotSupportedException ($"Cannot get image for {GetType ().Name}");

@@ -79,6 +79,8 @@
     <Compile Include="Layers\UnopLayer.cs" />
     <Compile Include="Layers\MaxPoolLayer.cs" />
     <Compile Include="Layers\PoolLayer.cs" />
+    <Compile Include="Layers\LossLayer.cs" />
+    <Compile Include="LossType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>
