@@ -10,10 +10,10 @@ namespace Tests
         [Test]
         public void ConvIdentity ()
         {
-            var input = Tensor.InputImage (256, 256);
+            var input = Tensor.InputImage ("input image", 256, 256);
             var output = input.Conv (32, stride: 2).Conv (32, stride: 2).Conv (1);
 
-            var label = Tensor.Labels (64, 64, 1);
+            var label = Tensor.Labels ("label image", 64, 64, 1);
             var loss = output.Loss (label, LossType.MeanSquaredError);
 
             var batchSize = 5;
@@ -24,7 +24,9 @@ namespace Tests
             var history = loss.Train (needed => {
                 Assert.AreEqual (2, needed.Length);
                 Assert.AreEqual (input.Label, needed[0].Label);
+                Assert.AreEqual ("input image", needed[0].Label);
                 Assert.AreEqual (label.Label, needed[1].Label);
+                Assert.AreEqual ("label image", needed[1].Label);
                 getDataCount++;
 
                 return needed.Select (x => x.Tensor.Clone ()).ToArray ();

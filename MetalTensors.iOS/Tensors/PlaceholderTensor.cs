@@ -13,7 +13,8 @@ namespace MetalTensors.Tensors
 
         readonly ConcurrentDictionary<IntPtr, MPSImage> deviceImages = new ConcurrentDictionary<IntPtr, MPSImage> ();
 
-        protected PlaceholderTensor (int[] shape)
+        protected PlaceholderTensor (string label, int[] shape)
+            : base (label)
         {
             this.shape = shape;
         }        

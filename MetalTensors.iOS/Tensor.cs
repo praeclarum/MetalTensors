@@ -22,9 +22,9 @@ namespace MetalTensors
         public virtual MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device) => metalImageNode.Value;
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
 
-        protected Tensor ()
+        protected Tensor (string? label = null)
         {
-            handle = new Lazy<TensorHandle> (() => new TensorHandle (this), true);
+            handle = new Lazy<TensorHandle> (() => new TensorHandle (this, label), true);
             metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
 
@@ -63,19 +63,19 @@ namespace MetalTensors
             }
         }
 
-        public static Tensor Input (params int[] shape)
+        public static Tensor Input (string label, params int[] shape)
         {
-            return new InputTensor (shape);
+            return new InputTensor (label, shape);
         }
 
-        public static Tensor InputImage (int height, int width, int featureChannels = 3)
+        public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
         {
-            return new InputTensor (height, width, featureChannels);
+            return new InputTensor (label, height, width, featureChannels);
         }
 
-        public static Tensor Labels (params int[] shape)
+        public static Tensor Labels (string label, params int[] shape)
         {
-            return new LabelsTensor (shape);
+            return new LabelsTensor (label, shape);
         }
 
         public static Tensor Constant (float constant, params int[] shape)

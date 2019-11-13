@@ -4,8 +4,8 @@ namespace MetalTensors.Tensors
 {
     public class InputTensor : PlaceholderTensor
     {
-        public InputTensor (params int[] shape)
-            : base (shape)
+        public InputTensor (string label, params int[] shape)
+            : base (label, shape)
         {
         }
     }
