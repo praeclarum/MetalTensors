@@ -1,25 +1,25 @@
 ﻿using System;
 using NUnit.Framework;
 
-using MetalTensors.Tensors;
+using MetalTensors;
 
 namespace Tests.iOS
 {
-    public class ZeroTensorTests
+    public class ConstantTensorTests
     {
         [Test]
-        public void Single ()
+        public void ZerosSingle ()
         {
-            var t = new ZeroTensor (1);
+            var t = Tensor.Zeros (1);
             Assert.AreEqual (1, t.Shape.Length);
             Assert.AreEqual (1, t.Shape[0]);
             Assert.AreEqual (0.0f, t[0]);
         }
 
         [Test]
-        public void FirstOfThree ()
+        public void ZerosFirstOfThree ()
         {
-            var t = new ZeroTensor (3);
+            var t = Tensor.Zeros (3);
             Assert.AreEqual (0.0f, t[0]);
         }
     }

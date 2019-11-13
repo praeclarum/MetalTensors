@@ -56,21 +56,17 @@ namespace MetalTensors
 
         public static Tensor Constant (float constant, params int[] shape)
         {
-            if (constant == 0.0f)
-                return Zeros (shape);
-            if (constant == 1.0f)
-                return Ones (shape);
             return new ConstantTensor (constant, shape);
         }
 
         public static Tensor Zeros (params int[] shape)
         {
-            return new ZeroTensor (shape);
+            return new ConstantTensor (0.0f, shape);
         }
 
         public static Tensor Ones (params int[] shape)
         {
-            return new OnesTensor (shape);
+            return new ConstantTensor (1.0f, shape);
         }
 
         public static Tensor Array (float[] array)

@@ -101,7 +101,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="UnitTestAppDelegate.cs" />
-    <Compile Include="ZeroTensorTests.cs" />
+    <Compile Include="ConstantTensorTests.cs" />
     <Compile Include="MPSImageTensorTests.cs" />
     <Compile Include="BinopLayerTests.cs" />
     <Compile Include="UpsampleLayerTests.cs" />

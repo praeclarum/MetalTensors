@@ -57,14 +57,12 @@
   <ItemGroup>
     <Compile Include="Tensor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tensors\ZeroTensor.cs" />
     <Compile Include="Tensors\MPSImageTensor.cs" />
     <Compile Include="MetalExtensions.cs" />
     <Compile Include="Tensors\ArrayTensor.cs" />
     <Compile Include="Layer.cs" />
     <Compile Include="Layers\AddLayer.cs" />
     <Compile Include="Tensors\LayerTensor.cs" />
-    <Compile Include="Tensors\OnesTensor.cs" />
     <Compile Include="Tensors\ConstantTensor.cs" />
     <Compile Include="TensorHandle.cs" />
     <Compile Include="Layers\UpsampleLayer.cs" />
