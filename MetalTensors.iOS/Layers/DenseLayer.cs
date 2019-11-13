@@ -33,7 +33,7 @@ namespace MetalTensors.Layers
 
         ConvWeights GetWeights (int inChannels, IMTLDevice device)
         {
-            var w = new ConvWeights (inChannels, FeatureChannels, 1, 1, 1, 1, true, "MEMEMEMEME", device);
+            var w = new ConvWeights (inChannels, FeatureChannels, 1, 1, 1, 1, true, Label, device);
             return w;
         }
     }

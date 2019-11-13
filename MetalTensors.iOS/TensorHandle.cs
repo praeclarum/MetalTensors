@@ -8,7 +8,6 @@ namespace MetalTensors
     public class TensorHandle : NSObject, IMPSHandle
     {
         static int nextId = 1;
-
         readonly string autoLabel;
 
         public string Label => autoLabel;

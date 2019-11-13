@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Foundation;
 using Metal;
@@ -10,13 +12,28 @@ namespace MetalTensors
 {
     public abstract class Layer
     {
+        static int nextId = 1;
+        readonly string autoLabel;
+
+        readonly ConcurrentDictionary<IntPtr, MPSNNFilterNode> deviceFilterNodes =
+            new ConcurrentDictionary<IntPtr, MPSNNFilterNode> ();
+
         public abstract int InputCount { get; }
+
+        public string Label => autoLabel;
+
+        protected Layer ()
+        {
+            var id = Interlocked.Increment (ref nextId);
+            autoLabel = GetType ().Name + id;
+        }
 
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
         public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, IMTLDevice device)
         {
             var f = GetFilterNode (inputs, device);
+            //Console.WriteLine (f.ResultImage.DebugDescription);
             return f.ResultImage;
         }
 
@@ -25,13 +42,13 @@ namespace MetalTensors
             return new LayerOutputTensor (this, inputs);
         }
 
-        public Task<Tensor> PredictAsync (Tensor[] inputs, IMTLDevice device)
+        public Task<Tensor> ExecuteAsync (Tensor[] inputs, IMTLDevice device)
         {
             if (inputs.Length < InputCount)
                 throw new ArgumentException (nameof (inputs));
 
             var tcs = new TaskCompletionSource<Tensor> ();
-            System.Threading.ThreadPool.QueueUserWorkItem (StartGraph);
+            ThreadPool.QueueUserWorkItem (StartGraph);
             return tcs.Task;
 
             void StartGraph (object s)
@@ -42,7 +59,7 @@ namespace MetalTensors
                     using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
                     };
-                    //Console.WriteLine (graph.DebugDescription);
+                    Console.WriteLine (graph.DebugDescription);
 
                     var sourceHandles = graph.SourceImageHandles;
                     var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetMetalImage ()).ToArray ();
@@ -71,8 +88,13 @@ namespace MetalTensors
 
         protected MPSNNFilterNode GetFilterNode (Tensor[] inputs, IMTLDevice device)
         {
+            var key = device.Handle;
+            if (deviceFilterNodes.TryGetValue (key, out var node))
+                return node;
+
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (device), x.Shape)).ToArray ();
-            var node = CreateFilterNode (inputImageNodes, device);
+            node = CreateFilterNode (inputImageNodes, device);
+            deviceFilterNodes.TryAdd (key, node);
             return node;
         }
 
