@@ -33,6 +33,12 @@ namespace MetalTensors.Tensors
         {
         }
 
+        public MPSImageTensor (nuint height, nuint width, nuint featureChannels, MPSImageFeatureChannelFormat featureChannelFormat, IMTLDevice device)
+            : this (new MPSImage (device, MPSImageDescriptor.GetImageDescriptor (
+                featureChannelFormat, width, height, featureChannels)))
+        {
+        }
+
         public MPSImageTensor (int height, int width, int featureChannels = 3, IMTLDevice? device = null)
             : this (new MPSImage (device.Current (), MPSImageDescriptor.GetImageDescriptor (
                 MPSImageFeatureChannelFormat.Float32, (nuint)width, (nuint)height, (nuint)featureChannels)))
@@ -72,6 +78,15 @@ namespace MetalTensors.Tensors
 
             image = new MPSImage (texture, (nuint)featureChannels);
             shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
+        }
+
+        public override Tensor Clone ()
+        {
+            var device = image.Device;
+            var newTensor = new MPSImageTensor (image.Height, image.Width, image.FeatureChannels, image.FeatureChannelFormat, device);
+            var newImage = newTensor.image;
+            //Console.WriteLine (newImage);
+            return newTensor;
         }
 
         public unsafe override void Copy (Span<float> destination)

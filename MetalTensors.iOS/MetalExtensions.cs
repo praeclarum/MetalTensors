@@ -52,6 +52,17 @@ namespace MetalTensors
             return r;
         }
 
+        public static bool ShapeEquals (this int[] shape, int[] other)
+        {
+            if (shape.Length != other.Length)
+                return false;
+            for (var i = 0; i < shape.Length; i++) {
+                if (shape[i] != other[i])
+                    return false;
+            }
+            return true;
+        }
+
         public static unsafe void Fill (this MPSImage image, float constant)
         {
             var dtype = image.PixelFormat;

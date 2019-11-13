@@ -30,9 +30,9 @@ namespace MetalTensors
 
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
-        public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, IMTLDevice device)
+        public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
-            var f = GetFilterNode (inputs, device);
+            var f = GetFilterNode (inputs, training, device);
             //Console.WriteLine (f.ResultImage.DebugDescription);
             return f.ResultImage;
         }
@@ -54,7 +54,7 @@ namespace MetalTensors
             void StartGraph (object s)
             {
                 try {
-                    var node = GetFilterNode (inputs, device);
+                    var node = GetFilterNode (inputs, false, device);
 
                     using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
@@ -86,13 +86,13 @@ namespace MetalTensors
             return null;
         }
 
-        protected MPSNNFilterNode GetFilterNode (Tensor[] inputs, IMTLDevice device)
+        protected MPSNNFilterNode GetFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
             var key = device.Handle;
             if (deviceFilterNodes.TryGetValue (key, out var node))
                 return node;
 
-            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (device), x.Shape)).ToArray ();
+            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
             node = CreateFilterNode (inputImageNodes, device);
             deviceFilterNodes.TryAdd (key, node);
             return node;

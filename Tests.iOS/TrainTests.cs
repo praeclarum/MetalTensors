@@ -10,14 +10,16 @@ namespace Tests
         [Test]
         public void ConvIdentity ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
-            var output = image.Conv (3, 3);
+            var input = Tensor.ReadImageResource ("elephant", "jpg");
+            var output = input.Conv (32, stride: 2).Conv (32, stride: 2).Conv (1);
 
-            var loss = output.Loss (image, LossType.MeanSquaredError);
+            var label = Tensor.Zeros (128, 128, 1);
+            var loss = output.Loss (label, LossType.MeanSquaredError);
 
             var history = loss.Train (inputs => {
-                return inputs.Select (x => x.Tensor).ToArray ();
-            });
+                Assert.AreEqual (2, inputs.Length);
+                return inputs.Select (x => x.Tensor.Clone ()).ToArray ();
+            }, batchSize: 5, numBatches: 3);
         }
     }
 }

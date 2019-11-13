@@ -16,14 +16,16 @@ namespace MetalTensors
 
         public abstract int[] Shape { get; }
 
-        readonly Lazy<MPSNNImageNode> imageNode;
-        public virtual MPSNNImageNode GetMetalImageNode (IMTLDevice device) => imageNode.Value;
+        readonly Lazy<MPSNNImageNode> metalImageNode;
+        public virtual MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device) => metalImageNode.Value;
 
         protected Tensor ()
         {
             handle = new Lazy<TensorHandle> (() => new TensorHandle (this), true);
-            imageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
+            metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
+
+        public virtual Tensor Clone () => this;
 
         public abstract void Copy (Span<float> destination);
 
@@ -142,7 +144,7 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public virtual Tensor Conv (int featureChannels, int size, int stride = 1, ConvPadding padding = ConvPadding.Same)
+        public virtual Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same)
         {
             return new ConvLayer (featureChannels, size, stride, padding).GetOutput (this);
         }
@@ -184,6 +186,9 @@ namespace MetalTensors
 
         public virtual Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
         {
+            if (!Shape.ShapeEquals (labels.Shape)) {
+                throw new ArgumentOutOfRangeException (nameof (labels), "Labels shape must match the shape of this tensor");
+            }
             var layer = new LossLayer (lossType, reductionType);
             return weights != null ?
                 layer.GetOutput (this, labels, weights) :
@@ -195,35 +200,83 @@ namespace MetalTensors
             var d = device.Current ();
             var h = new List<Tensor[]> ();
 
-            var thisImageNode = GetMetalImageNode (d);
+            //
+            // Build the training graph
+            //
+            var thisImageNode = GetMetalImageNode (true, d);
 
-            var grad = new MPSNNInitialGradientNode (thisImageNode);
-
-            var trainingGraphNodes = grad.GetTrainingGraph (grad.ResultImage, (x, y, z, w) => {
-                Console.WriteLine ($"{x}, {y}, {z}, {w}");
+            var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
+            var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
+            var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
+                Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
+                gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
+                if (inferenceNode is MPSNNForwardLossNode ln) {
+                    lossNodesIndex[ln.Handle] = ln;
+                }
+                //Console.WriteLine (gradientNode.ResultImage.Format);
             });
 
-            using var graph = new MPSNNGraph (d, thisImageNode, true) {
-                Format = MPSImageFeatureChannelFormat.Float32,
-            };            
+            var lossNodes = lossNodesIndex.Values.ToArray ();
+            if (lossNodes.Length < 1) {
+                throw new InvalidOperationException ("Loss is required in order to train");
+            }
 
-            var sourceHandles = graph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
+            var trainingGraphTerminiImageNodes = trainingGraphTermini.Select (x => x.ResultImage).ToArray ();
+            var resultsNeeded = trainingGraphTerminiImageNodes.Select (x => true).ToArray ();
 
-            var batch = GetBatch (sourceHandles, trainingData, batchSize);
+            using var trainingGraph = MPSNNGraph.Create (d, trainingGraphTerminiImageNodes, resultsNeeded);
+            trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            //Console.WriteLine (trainingGraph.DebugDescription);
 
-            var queue = d.CreateCommandQueue ();
-            var commandBuffer = queue.CommandBuffer ();
+            //
+            // Train
+            //
+            using var queue = d.CreateCommandQueue ();
 
-            var returnBatch = graph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> ());
+            for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
+                using var commandBuffer = queue.CommandBuffer ();
 
-            MPSImageBatch.Synchronize (returnBatch, commandBuffer);
-            commandBuffer.Commit ();
-            commandBuffer.WaitUntilCompleted ();
+                //
+                // Load the batch
+                //
+                var sourceHandles = trainingGraph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
+
+                var batch = GetBatch (sourceHandles, trainingData, batchSize);
+
+                NSArray<MPSImage>? returnBatch = trainingGraph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> ());
+
+                //
+                // Synchronize needed images
+                //
+                if (returnBatch != null) {
+                    MPSImageBatch.Synchronize (returnBatch, commandBuffer);
+                }
+                foreach (var ln in lossNodes) {                    
+                }
+
+                //
+                // Run the batch
+                //
+                commandBuffer.Commit ();
+                commandBuffer.WaitUntilCompleted ();
+
+                //
+                // Process the results
+                //
+                if (returnBatch != null) {
+                    var results = returnBatch.ToArray ();
+                    foreach (var r in results) {
+                        //Console.WriteLine (r.NumberOfImages);
+                    }
+                    var resultsTensors = results.Select (x => new MPSImageTensor (x)).ToArray ();
+                    //Console.WriteLine (resultsTensors);
+                }
+            }
 
             return new TrainingHistory (h.ToArray ());
         }
 
-        NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], Tensor[]> trainingData, int batchSize)
+        static NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], Tensor[]> trainingData, int batchSize)
         {
             var batch = new List<NSArray<MPSImage>> (batchSize);
             for (var i = 0; i < batchSize; i++) {

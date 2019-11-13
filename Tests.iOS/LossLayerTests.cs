@@ -38,5 +38,13 @@ namespace Tests
 
             Assert.AreEqual (Math.Max (0.0, 1.0 - x[0] * y[0]), loss[0], 0.05);
         }
+
+        [Test]
+        public void BadLabelShape ()
+        {
+            var output = Tensor.Zeros (2, 2, 1);
+            var label = Tensor.Zeros (1, 1, 1);
+            Assert.Throws<ArgumentOutOfRangeException> (() => output.Loss (label, LossType.MeanSquaredError));
+        }
     }
 }
