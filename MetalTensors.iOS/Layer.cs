@@ -62,7 +62,7 @@ namespace MetalTensors
                     //Console.WriteLine (graph.DebugDescription);
 
                     var sourceHandles = graph.SourceImageHandles;
-                    var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetMetalImage ()).ToArray ();
+                    var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetMetalImage (device)).ToArray ();
 
                     var r = graph.Execute (sources, (image, error) => {
                         if (error != null) {

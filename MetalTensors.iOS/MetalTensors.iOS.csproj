@@ -80,6 +80,9 @@
     <Compile Include="Layers\LossLayer.cs" />
     <Compile Include="LossType.cs" />
     <Compile Include="TrainingHistory.cs" />
+    <Compile Include="Tensors\PlaceholderTensor.cs" />
+    <Compile Include="Tensors\InputTensor.cs" />
+    <Compile Include="Tensors\LabelsTensor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

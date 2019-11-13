@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Foundation;
 using Metal;
@@ -13,17 +14,21 @@ namespace MetalTensors
     {
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
+        public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
 
         readonly Lazy<MPSNNImageNode> metalImageNode;
         public virtual MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device) => metalImageNode.Value;
+        public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
 
         protected Tensor ()
         {
             handle = new Lazy<TensorHandle> (() => new TensorHandle (this), true);
             metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
+
+        public override string ToString () => Label + " (" + string.Join (", ", Shape) + ")";
 
         public virtual Tensor Clone () => this;
 
@@ -56,6 +61,21 @@ namespace MetalTensors
                 }
                 return elements[i];
             }
+        }
+
+        public static Tensor Input (params int[] shape)
+        {
+            return new InputTensor (shape);
+        }
+
+        public static Tensor InputImage (int height, int width, int featureChannels = 3)
+        {
+            return new InputTensor (height, width, featureChannels);
+        }
+
+        public static Tensor Labels (params int[] shape)
+        {
+            return new LabelsTensor (shape);
         }
 
         public static Tensor Constant (float constant, params int[] shape)
@@ -226,6 +246,7 @@ namespace MetalTensors
 
             using var trainingGraph = MPSNNGraph.Create (d, trainingGraphTerminiImageNodes, resultsNeeded);
             trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            var sourceHandles = trainingGraph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
             //Console.WriteLine (trainingGraph.DebugDescription);
 
             //
@@ -234,15 +255,13 @@ namespace MetalTensors
             using var queue = d.CreateCommandQueue ();
 
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                using var commandBuffer = queue.CommandBuffer ();
 
                 //
                 // Load the batch
                 //
-                var sourceHandles = trainingGraph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
+                var batch = GetBatch (sourceHandles, trainingData, batchSize, d);
 
-                var batch = GetBatch (sourceHandles, trainingData, batchSize);
-
+                using var commandBuffer = queue.CommandBuffer ();
                 NSArray<MPSImage>? returnBatch = trainingGraph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> ());
 
                 //
@@ -266,9 +285,11 @@ namespace MetalTensors
                 if (returnBatch != null) {
                     var results = returnBatch.ToArray ();
                     foreach (var r in results) {
+                        //Console.WriteLine ($"BI{batchIndex} Results handle {r.Handle}");
                         //Console.WriteLine (r.NumberOfImages);
                     }
                     var resultsTensors = results.Select (x => new MPSImageTensor (x)).ToArray ();
+                    h.Add (resultsTensors);
                     //Console.WriteLine (resultsTensors);
                 }
             }
@@ -276,21 +297,16 @@ namespace MetalTensors
             return new TrainingHistory (h.ToArray ());
         }
 
-        static NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], Tensor[]> trainingData, int batchSize)
+        static NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], Tensor[]> trainingData, int batchSize, IMTLDevice device)
         {
             var batch = new List<NSArray<MPSImage>> (batchSize);
             for (var i = 0; i < batchSize; i++) {
                 var data = trainingData (sourceHandles);
-                var sources = data.Select (x => x.GetMetalImage ()).ToArray ();
+                var sources = data.Select (x => x.GetMetalImage (device)).ToArray ();
                 var sourcesArray = NSArray<MPSImage>.FromNSObjects (sources);
                 batch.Add (sourcesArray);
             }
             return batch.ToArray ();
-        }
-
-        public virtual MPSImage GetMetalImage ()
-        {
-            throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
         }
 
         public static void ValidateShape (params int[] shape)
@@ -312,6 +328,25 @@ namespace MetalTensors
                 throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
             }
             return neededLength;
+        }
+
+        protected static MPSImage CreateConstantImage (int[] shape, float constantValue)
+        {
+            var imageTensor = shape.Length switch
+            {
+                0 => new MPSImageTensor (1, 1, 1),
+                1 => new MPSImageTensor (shape[0], 1, 1),
+                2 => new MPSImageTensor (shape[0], shape[1], 1),
+                3 => new MPSImageTensor (shape[0], shape[1], shape[2]),
+                var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
+            };
+            var image = imageTensor.Image;
+            image.Fill (constantValue);
+#if DEBUG
+            var data = imageTensor.ToArray ();
+            Debug.Assert (data[0] == constantValue);
+#endif
+            return image;
         }
     }
 }

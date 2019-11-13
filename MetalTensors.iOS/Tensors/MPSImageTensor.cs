@@ -155,8 +155,10 @@ namespace MetalTensors.Tensors
             return base.Slice (indexes);
         }
 
-        public override MPSImage GetMetalImage ()
+        public override MPSImage GetMetalImage (IMTLDevice device)
         {
+            if (device.Handle != image.Device.Handle)
+                throw new ArgumentException ($"Cannot get image for {device.Name} because it was created on {image.Device.Name}");
             return image;
         }
     }
