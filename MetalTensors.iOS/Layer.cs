@@ -94,6 +94,8 @@ namespace MetalTensors
 
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
             node = CreateFilterNode (inputImageNodes, device);
+            node.ResultImage.MPSHandle = new LayerHandle (this);
+
             deviceFilterNodes.TryAdd (key, node);
             return node;
         }

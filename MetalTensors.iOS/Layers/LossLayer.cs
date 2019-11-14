@@ -33,27 +33,7 @@ namespace MetalTensors.Layers
             resultImage.ExportFromGraph = true;
             resultImage.SynchronizeResource = true;
             resultImage.ImageAllocator = MPSImage.DefaultAllocator;
-            resultImage.MPSHandle = new LossLayerHandle (this);
             return ln;
-        }
-    }
-
-    class LossLayerHandle : NSObject, IMPSHandle
-    {
-        public string Label { get; }
-        public LossLayer LossLayer { get; }
-
-        public LossLayerHandle (LossLayer lossLayer)
-        {
-            Label = lossLayer.Label;
-            LossLayer = lossLayer;
-        }
-
-        public override string ToString () => Label;
-
-        public void EncodeTo (NSCoder encoder)
-        {
-            encoder.Encode (new NSString (Label), "label");
         }
     }
 }

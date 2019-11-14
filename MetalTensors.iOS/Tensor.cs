@@ -248,8 +248,7 @@ namespace MetalTensors
 
             var sourceHandles = trainingGraph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
             //var resultStateHandles = trainingGraph.ResultStateHandles;
-            var intermediateHandles = trainingGraph.IntermediateImageHandles.Select (x => (LossLayerHandle)x).ToArray ();
-            var nintermediate = intermediateHandles.Length;
+            var intermediateHandles = trainingGraph.IntermediateImageHandles.Select (x => (LayerHandle)x).ToArray ();
 
             //Console.WriteLine (intermediateHandles);
             //Console.WriteLine (trainingGraph.DebugDescription);
@@ -306,7 +305,7 @@ namespace MetalTensors
                 }
 
                 //Console.WriteLine ($"{intermediateImages.Length} ims");
-                if (intermediateImages.Length - 1 != nintermediate) {
+                if (intermediateImages.Length - 1 != intermediateHandles.Length) {
                     throw new ApplicationException ("Trained intermediate images without handles");
                 }
                 var loss = intermediateImages.Length > 0 ?
