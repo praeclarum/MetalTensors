@@ -25,12 +25,12 @@ namespace Tests
 
             var rand = new Random ();
 
-            var history = loss.Train (GenTrainingData, batchSize: 16, numBatches: 400);
+            var history = loss.Train (GenTrainingData, batchSize: 16, numBatches: 200);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, batch.Loss[0].Shape[0]);
 
-            var minLoss = 0.2f;
+            var minLoss = 0.1f;
             var belowMinLoss = false;
             for (var bi = 0; bi < history.Batches.Length; bi++) {
                 var b = history.Batches[bi];

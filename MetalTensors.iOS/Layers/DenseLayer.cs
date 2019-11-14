@@ -9,10 +9,12 @@ namespace MetalTensors.Layers
         public override int InputCount => 1;
 
         public int FeatureChannels { get; }
+        public bool Bias { get; }
 
-        public DenseLayer (int featureChannels)
+        public DenseLayer (int featureChannels, bool bias)
         {
             FeatureChannels = featureChannels;
+            Bias = bias;
         }
 
         public override int[] GetOutputShape (params Tensor[] inputs)
@@ -33,7 +35,7 @@ namespace MetalTensors.Layers
 
         ConvWeights GetWeights (int inChannels, IMTLDevice device)
         {
-            var w = new ConvWeights (inChannels, FeatureChannels, 1, 1, 1, 1, true, Label, device);
+            var w = new ConvWeights (inChannels, FeatureChannels, 1, 1, 1, 1, Bias, Label, device);
             return w;
         }
     }

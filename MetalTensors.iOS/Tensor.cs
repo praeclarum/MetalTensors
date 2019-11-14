@@ -181,9 +181,9 @@ namespace MetalTensors
             return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
-        public virtual Tensor Dense (int featureChannels)
+        public virtual Tensor Dense (int featureChannels, bool bias = true)
         {
-            return new DenseLayer (featureChannels).GetOutput (this);
+            return new DenseLayer (featureChannels, bias).GetOutput (this);
         }
 
         public virtual Tensor ReLU (float alpha = 0.2f)
