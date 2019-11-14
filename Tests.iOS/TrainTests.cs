@@ -29,7 +29,7 @@ namespace Tests
                 Assert.AreEqual ("label image", needed[1].Label);
                 getDataCount++;
 
-                return needed.Select (x => x.Tensor.Clone ());
+                return needed.Select (x => x.Tensor);
             }, batchSize: batchSize, numBatches: numBatches);
 
             Assert.AreEqual (batchSize * numBatches, getDataCount);

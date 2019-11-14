@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -11,9 +13,6 @@ namespace MetalTensors.Tensors
         readonly int[] shape;
 
         public override int[] Shape => shape;
-
-        readonly ConcurrentDictionary<IntPtr, MPSImage> deviceImages =
-            new ConcurrentDictionary<IntPtr, MPSImage> ();
 
         public ArrayTensor (float[] data)
         {
@@ -39,18 +38,20 @@ namespace MetalTensors.Tensors
 
         public override unsafe MPSImage GetMetalImage (IMTLDevice device)
         {
-            var key = device.Handle;
-            if (deviceImages.TryGetValue (key, out var image))
-                return image;
-
-            image = CreateConstantImage (Shape, 0.0f);
+            var image = CreateUninitializedImage (Shape);
             fixed (float* dataPtr = data) {
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }
 
-            if (deviceImages.TryAdd (key, image))
-                return image;
-            return deviceImages[key];
+#if DEBUG_ARRAY_TENSOR
+            var dt = new MPSImageTensor (image);
+            for (var i = 0; i < Math.Min (5, Shape[0]); i++) {
+                var x = dt[i];
+                Debug.Assert (Math.Abs (x - data[i]) < 1.0e-6f);
+            }
+#endif
+
+            return image;
         }
     }
 }

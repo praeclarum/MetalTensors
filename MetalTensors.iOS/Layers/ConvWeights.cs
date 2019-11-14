@@ -63,14 +63,14 @@ namespace MetalTensors.Layers
             var vDescBiases = VectorDescriptor (outChannels);
             biasVectors = new OptimizableVector (device, vDescBiases, 0.1f);
 
+            using var queue = device.CreateCommandQueue ();
+            RandomizeWeights ((nuint)DateTime.Now.Ticks, queue);
+
             convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, biasVectors.Value.Data);
             momentumVectors = NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, biasVectors.Momentum);
             velocityVectors = NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity);
 
-            SetOptimizationOptions (learningRate: 0.0002f);
-
-            using var queue = device.CreateCommandQueue ();
-            RandomizeWeights ((nuint)DateTime.Now.Ticks, queue);
+            SetOptimizationOptions (learningRate: 0.0004f);
         }
 
         void SetOptimizationOptions (float learningRate)
@@ -108,7 +108,7 @@ namespace MetalTensors.Layers
                     throw new Exception ($"Update time step is out of synch");
                 }
 
-                //Console.WriteLine ($"UpdateWeights of Conv2dDataSource {this.Label}");
+                //Console.WriteLine ($"UpdateWeights of ConvWeights {this.Label}");
             }
 
             return convWtsAndBias;

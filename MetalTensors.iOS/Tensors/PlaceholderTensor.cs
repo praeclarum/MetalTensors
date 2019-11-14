@@ -11,8 +11,6 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
-        readonly ConcurrentDictionary<IntPtr, MPSImage> deviceImages = new ConcurrentDictionary<IntPtr, MPSImage> ();
-
         protected PlaceholderTensor (string label, int[] shape)
             : base (label)
         {
@@ -29,13 +27,8 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            var key = device.Handle;
-            if (deviceImages.TryGetValue (key, out var image))
-                return image;
-            image = CreateConstantImage (Shape, 0.0f);
-            if (deviceImages.TryAdd (key, image))
-                return image;
-            return deviceImages[key];
+            var image = CreateConstantImage (Shape, 0.0f);
+            return image;
         }
     }
 }

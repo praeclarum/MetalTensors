@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
@@ -16,8 +17,6 @@ namespace MetalTensors
         readonly MPSNNGraph trainingGraph;
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
-
-        //readonly Stopwatch stopwatch = new Stopwatch ();
 
         public TrainingGraph (Tensor output, IMTLDevice device)
         {
@@ -74,14 +73,15 @@ namespace MetalTensors
             //
             // Train
             //
-            //stopwatch.Restart ();
+            var stopwatch = new Stopwatch ();
+            stopwatch.Restart ();
             using var q = device.CreateCommandQueue ();
 
             var semaphore = new Semaphore (2, 2);
 
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = TrainBatch (batchIndex, trainingData, batchSize, AddHistory, semaphore, q);
+                lcb = TrainBatch (batchIndex, trainingData, batchSize, AddHistory, stopwatch, semaphore, q);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
@@ -90,22 +90,30 @@ namespace MetalTensors
             return new TrainingHistory (h);
         }
 
-        MPSCommandBuffer TrainBatch (int batchIndex, Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
+        MPSCommandBuffer TrainBatch (int batchIndex, Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
         {
+            //
+            // This pool is necessary for Metal to clean up its objects
+            //
+            using var pool = new NSAutoreleasePool ();
+
             semaphore.WaitOne ();
-            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex}");
+            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             //
             // Load data
             //
             NSArray<MPSImage>[] batch;
+            MPSImage[] temporaryBatchImages;
             try {
-                batch = GetBatch (trainingData, batchSize);
+                (batch, temporaryBatchImages) = GetBatch (trainingData, batchSize);
             }
             catch {
                 semaphore.Release ();
                 throw;
             }
+
+            //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
             var commandBuffer = MPSCommandBuffer.Create (queue);
 
@@ -133,8 +141,12 @@ namespace MetalTensors
             //
             commandBuffer.AddCompletedHandler (cmdBuf => {
 
-                //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex}");
+                //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 semaphore.Release ();
+
+                if (cmdBuf.Error != null) {
+                    Console.WriteLine ("Command Buffer Error: " + cmdBuf.Error.Description);
+                }
 
                 //
                 // Process the results
@@ -147,6 +159,9 @@ namespace MetalTensors
                     }
                 }
 
+                //
+                // Record history
+                //
                 //Console.WriteLine ($"{intermediateImages.Length} ims");
                 if (intermediateImages.Length - 1 != intermediateHandles.Length) {
                     throw new ApplicationException ("Trained intermediate images without handles");
@@ -159,9 +174,25 @@ namespace MetalTensors
                     var key = intermediateHandles[imi - 1].Label;
                     bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
                 }
-
                 recordHistory (new TrainingHistory.BatchHistory (loss, bh));
-                //Console.WriteLine (resultsTensors);
+
+                //
+                // Free the temps
+                //
+                //var allocBefore = device.GetCurrentAllocatedSize ();
+
+                foreach (var t in temporaryBatchImages) {
+                    t.Dispose ();
+                }
+                temporaryBatchImages = Array.Empty<MPSImage> ();
+                foreach (var b in batch) {
+                    b.Dispose ();
+                }
+                batch = Array.Empty<NSArray<MPSImage>> ();
+
+                //var allocAfter = device.GetCurrentAllocatedSize ();
+                //Console.WriteLine ($"{stopwatch.Elapsed} ALLOCD {(long)allocBefore-(long)allocAfter:#,0} = {allocBefore:#,0} - {allocAfter:#,0} BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
+
             });
 
             //
@@ -172,13 +203,16 @@ namespace MetalTensors
             return commandBuffer;
         }
 
-        NSArray<MPSImage>[] GetBatch (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize)
+        (NSArray<MPSImage>[], MPSImage[]) GetBatch (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize)
         {
+            var temps = new List<MPSImage> ();
+
             var nsources = sourceHandles.Length;
             var batch = new List<List<MPSImage>> (batchSize);
             for (var i = 0; i < batchSize; i++) {
+                //Console.WriteLine ($"GET BATCH IMAGE {i}");
                 var data = trainingData (sourceHandles);
-                var dataImages = data.Select (x => x.GetMetalImage (device)).ToList ();
+                var dataImages = data.Select (ImageFromTensor).ToList ();
                 batch.Add (dataImages);
             }
 
@@ -191,7 +225,19 @@ namespace MetalTensors
                 sources[si] = NSArray<MPSImage>.FromNSObjects (b);
             }
 
-            return sources;
+            return (sources, temps.ToArray());
+
+            MPSImage ImageFromTensor (Tensor t)
+            {
+                if (t is MPSImageTensor it) {
+                    return t.GetMetalImage (device);
+                }
+                else {
+                    var i = t.GetMetalImage (device);
+                    temps.Add (i);
+                    return i;
+                }
+            }
         }
     }
 }

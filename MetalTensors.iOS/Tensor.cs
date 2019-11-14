@@ -32,7 +32,7 @@ namespace MetalTensors
 
         public override string ToString () => Label + " (" + string.Join (", ", Shape) + ")";
 
-        public virtual Tensor Clone () => this;
+        //public virtual Tensor Clone () => this;
 
         public abstract void Copy (Span<float> destination);
 
@@ -260,7 +260,7 @@ namespace MetalTensors
             return neededLength;
         }
 
-        protected static MPSImage CreateConstantImage (int[] shape, float constantValue)
+        protected static MPSImage CreateUninitializedImage (int[] shape)
         {
             var imageTensor = shape.Length switch
             {
@@ -271,9 +271,15 @@ namespace MetalTensors
                 var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
             };
             var image = imageTensor.Image;
+            return image;
+        }
+
+        protected static MPSImage CreateConstantImage (int[] shape, float constantValue)
+        {
+            var image = CreateUninitializedImage (shape);
             image.Fill (constantValue);
 #if DEBUG
-            var data = imageTensor.ToArray ();
+            var data = new MPSImageTensor (image).ToArray ();
             Debug.Assert (data[0] == constantValue);
 #endif
             return image;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MetalTensors
@@ -6,6 +7,11 @@ namespace MetalTensors
     public class TrainingHistory
     {
         public BatchHistory[] Batches { get; }
+
+        public TrainingHistory ()
+        {
+            Batches = Array.Empty<BatchHistory> ();
+        }
 
         public TrainingHistory (IEnumerable<BatchHistory> batches)
         {
