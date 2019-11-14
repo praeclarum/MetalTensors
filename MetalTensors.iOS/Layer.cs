@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
+using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
@@ -80,6 +81,11 @@ namespace MetalTensors
             }
         }
 
+        public virtual MPSCnnConvolutionDataSource? GetMetalConvDataSource (IMTLDevice device)
+        {
+            return null;
+        }
+
         static IMTLDevice? FindDevice (Tensor[] tensors)
         {
             // TODO: Scan inputs for the correct device to use
@@ -95,6 +101,7 @@ namespace MetalTensors
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
             node = CreateFilterNode (inputImageNodes, device);
             node.ResultImage.MPSHandle = new LayerHandle (this);
+            node.Label = Label;
 
             deviceFilterNodes.TryAdd (key, node);
             return node;

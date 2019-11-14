@@ -24,8 +24,8 @@ namespace MetalTensors.Layers
             var h = inputShape[0];
             var w = inputShape[1];
             var fc = inputShape[^1];
-            var kh = ConvLayer.ConvOutputLength (h, SizeY, StrideY, ConvPadding.Valid, 1);
-            var kw = ConvLayer.ConvOutputLength (w, SizeX, StrideX, ConvPadding.Valid, 1);
+            var kh = ConvWeightsLayer.ConvOutputLength (h, SizeY, StrideY, ConvPadding.Valid, 1);
+            var kw = ConvWeightsLayer.ConvOutputLength (w, SizeX, StrideX, ConvPadding.Valid, 1);
             //var sh = kh / StrideY;
             //var sw = kw / StrideX;
             return new[] { kh, kw, fc };

@@ -11,10 +11,10 @@ namespace Tests
         [Test]
         public void Or ()
         {
-            TrainBinop ("or", (a, b) => a || b);
+            TrainBinop ("or", 0.1f, (a, b) => a || b);
         }
 
-        void TrainBinop (string opname, Func<bool, bool, bool> binop)
+        void TrainBinop (string opname, float minLoss, Func<bool, bool, bool> binop)
         {
             var x = Tensor.Input ("x", 2);
             var y = x.Dense (8).Tanh ().Dense (1).Tanh ();
@@ -25,12 +25,11 @@ namespace Tests
 
             var rand = new Random ();
 
-            var history = loss.Train (GenTrainingData, batchSize: 16, numBatches: 200);
+            var history = loss.Train (GenTrainingData, learningRate: 0.01f, batchSize: 16, numBatches: 100);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, batch.Loss[0].Shape[0]);
 
-            var minLoss = 0.1f;
             var belowMinLoss = false;
             for (var bi = 0; bi < history.Batches.Length; bi++) {
                 var b = history.Batches[bi];
@@ -41,7 +40,7 @@ namespace Tests
                     count++;
                 }
                 var bl = sum / count;
-                Console.WriteLine ($"BATCH {bi:#,0} LOSS {bl}");
+                //Console.WriteLine ($"BATCH {bi:#,0} LOSS {bl}");
                 if (bl < minLoss) {
                     belowMinLoss = true;
                     break;

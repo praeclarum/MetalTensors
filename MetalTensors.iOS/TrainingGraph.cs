@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
+using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
@@ -17,6 +18,7 @@ namespace MetalTensors
         readonly MPSNNGraph trainingGraph;
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
+        readonly ConvWeights[] convWeights;
 
         public TrainingGraph (Tensor output, IMTLDevice device)
         {
@@ -30,13 +32,22 @@ namespace MetalTensors
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
+            var convWeightsL = new List<ConvWeights> ();
             var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
                 //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
                 gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
                 if (inferenceNode is MPSNNForwardLossNode ln) {
                     lossNodesIndex[ln.Handle] = ln;
                 }
+                else if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
+                         lh.Layer.GetMetalConvDataSource (device) is ConvWeights cw) {
+                    convWeightsL.Add (cw);
+                    Console.WriteLine (lh);
+                }
+                
             });
+
+            convWeights = convWeightsL.ToArray ();
 
             var lossNodes = lossNodesIndex.Values.ToArray ();
             if (lossNodes.Length < 1) {
@@ -57,8 +68,15 @@ namespace MetalTensors
             //Console.WriteLine (trainingGraph.DebugDescription);
         }
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize, int numBatches)
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate, int batchSize, int numBatches)
         {
+            //
+            // Set the learning rate
+            //
+            foreach (var c in convWeights) {
+                c.SetOptimizationOptions (learningRate);
+            }
+
             //
             // Init history
             //

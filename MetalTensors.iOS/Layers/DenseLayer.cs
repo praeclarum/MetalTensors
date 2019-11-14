@@ -4,17 +4,11 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public class DenseLayer : Layer
+    public class DenseLayer : ConvWeightsLayer
     {
-        public override int InputCount => 1;
-
-        public int FeatureChannels { get; }
-        public bool Bias { get; }
-
         public DenseLayer (int featureChannels, bool bias)
+            : base (featureChannels, 1, 1, 1, 1, bias, ConvPadding.Valid)
         {
-            FeatureChannels = featureChannels;
-            Bias = bias;
         }
 
         public override int[] GetOutputShape (params Tensor[] inputs)
@@ -26,17 +20,9 @@ namespace MetalTensors.Layers
             return outputShape;
         }
 
-        protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
+        protected override MPSNNFilterNode CreateConvWeightsNode (MPSNNImageNode imageNode, MPSCnnConvolutionDataSource convDataSource)
         {
-            var input = inputs[0];
-            int inChannels = input.Shape[^1];
-            return new MPSCnnFullyConnectedNode (input.ImageNode, GetWeights (inChannels, device));
-        }
-
-        ConvWeights GetWeights (int inChannels, IMTLDevice device)
-        {
-            var w = new ConvWeights (inChannels, FeatureChannels, 1, 1, 1, 1, Bias, Label, device);
-            return w;
+            return new MPSCnnFullyConnectedNode (imageNode, convDataSource);
         }
     }
 }

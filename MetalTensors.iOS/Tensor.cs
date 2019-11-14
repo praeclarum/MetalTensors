@@ -14,6 +14,8 @@ namespace MetalTensors
 {
     public abstract class Tensor
     {
+        public const float DefaultLearningRate = 0.0001f;
+
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
         public string Label => Handle.Label;
@@ -171,14 +173,14 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public virtual Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same)
+        public virtual Tensor Conv (int featureChannels, int size = 3, int stride = 1, bool bias = true, ConvPadding padding = ConvPadding.Same)
         {
-            return new ConvLayer (featureChannels, size, stride, padding).GetOutput (this);
+            return new ConvLayer (featureChannels, size, size, stride, stride, bias, padding).GetOutput (this);
         }
 
-        public virtual Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding = ConvPadding.Same)
+        public virtual Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias = true, ConvPadding padding = ConvPadding.Same)
         {
-            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
+            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, bias, padding).GetOutput (this);
         }
 
         public virtual Tensor Dense (int featureChannels, bool bias = true)
@@ -229,7 +231,7 @@ namespace MetalTensors
 
         readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
 
-        public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
+        public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
         {
             var d = device.Current ();
 
@@ -241,7 +243,7 @@ namespace MetalTensors
                 }
             }
 
-            return g.Train (trainingData, batchSize, numBatches);
+            return g.Train (trainingData, learningRate, batchSize, numBatches);
         }
 
         public static void ValidateShape (params int[] shape)
