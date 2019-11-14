@@ -17,7 +17,7 @@ namespace Tests
         void TrainBinop (string opname, Func<bool, bool, bool> binop)
         {
             var x = Tensor.Input ("x", 2);
-            var y = x.Dense (16).ReLU ().Dense (1).ReLU ();
+            var y = x.Dense (8).Tanh ().Dense (1).Tanh ();
 
             var ylabels = Tensor.Labels ("ylabels", 1);
 
@@ -41,6 +41,7 @@ namespace Tests
                     count++;
                 }
                 var bl = sum / count;
+                Console.WriteLine ($"BATCH {bi:#,0} LOSS {bl}");
                 if (bl < minLoss) {
                     belowMinLoss = true;
                     break;

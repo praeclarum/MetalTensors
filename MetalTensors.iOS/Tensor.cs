@@ -191,6 +191,11 @@ namespace MetalTensors
             return new ReLULayer (alpha).GetOutput (this);
         }
 
+        public virtual Tensor Tanh ()
+        {
+            return new TanhLayer ().GetOutput (this);
+        }
+
         public virtual Tensor MaxPool (int size = 2, int stride = 2)
         {
             return new MaxPoolLayer (size, stride).GetOutput (this);
