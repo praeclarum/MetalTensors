@@ -29,12 +29,15 @@ namespace Tests
                 Assert.AreEqual ("label image", needed[1].Label);
                 getDataCount++;
 
-                return needed.Select (x => x.Tensor.Clone ()).ToArray ();
+                return needed.Select (x => x.Tensor.Clone ());
             }, batchSize: batchSize, numBatches: numBatches);
 
             Assert.AreEqual (batchSize * numBatches, getDataCount);
 
-            Assert.AreEqual (numBatches, history.Losses.Length);
+            Assert.AreEqual (numBatches, history.Batches.Length);
+            Assert.AreEqual (batchSize, history.Batches[0].Loss.Length);
+            Assert.AreEqual (1, history.Batches[0].IntermediateValues.Count);
+            Assert.AreEqual (batchSize, history.Batches[0].IntermediateValues[loss.Label].Length);
         }
     }
 }

@@ -13,19 +13,19 @@ namespace MetalTensors
     public abstract class Layer
     {
         static int nextId = 1;
-        readonly string autoLabel;
+        readonly string label;
 
         readonly ConcurrentDictionary<IntPtr, MPSNNFilterNode> deviceFilterNodes =
             new ConcurrentDictionary<IntPtr, MPSNNFilterNode> ();
 
         public abstract int InputCount { get; }
 
-        public string Label => autoLabel;
+        public string Label => label;
 
-        protected Layer ()
+        protected Layer (string? label = null)
         {
             var id = Interlocked.Increment (ref nextId);
-            autoLabel = GetType ().Name + id;
+            this.label = string.IsNullOrWhiteSpace (label) ? GetType ().Name + id : label!;
         }
 
         public abstract int[] GetOutputShape (params Tensor[] inputs);

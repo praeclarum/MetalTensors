@@ -1,12 +1,27 @@
-﻿namespace MetalTensors
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace MetalTensors
 {
     public class TrainingHistory
     {
-        public Tensor[][] Losses { get; }
+        public BatchHistory[] Batches { get; }
 
-        public TrainingHistory (Tensor[][] losses)
+        public TrainingHistory (IEnumerable<BatchHistory> batches)
         {
-            Losses = losses;
+            Batches = batches.ToArray ();
+        }
+
+        public class BatchHistory
+        {
+            public Tensor[] Loss { get; }
+            public Dictionary<string, Tensor[]> IntermediateValues { get; }
+
+            public BatchHistory (Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues)
+            {
+                Loss = loss;
+                IntermediateValues = intermediateValues;
+            }
         }
     }
 }

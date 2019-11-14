@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Foundation;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -27,7 +28,32 @@ namespace MetalTensors.Layers
         {
             var sourceNodes = inputs.Select (x => x.ImageNode).ToArray ();
             var descriptor = MPSCnnLossDescriptor.Create ((MPSCnnLossType)LossType, ReductionType);
-            return new MPSNNForwardLossNode (sourceNodes, descriptor);
+            var ln = new MPSNNForwardLossNode (sourceNodes, descriptor);
+            var resultImage = ln.ResultImage;
+            resultImage.ExportFromGraph = true;
+            resultImage.SynchronizeResource = true;
+            resultImage.ImageAllocator = MPSImage.DefaultAllocator;
+            resultImage.MPSHandle = new LossLayerHandle (this);
+            return ln;
+        }
+    }
+
+    class LossLayerHandle : NSObject, IMPSHandle
+    {
+        public string Label { get; }
+        public LossLayer LossLayer { get; }
+
+        public LossLayerHandle (LossLayer lossLayer)
+        {
+            Label = lossLayer.Label;
+            LossLayer = lossLayer;
+        }
+
+        public override string ToString () => Label;
+
+        public void EncodeTo (NSCoder encoder)
+        {
+            encoder.Encode (new NSString (Label), "label");
         }
     }
 }
