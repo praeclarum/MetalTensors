@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -94,9 +95,14 @@ namespace MetalTensors
             return new ConstantTensor (1.0f, shape);
         }
 
-        public static Tensor Array (float[] array)
+        public static Tensor Array (params float[] array)
         {
             return new ArrayTensor (array);
+        }
+
+        public static Tensor Array (params double[] array)
+        {
+            return new ArrayTensor (array.Select (x => (float)x).ToArray ());
         }
 
         public static Tensor ReadImage (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
@@ -216,10 +222,20 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize = 32, int numBatches = 1, IMTLDevice? device = null)
+        readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
+
+        public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
         {
             var d = device.Current ();
-            var g = new TrainingGraph (this, d);
+
+            var key = d.Handle;
+            if (!trainingGraphs.TryGetValue (key, out var g)) {
+                g = new TrainingGraph (this, d);
+                if (!trainingGraphs.TryAdd (key, g)) {
+                    g = trainingGraphs[key];
+                }
+            }
+
             return g.Train (trainingData, batchSize, numBatches);
         }
 

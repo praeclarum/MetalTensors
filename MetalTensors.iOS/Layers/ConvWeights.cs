@@ -68,6 +68,9 @@ namespace MetalTensors.Layers
             velocityVectors = NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity);
 
             SetOptimizationOptions (learningRate: 0.0002f);
+
+            using var queue = device.CreateCommandQueue ();
+            RandomizeWeights ((nuint)DateTime.Now.Ticks, queue);
         }
 
         void SetOptimizationOptions (float learningRate)
