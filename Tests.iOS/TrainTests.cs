@@ -8,7 +8,7 @@ namespace Tests
     public class TrainTests
     {
         [Test]
-        public void ConvIdentity ()
+        public void TrainImageClassifier ()
         {
             var input = Tensor.InputImage ("input image", 256, 256);
             var output = input.Conv (32, stride: 2).Conv (32, stride: 2).Conv (1);
@@ -17,7 +17,7 @@ namespace Tests
             var loss = output.Loss (label, LossType.MeanSquaredError);
 
             var batchSize = 5;
-            var numBatches = 3;
+            var numBatches = 10;
 
             var getDataCount = 0;
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
@@ -218,130 +219,8 @@ namespace MetalTensors
         public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize = 32, int numBatches = 1, IMTLDevice? device = null)
         {
             var d = device.Current ();
-            var h = new List<TrainingHistory.BatchHistory> ();
-
-            //
-            // Build the training graph
-            //
-            var thisImageNode = GetMetalImageNode (true, d);
-
-            var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
-            var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
-            var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
-                //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
-                gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
-                if (inferenceNode is MPSNNForwardLossNode ln) {
-                    lossNodesIndex[ln.Handle] = ln;
-                }
-            });
-
-            var lossNodes = lossNodesIndex.Values.ToArray ();
-            if (lossNodes.Length < 1) {
-                throw new InvalidOperationException ("Loss is required in order to train");
-            }
-
-            var trainingGraphTerminiImageNodes = trainingGraphTermini.Select (x => x.ResultImage).ToArray ();
-            var resultsNeeded = trainingGraphTerminiImageNodes.Select (x => true).ToArray ();
-
-            using var trainingGraph = MPSNNGraph.Create (d, trainingGraphTerminiImageNodes, resultsNeeded);
-            trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
-
-            var sourceHandles = trainingGraph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
-            //var resultStateHandles = trainingGraph.ResultStateHandles;
-            var intermediateHandles = trainingGraph.IntermediateImageHandles.Select (x => (LayerHandle)x).ToArray ();
-
-            //Console.WriteLine (intermediateHandles);
-            //Console.WriteLine (trainingGraph.DebugDescription);
-
-            //
-            // Train
-            //
-            using var queue = d.CreateCommandQueue ();
-
-            for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-
-                var bh = new Dictionary<string, Tensor[]> ();
-
-                //
-                // Load the batch
-                //
-                var batch = GetBatch (sourceHandles, trainingData, batchSize, d);
-
-                using var commandBuffer = queue.CommandBuffer ();
-                var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
-                var destinationStates = new NSMutableArray<NSArray<MPSState>> ();
-                NSArray<MPSImage>? returnBatch = trainingGraph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> (), intermediateImagesMA, null);
-                var intermediateImages = intermediateImagesMA.ToArray ();
-
-                //
-                // Synchronize needed images
-                //
-                if (returnBatch != null) {
-                    if ((int)returnBatch.Count != batchSize) {
-                        throw new Exception ("Training did not return the expected number of results");
-                    }
-                    MPSImageBatch.Synchronize (returnBatch, commandBuffer);
-                }
-                foreach (var imBatch in intermediateImages) {
-                    //Console.WriteLine (ims);
-                    MPSImageBatch.Synchronize (imBatch, commandBuffer);
-                }
-
-                //
-                // Run the batch
-                //
-                commandBuffer.Commit ();
-                commandBuffer.WaitUntilCompleted ();
-
-                //
-                // Process the results
-                //
-                if (returnBatch != null) {
-                    var results = returnBatch.ToArray ();
-                    foreach (var r in results) {
-                        //Console.WriteLine ($"BI{batchIndex} Results handle {r.Handle}");
-                        //Console.WriteLine (r.NumberOfImages);
-                    }
-                }
-
-                //Console.WriteLine ($"{intermediateImages.Length} ims");
-                if (intermediateImages.Length - 1 != intermediateHandles.Length) {
-                    throw new ApplicationException ("Trained intermediate images without handles");
-                }
-                var loss = intermediateImages.Length > 0 ?
-                    intermediateImages[0].Select (x => new MPSImageTensor (x)).ToArray () :
-                    System.Array.Empty<Tensor> ();
-                for (var imi = 1; imi < intermediateImages.Length; imi++) {
-                    var key = intermediateHandles[imi - 1].Label;
-                    bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
-                }
-                h.Add (new TrainingHistory.BatchHistory (loss, bh));
-                //Console.WriteLine (resultsTensors);
-            }
-
-            return new TrainingHistory (h);
-        }
-
-        static NSArray<MPSImage>[] GetBatch (TensorHandle[] sourceHandles, Func<TensorHandle[], IEnumerable<Tensor>> trainingData, int batchSize, IMTLDevice device)
-        {
-            var nsources = sourceHandles.Length;
-            var batch = new List<List<MPSImage>> (batchSize);
-            for (var i = 0; i < batchSize; i++) {
-                var data = trainingData (sourceHandles);
-                var dataImages = data.Select (x => x.GetMetalImage (device)).ToList ();
-                batch.Add (dataImages);
-            }
-
-            var sources = new NSArray<MPSImage>[nsources];
-            for (var si = 0; si < nsources; si++) {
-                var b = new MPSImage[batchSize];
-                for (var bi = 0; bi < batchSize; bi++) {
-                    b[bi] = batch[bi][si];
-                }
-                sources[si] = NSArray<MPSImage>.FromNSObjects (b);
-            }
-
-            return sources;
+            var g = new TrainingGraph (this, d);
+            return g.Train (trainingData, batchSize, numBatches);
         }
 
         public static void ValidateShape (params int[] shape)
