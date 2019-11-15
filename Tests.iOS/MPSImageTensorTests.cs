@@ -77,7 +77,7 @@ namespace Tests.iOS
         public void ReadImageResourceIsMPSImage ()
         {
             var image = Tensor.ReadImageResource ("elephant", "jpg");
-            Assert.IsInstanceOfType (typeof (MPSImageTensor), image);
+            Assert.IsTrue (image is MPSImageTensor);
         }
 
         [Test]
@@ -85,7 +85,7 @@ namespace Tests.iOS
         {
             var path = NSBundle.MainBundle.PathForResource ("elephant", "jpg");
             var image = Tensor.ReadImage (path);
-            Assert.IsInstanceOfType (typeof (MPSImageTensor), image);
+            Assert.IsTrue (image is MPSImageTensor);
         }
     }
 }
