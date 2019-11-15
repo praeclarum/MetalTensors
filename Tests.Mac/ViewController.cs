@@ -95,7 +95,7 @@ namespace Tests.Mac
 
             public override string ToString ()
             {
-                return $"{Fixture}.{Test} = {Success}";
+                return $"{Fixture}.{Test}() = {Success}";
             }
         }
 
@@ -110,7 +110,7 @@ namespace Tests.Mac
                 Tests = tests;
             }
 
-            public override string ToString () => TestObject.ToString ();
+            public override string ToString () => TestObject.GetType ().FullName;
         }
 
         class Test
@@ -122,7 +122,7 @@ namespace Tests.Mac
                 TestMethod = method;
             }
 
-            public override string ToString () => TestMethod.ToString ();
+            public override string ToString () => TestMethod.Name;
         }
 
         private TestFixture[] FindTests ()
