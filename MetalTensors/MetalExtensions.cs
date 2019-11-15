@@ -29,7 +29,7 @@ namespace MetalTensors
         {
             if (device != null)
                 return device;
-            var def = MTLDevice.SystemDefault;
+            var def = MPSKernel.GetPreferredDevice (MPSDeviceOptions.Default);
             if (def == null || def.Name.Contains ("iOS simulator")) {
                 throw new NotSupportedException ("Metal is not supported on this device");
             }
