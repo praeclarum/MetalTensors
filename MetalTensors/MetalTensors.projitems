@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{7EC97FDC-55FB-4B35-9271-713973E659E2}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>MetalTensors</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Tensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TrainingGraph.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Model.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeights.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\LossLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeightsLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\MaxPoolLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\DenseLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\TanhLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\PoolLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ReLULayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\DivideLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\AddLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\BinopLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\MultiplyLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\UnopLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\SubtractLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\UpsampleLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MetalExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TensorExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\ModelTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\LayerTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\ConstantTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\PlaceholderTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\LabelsTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\ArrayTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\MPSImageTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tensors\InputTensor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TrainingHistory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LayerHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TensorHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LossType.cs" />
+  </ItemGroup>
+</Project>

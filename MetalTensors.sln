@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetalTensors.iOS", "MetalTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.iOS", "Tests.iOS\Tests.iOS.csproj", "{DBA8A670-F807-4EFF-9B08-1DC31CCC7468}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MetalTensors", "MetalTensors\MetalTensors.shproj", "{7EC97FDC-55FB-4B35-9271-713973E659E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
