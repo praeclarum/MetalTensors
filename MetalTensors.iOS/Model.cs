@@ -78,5 +78,15 @@ namespace MetalTensors
             Labels = labelsTensors.ToArray ();
             Layers = layers.ToArray ();
         }
+
+        public Tensor GetOutput (params Tensor[] inputs)
+        {
+            return new ModelTensor (this, 0, inputs);
+        }
+
+        public Tensor GetOutput (Model inputModel)
+        {
+            return new ModelTensor (this, 0, inputModel.Outputs);
+        }
     }
 }

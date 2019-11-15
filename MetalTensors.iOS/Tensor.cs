@@ -84,6 +84,11 @@ namespace MetalTensors
             return new LabelsTensor (label, shape);
         }
 
+        public Tensor Apply (Model model)
+        {
+            return new ModelTensor (model, 0, this);
+        }
+
         public static Tensor Constant (float constant, params int[] shape)
         {
             return new ConstantTensor (constant, shape);
@@ -226,7 +231,7 @@ namespace MetalTensors
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
         }
 
-        public virtual Tensor Upsample (int scale)
+        public virtual Tensor Upsample (int scale = 2)
         {
             return Upsample (scale, scale);
         }

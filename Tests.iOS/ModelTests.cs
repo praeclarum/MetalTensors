@@ -51,5 +51,33 @@ namespace Tests
             Assert.AreEqual (y, m.TrainingTensor);
         }
 
+        [Test]
+        public void Gan ()
+        {
+            var z = Tensor.InputImage ("z", 4, 4);
+
+            var generatedImage = z.Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Conv (3);
+            var generator = new Model (generatedImage);
+
+            Assert.AreEqual (1, generator.Outputs.Length);
+            Assert.AreEqual (1, generator.Inputs.Length);
+            Assert.AreEqual (0, generator.Labels.Length);
+            Assert.AreEqual (1, generator.Sources.Length);
+            Assert.AreEqual (9, generator.Layers.Length);
+
+            var discriminatedImage = z.Conv (16).Tanh ().Conv (32, stride:2).Tanh ().Conv (32, stride: 2).Tanh ().Conv (1);
+            var discriminator = new Model (discriminatedImage);
+
+            Assert.AreEqual (1, discriminator.Outputs[0].Shape[0]);
+            Assert.AreEqual (1, discriminator.Outputs[0].Shape[1]);
+            Assert.AreEqual (1, discriminator.Outputs[0].Shape[2]);
+
+            var gan = generatedImage.Apply(discriminator);
+
+            Assert.AreEqual (1, gan.Shape[0]);
+            Assert.AreEqual (1, gan.Shape[1]);
+            Assert.AreEqual (1, gan.Shape[2]);
+
+        }
     }
 }
