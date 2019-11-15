@@ -18,11 +18,13 @@ namespace MetalTensors
         readonly MPSNNGraph trainingGraph;
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
-        readonly ConvWeights[] convWeights;
+        readonly (ConvWeights Weights, bool Trainable)[] convWeights;
+        readonly Dictionary<Layer, bool> trainable;
 
-        public TrainingGraph (Tensor output, IMTLDevice device)
+        public TrainingGraph (Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device)
         {
             this.device = device;
+            this.trainable = trainable;
             //stopwatch.Start ();
 
             //
@@ -32,7 +34,7 @@ namespace MetalTensors
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
-            var convWeightsL = new List<ConvWeights> ();
+            var convWeightsL = new List<(ConvWeights, bool)> ();
             var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
                 //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
                 gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
@@ -41,10 +43,9 @@ namespace MetalTensors
                 }
                 else if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
                          lh.Layer.GetMetalConvDataSource (device) is ConvWeights cw) {
-                    convWeightsL.Add (cw);
-                    Console.WriteLine (lh);
-                }
-                
+                    convWeightsL.Add ((cw, trainable[lh.Layer]));
+                    //Console.WriteLine (lh);
+                }                
             });
 
             convWeights = convWeightsL.ToArray ();
@@ -74,7 +75,7 @@ namespace MetalTensors
             // Set the learning rate
             //
             foreach (var c in convWeights) {
-                c.SetOptimizationOptions (learningRate);
+                c.Weights.SetOptimizationOptions (c.Trainable, learningRate);
             }
 
             //

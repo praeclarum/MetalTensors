@@ -200,7 +200,7 @@ namespace MetalTensors
                 trainingModel.Outputs[0] :
                 Tensor.Add (trainingModel.Outputs);
 
-            return new TrainingGraph (trainingTensor, d);
+            return new TrainingGraph (trainingTensor, trainable, d);
         }
 
         (Model, Dictionary<Layer, bool>) Flatten ()
@@ -221,7 +221,11 @@ namespace MetalTensors
                     var inst = m.BaseModel.RebuildModelWithInputs (m.ModelInputs.Select (FlattenTensor).ToArray ());
                     var o = FlattenTensor (inst.Outputs[m.OutputIndex]);
                     foreach (var layer in GetAllLayers (o)) {
-                        trainable[layer] = m.BaseModel.IsTrainable;
+                        var lt = m.BaseModel.IsTrainable;
+                        if (trainable.TryGetValue (layer, out var et)) {
+                            lt = lt || trainable[layer];
+                        }
+                        trainable[layer] = lt;
                     }
                     return o;
                 }

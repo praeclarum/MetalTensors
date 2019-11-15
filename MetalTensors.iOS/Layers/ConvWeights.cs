@@ -79,17 +79,22 @@ namespace MetalTensors.Layers
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity) :
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
 
-            SetOptimizationOptions (learningRate: Model.DefaultLearningRate);
+            SetOptimizationOptions (true, learningRate: Model.DefaultLearningRate);
         }
 
-        public void SetOptimizationOptions (float learningRate)
+        public void SetOptimizationOptions (bool trainable, float learningRate)
         {
-            var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
-            updater = new MPSNNOptimizerAdam (
-                device,
-                beta1: 0.9f, beta2: 0.999f, epsilon: 1e-8f,
-                timeStep: 0,
-                optimizerDescriptor: odesc);
+            if (trainable) {
+                var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
+                updater = new MPSNNOptimizerAdam (
+                    device,
+                    beta1: 0.9f, beta2: 0.999f, epsilon: 1e-8f,
+                    timeStep: 0,
+                    optimizerDescriptor: odesc);
+            }
+            else {
+                updater = null;
+            }
         }
 
         [DebuggerHidden]
