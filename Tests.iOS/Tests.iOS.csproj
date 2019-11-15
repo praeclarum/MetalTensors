@@ -86,7 +86,6 @@
     <MtouchArch>ARM64</MtouchArch>
     <MtouchHttpClientHandler>NSUrlSessionHandler</MtouchHttpClientHandler>
     <MtouchVerbosity></MtouchVerbosity>
-    <MtouchSdkVersion></MtouchSdkVersion>
     <IpaPackageName></IpaPackageName>
     <CodesignResourceRules></CodesignResourceRules>
     <LangVersion>8.0</LangVersion>
@@ -120,6 +119,7 @@
     <Compile Include="TrainTests.cs" />
     <Compile Include="PlaceholderTensorTests.cs" />
     <Compile Include="TrainBinopTests.cs" />
+    <Compile Include="ModelTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

@@ -11,6 +11,8 @@ namespace MetalTensors.Tensors
         public Layer Layer { get; }
         public Tensor[] LayerInputs { get; }
 
+        public override Tensor[] Inputs => LayerInputs;
+
         public LayerTensor (Layer layer, params Tensor[] layerInputs)
             : base (layer.Label)
         {

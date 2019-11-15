@@ -22,6 +22,8 @@ namespace MetalTensors
 
         public abstract int[] Shape { get; }
 
+        public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
+
         readonly Lazy<MPSNNImageNode> metalImageNode;
         public virtual MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device) => metalImageNode.Value;
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
@@ -141,6 +143,17 @@ namespace MetalTensors
         public virtual Tensor Add (Tensor other)
         {
             return new AddLayer ().GetOutput (this, other);
+        }
+
+        public static Tensor Add (params Tensor[] tensors)
+        {
+            if (tensors.Length < 1)
+                throw new ArgumentException ("Must supply at least one tensor to add", nameof (tensors));
+            var r = tensors[0];
+            for (var i = 1; i < tensors.Length; i++) {
+                r += tensors[i];
+            }
+            return r;
         }
 
         public static Tensor operator - (Tensor a, Tensor b)

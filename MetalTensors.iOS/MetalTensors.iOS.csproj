@@ -87,6 +87,7 @@
     <Compile Include="TrainingGraph.cs" />
     <Compile Include="Layers\TanhLayer.cs" />
     <Compile Include="Layers\ConvWeightsLayer.cs" />
+    <Compile Include="Model.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>
