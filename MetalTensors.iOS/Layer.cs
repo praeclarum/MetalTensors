@@ -110,8 +110,9 @@ namespace MetalTensors
             node.ResultImage.MPSHandle = new LayerHandle (this);
             node.Label = Label;
 
-            deviceFilterNodes.TryAdd (key, node);
-            return node;
+            if (deviceFilterNodes.TryAdd (key, node))
+                return node;
+            return deviceFilterNodes[key];
         }
 
         protected abstract MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device);
