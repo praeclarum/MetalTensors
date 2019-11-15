@@ -14,7 +14,7 @@ namespace MetalTensors
         public Tensor[] Tensors { get; }
         public Layer[] Layers { get; }
 
-        public Tensor UnifiedOutput { get; }
+        public Tensor TrainingTensor { get; }
 
         public Model (params Tensor[] outputs)
         {
@@ -22,7 +22,7 @@ namespace MetalTensors
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
             Outputs = outputs;
-            UnifiedOutput = outputs.Length == 1 ?
+            TrainingTensor = outputs.Length == 1 ?
                 outputs[0] :
                 Tensor.Add (outputs);
 
@@ -43,10 +43,9 @@ namespace MetalTensors
                         handledTensors.Add (t);
                         tensorHandled.Add (t);
 
-                        if (t is LayerTensor lt) {
-                            if (!layers.Contains (lt.Layer))
-                                layers.Add (lt.Layer);
-                            nextTensors.AddRange (lt.LayerInputs);
+                        var tins = t.Inputs;
+                        if (tins.Length > 0) {
+                            nextTensors.AddRange (tins);
                         }
                         else {
                             if (!sourceTensors.Contains (t))
@@ -60,6 +59,10 @@ namespace MetalTensors
                         else if (t is LabelsTensor) {
                             if (!labelsTensors.Contains (t))
                                 labelsTensors.Add (t);
+                        }
+                        else if (t is LayerTensor lt) {
+                            if (!layers.Contains (lt.Layer))
+                                layers.Add (lt.Layer);
                         }
                     }
                 }

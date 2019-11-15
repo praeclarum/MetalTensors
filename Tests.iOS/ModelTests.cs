@@ -18,7 +18,7 @@ namespace Tests
             Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (0, m.Layers.Length);
-            Assert.AreEqual (x, m.UnifiedOutput);
+            Assert.AreEqual (x, m.TrainingTensor);
         }
 
         [Test]
@@ -48,7 +48,7 @@ namespace Tests
             Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (4, m.Layers.Length);
-            Assert.AreEqual (y, m.UnifiedOutput);
+            Assert.AreEqual (y, m.TrainingTensor);
         }
 
     }
