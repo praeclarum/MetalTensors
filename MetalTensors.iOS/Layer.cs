@@ -16,8 +16,8 @@ namespace MetalTensors
         static int nextId = 1;
         readonly string label;
 
-        readonly ConcurrentDictionary<IntPtr, MPSNNFilterNode> deviceFilterNodes =
-            new ConcurrentDictionary<IntPtr, MPSNNFilterNode> ();
+        readonly ConcurrentDictionary<string, MPSNNFilterNode> deviceFilterNodes =
+            new ConcurrentDictionary<string, MPSNNFilterNode> ();
 
         public abstract int InputCount { get; }
 
@@ -94,14 +94,19 @@ namespace MetalTensors
             return null;
         }
 
-        protected MPSNNFilterNode GetFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
+        MPSNNFilterNode GetFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
-            var key = device.Handle;
+            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
+            return GetFilterNode (inputImageNodes, training, device);
+        }
+
+        MPSNNFilterNode GetFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, bool training, IMTLDevice device)
+        {
+            var key = device.Handle + "-" + string.Join (",", inputs.Select (x => x.ImageNode.MPSHandle.Label));
             if (deviceFilterNodes.TryGetValue (key, out var node))
                 return node;
 
-            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
-            node = CreateFilterNode (inputImageNodes, device);
+            node = CreateFilterNode (inputs, device);
             node.ResultImage.MPSHandle = new LayerHandle (this);
             node.Label = Label;
 

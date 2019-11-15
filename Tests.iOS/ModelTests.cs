@@ -57,7 +57,7 @@ namespace Tests
             var height = 8;
             var width = 8;
 
-            var z = Tensor.InputImage ("z", 2, 2);
+            var z = Tensor.InputImage ("z", 2, 2, 1);
 
             var generator = z.Conv (16).Tanh ()
                 .Upsample ().Conv (16).Tanh ()
