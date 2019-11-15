@@ -7,14 +7,12 @@ namespace MetalTensors
 {
     public class Model
     {
+        public string Label { get; }
         public bool IsTrainable { get; }
-
         public Tensor[] Outputs { get; }
-        public Tensor Output => Outputs[0];
 
         public Tensor[] Inputs { get; }
-        public Tensor Input => Inputs[0];
-
+        
         public Tensor[] Sources { get; }
         public Tensor[] Labels { get; }
         public Tensor[] Tensors { get; }
@@ -23,11 +21,15 @@ namespace MetalTensors
 
         public Tensor TrainingTensor { get; }
 
-        public Model (bool trainable, params Tensor[] outputs)
+        public Tensor Output => Outputs[0];
+        public Tensor Input => Inputs[0];
+
+        public Model (string? label, bool trainable, params Tensor[] outputs)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
+            Label = label ?? outputs[0].Label;
             IsTrainable = trainable;
 
             Outputs = outputs;
@@ -94,28 +96,30 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
+        public override string ToString () => $"{Label} (trainable={IsTrainable})";
+
         public Model Lock ()
         {
             if (!IsTrainable)
                 return this;
-            return new Model (false, Outputs);
+            return new Model (Label, false, Outputs);
         }
 
         public Model Unlock ()
         {
             if (IsTrainable)
                 return this;
-            return new Model (true, Outputs);
+            return new Model (Label, true, Outputs);
         }
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (IsTrainable, noutputs);
+            var nm = new Model (Label, IsTrainable, noutputs);
             return nm;
         }
 
-        public Model Apply (params Tensor[] inputs)
+        public Model RebuildModelWithInputs (params Tensor[] inputs)
         {
             if (inputs.Length != Inputs.Length)
                 throw new ArgumentOutOfRangeException ($"Model expects {Inputs.Length} inputs, {inputs.Length} provided");
@@ -130,7 +134,9 @@ namespace MetalTensors
 
         public Model Apply (Model inputModel)
         {
-            return Apply (inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ());
+            var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
+            var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
+            return new Model (Label, IsTrainable, outputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)

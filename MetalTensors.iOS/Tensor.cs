@@ -89,9 +89,9 @@ namespace MetalTensors
             return new ModelTensor (model, 0, this);
         }
 
-        public Model Model (bool trainable = true)
+        public Model Model (string? name = null, bool trainable = true)
         {
-            return new Model (trainable, this);
+            return new Model (name, trainable, this);
         }
 
         public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)

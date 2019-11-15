@@ -59,7 +59,11 @@ namespace Tests
 
             var z = Tensor.InputImage ("z", 2, 2);
 
-            var generator = z.Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Conv (3).Model ();
+            var generator = z.Conv (16).Tanh ()
+                .Upsample ().Conv (16).Tanh ()
+                .Upsample ().Conv (16).Tanh ()
+                .Conv (3)
+                .Model ("generator");
 
             Assert.AreEqual (1, generator.Inputs.Length);
             Assert.AreEqual (z, generator.Input);
@@ -74,7 +78,7 @@ namespace Tests
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (1)
-                .Model ();
+                .Model ("discriminator");
 
             Assert.AreEqual (dinput, discriminator.Input);
             Assert.AreEqual (1, discriminator.Output.Shape[0]);
@@ -83,14 +87,11 @@ namespace Tests
 
             var gan = discriminator.Lock ().Apply (generator);
 
-            Assert.AreEqual (1, gan.Inputs.Length);
-            Assert.AreEqual (z, gan.Input);
+            Assert.AreEqual (0, gan.Inputs.Length);
             Assert.AreEqual (1, gan.Output.Shape[0]);
             Assert.AreEqual (1, gan.Output.Shape[1]);
             Assert.AreEqual (1, gan.Output.Shape[2]);
             Assert.AreEqual (1, gan.Submodels);
-            Assert.AreNotEqual (discriminator.Output, gan.Output);
-            Assert.AreEqual (discriminator.Output.Label, gan.Output.Label);
         }
     }
 }

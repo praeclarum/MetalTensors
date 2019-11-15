@@ -12,6 +12,7 @@ namespace MetalTensors.Tensors
         public Tensor[] ModelInputs { get; }
 
         public ModelTensor (Model model, int outputIndex, params Tensor[] inputs)
+            : base (model.Label)
         {
             BaseModel = model;
             OutputIndex = outputIndex;
@@ -20,7 +21,7 @@ namespace MetalTensors.Tensors
 
         public override void Copy (Span<float> destination)
         {
-            BaseModel.Apply (ModelInputs).Outputs[0].Copy (destination);
+            BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)
