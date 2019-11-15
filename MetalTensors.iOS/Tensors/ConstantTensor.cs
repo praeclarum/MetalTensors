@@ -19,8 +19,7 @@ namespace MetalTensors.Tensors
         public ConstantTensor (float constant, params int[] shape)
         {
             ConstantValue = constant;
-            ValidateShape (shape);
-            this.shape = shape;
+            this.shape = shape.NormalizeShape ();
         }
 
         public override void Copy (Span<float> destination)

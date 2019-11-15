@@ -259,18 +259,6 @@ namespace MetalTensors
             return g.Train (trainingData, learningRate, batchSize, numBatches);
         }
 
-        public static void ValidateShape (params int[] shape)
-        {
-            if (shape is null) {
-                throw new ArgumentNullException (nameof (shape));
-            }
-
-            for (var i = 0; i < shape.Length; i++) {
-                if (shape[i] <= 0)
-                    throw new ArgumentOutOfRangeException (nameof (shape), $"Shape dimension must be > 0");
-            }
-        }
-
         protected int ValidateCopyDestination (Span<float> destination)
         {
             var neededLength = Shape.GetShapeLength ();

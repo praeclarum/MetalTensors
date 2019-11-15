@@ -8,6 +8,24 @@ namespace Tests.iOS
     public class PlaceholderTensorTests
     {
         [Test]
+        public void DefaultInputShape ()
+        {
+            var t = Tensor.Input ("foo");
+            Assert.AreEqual ("foo", t.Label);
+            Assert.AreEqual (1, t.Shape.Length);
+            Assert.AreEqual (1, t.Shape[0]);
+        }
+
+        [Test]
+        public void DefaultLabelsShape ()
+        {
+            var t = Tensor.Labels ("foo");
+            Assert.AreEqual ("foo", t.Label);
+            Assert.AreEqual (1, t.Shape.Length);
+            Assert.AreEqual (1, t.Shape[0]);
+        }
+
+        [Test]
         public void Input ()
         {
             var t = Tensor.Input ("foo", 1);

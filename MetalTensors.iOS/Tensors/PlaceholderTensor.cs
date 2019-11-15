@@ -14,7 +14,7 @@ namespace MetalTensors.Tensors
         protected PlaceholderTensor (string label, int[] shape)
             : base (label)
         {
-            this.shape = shape;
+            this.shape = shape.NormalizeShape ();
         }        
 
         public override void Copy (Span<float> destination)
