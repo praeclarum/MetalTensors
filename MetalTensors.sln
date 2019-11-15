@@ -5,6 +5,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetalTensors.iOS", "MetalTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.iOS", "Tests.iOS\Tests.iOS.csproj", "{DBA8A670-F807-4EFF-9B08-1DC31CCC7468}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MetalTensors", "MetalTensors\MetalTensors.shproj", "{7EC97FDC-55FB-4B35-9271-713973E659E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetalTensors.Mac", "MetalTensors.Mac\MetalTensors.Mac.csproj", "{649B14D8-55B2-4BF1-928F-B343EB4C6815}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,5 +43,17 @@ Global
 		{DBA8A670-F807-4EFF-9B08-1DC31CCC7468}.Release|iPhoneSimulator.Build.0 = Release|iPhoneSimulator
 		{DBA8A670-F807-4EFF-9B08-1DC31CCC7468}.Debug|iPhone.ActiveCfg = Debug|iPhone
 		{DBA8A670-F807-4EFF-9B08-1DC31CCC7468}.Debug|iPhone.Build.0 = Debug|iPhone
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|Any CPU.Build.0 = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|iPhone.ActiveCfg = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|iPhone.Build.0 = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|iPhone.ActiveCfg = Debug|Any CPU
+		{649B14D8-55B2-4BF1-928F-B343EB4C6815}.Debug|iPhone.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal

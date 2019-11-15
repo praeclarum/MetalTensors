@@ -13,6 +13,10 @@
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <AssemblyName>MetalTensors.iOS</AssemblyName>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -22,10 +26,6 @@
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>8.0</LangVersion>
     <MtouchDebug></MtouchDebug>
     <MtouchNoSymbolStrip></MtouchNoSymbolStrip>
     <MtouchFastDev></MtouchFastDev>
@@ -38,10 +38,6 @@
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -51,45 +47,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
-    <Folder Include="Tensors\" />
-    <Folder Include="Layers\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Tensor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tensors\MPSImageTensor.cs" />
-    <Compile Include="MetalExtensions.cs" />
-    <Compile Include="Tensors\ArrayTensor.cs" />
-    <Compile Include="Layer.cs" />
-    <Compile Include="Layers\AddLayer.cs" />
-    <Compile Include="Tensors\LayerTensor.cs" />
-    <Compile Include="Tensors\ConstantTensor.cs" />
-    <Compile Include="TensorHandle.cs" />
-    <Compile Include="Layers\UpsampleLayer.cs" />
-    <Compile Include="Layers\BinopLayer.cs" />
-    <Compile Include="Layers\SubtractLayer.cs" />
-    <Compile Include="Layers\MultiplyLayer.cs" />
-    <Compile Include="Layers\DivideLayer.cs" />
-    <Compile Include="Layers\ConvLayer.cs" />
-    <Compile Include="Layers\DenseLayer.cs" />
-    <Compile Include="Layers\ConvWeights.cs" />
-    <Compile Include="Layers\ReLULayer.cs" />
-    <Compile Include="Layers\UnopLayer.cs" />
-    <Compile Include="Layers\MaxPoolLayer.cs" />
-    <Compile Include="Layers\PoolLayer.cs" />
-    <Compile Include="Layers\LossLayer.cs" />
-    <Compile Include="LossType.cs" />
-    <Compile Include="TrainingHistory.cs" />
-    <Compile Include="Tensors\PlaceholderTensor.cs" />
-    <Compile Include="Tensors\InputTensor.cs" />
-    <Compile Include="Tensors\LabelsTensor.cs" />
-    <Compile Include="LayerHandle.cs" />
-    <Compile Include="TrainingGraph.cs" />
-    <Compile Include="Layers\TanhLayer.cs" />
-    <Compile Include="Layers\ConvWeightsLayer.cs" />
-    <Compile Include="Model.cs" />
-    <Compile Include="Tensors\ModelTensor.cs" />
-    <Compile Include="TensorExtensions.cs" />
   </ItemGroup>
+  <Import Project="..\MetalTensors\MetalTensors.projitems" Label="Shared" Condition="Exists('..\MetalTensors\MetalTensors.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

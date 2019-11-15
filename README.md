@@ -40,13 +40,16 @@ There are four main classes offered with increasing levels of abstraction:
 * `Models` combine layers into groups to make trainable networks
 * `Applications` use models to perform a particular task
 
+The object model is *mostly* immutable and *completely* thread-safe
+(famous last words, I know lol).
+
 ### Multi-device support
 
 Tensors and layers and models do their best to stay
 metal device agnostic.
 
 The goal is to make it possible to train using multiple GPUs
-on the same machine.
+from the same process.
 
 Note, while training the same model
 on multiple GPUs is technically allowed by this library,
@@ -68,5 +71,5 @@ Also, most libraries are for Python and not .NET.
 
 I wanted to be able to easily play with new network architectures
 safe in the knowledge that the work I do will run perfectly
-on mobile devices.
+on mobile devices and be accessible from my favorite programming languages.
 
