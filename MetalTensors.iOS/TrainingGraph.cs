@@ -19,12 +19,10 @@ namespace MetalTensors
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
         readonly (ConvWeights Weights, bool Trainable)[] convWeights;
-        readonly Dictionary<Layer, bool> trainable;
 
         public TrainingGraph (Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device)
         {
             this.device = device;
-            this.trainable = trainable;
             //stopwatch.Start ();
 
             //
