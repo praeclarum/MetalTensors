@@ -37,7 +37,7 @@ There are four main classes offered with increasing levels of abstraction:
 
 * `Tensors` represent primitive bags of data
 * `Layers` represent operations on tensors
-* `Models` combine layers into groups to make complex computations
+* `Models` combine layers into groups to make trainable networks
 * `Applications` use models to perform a particular task
 
 ### Multi-device support
@@ -60,7 +60,7 @@ To use the non-default GPU, pass an `IMTLDevice` to the
 
 
 
-## Why another nerual network library?
+## Why another neural network library?
 
 Most neural network libraries aren't able to use the GPUs
 on iPhones, iPads, and Macs.
