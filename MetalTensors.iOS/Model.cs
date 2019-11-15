@@ -7,10 +7,15 @@ namespace MetalTensors
 {
     public class Model
     {
+        public bool IsTrainable { get; }
+
         public Tensor[] Outputs { get; }
+        public Tensor Output => Outputs[0];
+
+        public Tensor[] Inputs { get; }
+        public Tensor Input => Inputs[0];
 
         public Tensor[] Sources { get; }
-        public Tensor[] Inputs { get; }
         public Tensor[] Labels { get; }
         public Tensor[] Tensors { get; }
         public Layer[] Layers { get; }
@@ -18,10 +23,12 @@ namespace MetalTensors
 
         public Tensor TrainingTensor { get; }
 
-        public Model (params Tensor[] outputs)
+        public Model (bool trainable, params Tensor[] outputs)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
+
+            IsTrainable = trainable;
 
             Outputs = outputs;
             TrainingTensor = outputs.Length == 1 ?
@@ -87,16 +94,25 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
+        public Model Lock ()
+        {
+            if (!IsTrainable)
+                return this;
+            return new Model (false, Outputs);
+        }
+
+        public Model Unlock ()
+        {
+            if (IsTrainable)
+                return this;
+            return new Model (true, Outputs);
+        }
+
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (noutputs);
+            var nm = new Model (IsTrainable, noutputs);
             return nm;
-        }
-
-        public Model Apply (Model inputModel)
-        {
-            return Apply (inputModel.Outputs);
         }
 
         public Model Apply (params Tensor[] inputs)
@@ -110,6 +126,11 @@ namespace MetalTensors
             }
 
             return MapInputs (map);
+        }
+
+        public Model Apply (Model inputModel)
+        {
+            return Apply (inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ());
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)

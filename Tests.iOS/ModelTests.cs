@@ -11,7 +11,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x");
             var y = x;
-            var m = new Model (y);
+            var m = y.Model ();
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
@@ -27,7 +27,7 @@ namespace Tests
             var x0 = Tensor.Input ("x0");
             var x1 = Tensor.Input ("x1");
             var y = x0 + x1;
-            var m = new Model (y);
+            var m = y.Model ();
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (2, m.Inputs.Length);
@@ -41,7 +41,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x");
             var y = x.Dense (16).Tanh ().Dense (1).Tanh ();
-            var m = new Model (y);
+            var m = y.Model ();
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
@@ -62,32 +62,35 @@ namespace Tests
             var generator = z.Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Conv (3).Model ();
 
             Assert.AreEqual (1, generator.Inputs.Length);
-            Assert.AreEqual (z, generator.Inputs[0]);
+            Assert.AreEqual (z, generator.Input);
             Assert.AreEqual (1, generator.Outputs.Length);
             Assert.AreEqual (0, generator.Labels.Length);
             Assert.AreEqual (1, generator.Sources.Length);
             Assert.AreEqual (9, generator.Layers.Length);
 
             var dinput = Tensor.InputImage ("dinput", height, width);
-            var discriminatedImage = dinput.Conv (16).Tanh ()
+            var discriminator = dinput.Conv (16).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
-                .Conv (1);
-            var discriminator = new Model (discriminatedImage);
+                .Conv (1)
+                .Model ();
 
-            Assert.AreEqual (dinput, discriminator.Inputs[0]);
-            Assert.AreEqual (1, discriminator.Outputs[0].Shape[0]);
-            Assert.AreEqual (1, discriminator.Outputs[0].Shape[1]);
-            Assert.AreEqual (1, discriminator.Outputs[0].Shape[2]);
+            Assert.AreEqual (dinput, discriminator.Input);
+            Assert.AreEqual (1, discriminator.Output.Shape[0]);
+            Assert.AreEqual (1, discriminator.Output.Shape[1]);
+            Assert.AreEqual (1, discriminator.Output.Shape[2]);
 
-            var gan = discriminator.Apply (generator);
+            var gan = discriminator.Lock ().Apply (generator);
 
-            Assert.AreEqual (z, gan.Inputs[0]);
-            Assert.AreEqual (1, gan.Outputs[0].Shape[0]);
-            Assert.AreEqual (1, gan.Outputs[0].Shape[1]);
-            Assert.AreEqual (1, gan.Outputs[0].Shape[2]);
-
+            Assert.AreEqual (1, gan.Inputs.Length);
+            Assert.AreEqual (z, gan.Input);
+            Assert.AreEqual (1, gan.Output.Shape[0]);
+            Assert.AreEqual (1, gan.Output.Shape[1]);
+            Assert.AreEqual (1, gan.Output.Shape[2]);
+            Assert.AreEqual (1, gan.Submodels);
+            Assert.AreNotEqual (discriminator.Output, gan.Output);
+            Assert.AreEqual (discriminator.Output.Label, gan.Output.Label);
         }
     }
 }
