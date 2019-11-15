@@ -5,16 +5,16 @@ namespace MetalTensors.Layers
 {
     public class ReLULayer : UnopLayer
     {
-        public float Alpha { get; }
+        public float A { get; }
 
-        public ReLULayer (float alpha = 0.2f)
+        public ReLULayer (float a = 0.2f)
         {
-            Alpha = alpha;
+            A = a;
         }
 
         protected override MPSNNFilterNode CreateUnopNode (MPSNNImageNode imageNode)
         {
-            return new MPSCnnNeuronReLUNode (imageNode, Alpha);
+            return new MPSCnnNeuronReLUNode (imageNode, A);
         }
     }
 }

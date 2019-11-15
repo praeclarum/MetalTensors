@@ -212,14 +212,19 @@ namespace MetalTensors
             return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, bias, padding).GetOutput (this);
         }
 
-        public Tensor Dense (int featureChannels, bool bias = true)
+        public Tensor Dense (int featureChannels, int size = 1, bool bias = true)
         {
-            return new DenseLayer (featureChannels, bias).GetOutput (this);
+            return new DenseLayer (featureChannels, size, size, bias).GetOutput (this);
         }
 
-        public Tensor ReLU (float alpha = 0.2f)
+        public Tensor Dropout (float keepProbability)
         {
-            return new ReLULayer (alpha).GetOutput (this);
+            return new DropoutLayer (keepProbability).GetOutput (this);
+        }
+
+        public Tensor ReLU (float a = 0.2f)
+        {
+            return new ReLULayer (a).GetOutput (this);
         }
 
         public Tensor Tanh ()

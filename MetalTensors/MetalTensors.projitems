@@ -43,5 +43,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)LayerHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TensorHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LossType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\DropoutLayer.cs" />
   </ItemGroup>
 </Project>

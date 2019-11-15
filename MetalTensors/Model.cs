@@ -10,7 +10,7 @@ namespace MetalTensors
 {
     public class Model
     {
-        public const float DefaultLearningRate = 0.0001f;
+        public const float DefaultLearningRate = 0.001f;
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = 100;
 
@@ -243,6 +243,22 @@ namespace MetalTensors
                 }
                 return r;
             }
+        }
+
+        public static Model Mnist ()
+        {
+            var (height, width) = (28, 28);
+            var image = Tensor.InputImage ("image", height, width, 1);
+            var output =
+                image
+                .Conv (32, size: 5).ReLU (a: 0).MaxPool ()
+                .Conv (64, size: 5).ReLU (a: 0).MaxPool ()
+                .Dense (1024, size: 7).ReLU (a: 0)
+                .Dropout (0.5f)
+                .Dense (10);
+            var model = output.Model ("mnist");
+
+            return model;
         }
     }
 }
