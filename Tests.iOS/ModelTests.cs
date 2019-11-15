@@ -87,11 +87,12 @@ namespace Tests
 
             var gan = discriminator.Lock ().Apply (generator);
 
-            Assert.AreEqual (0, gan.Inputs.Length);
+            Assert.AreEqual (1, gan.Inputs.Length);
+            Assert.AreEqual (z, gan.Input);
             Assert.AreEqual (1, gan.Output.Shape[0]);
             Assert.AreEqual (1, gan.Output.Shape[1]);
             Assert.AreEqual (1, gan.Output.Shape[2]);
-            Assert.AreEqual (1, gan.Submodels);
+            Assert.AreEqual (2, gan.Submodels.Length);
         }
     }
 }

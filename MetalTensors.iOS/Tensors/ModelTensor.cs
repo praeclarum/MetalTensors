@@ -11,6 +11,8 @@ namespace MetalTensors.Tensors
         public int OutputIndex { get; }
         public Tensor[] ModelInputs { get; }
 
+        public override Tensor[] Inputs => ModelInputs;
+
         public ModelTensor (Model model, int outputIndex, params Tensor[] inputs)
             : base (model.Label)
         {
