@@ -94,13 +94,16 @@ namespace Tests
             Assert.AreEqual (1, gan.Output.Shape[2]);
             Assert.AreEqual (2, gan.Submodels.Length);
 
-            gan.Train (GetTrainingData);
+            var h = gan.Train (GetTrainingData, batchSize: 5, numBatches: 7);
 
             IEnumerable<Tensor> GetTrainingData (TensorHandle[] handles)
             {
-                Assert.AreEqual (1, handles.Length);
-                return new[] { Tensor.Ones (height, width, 3) };
+                Assert.AreEqual (2, handles.Length);
+                Assert.AreEqual ("z", handles[0].Label);
+                return new[] { Tensor.Ones (height, width, 3), Tensor.Ones (1, 1, 1) };
             }
+
+            Assert.AreEqual (7, h.Batches.Length);
         }
     }
 }

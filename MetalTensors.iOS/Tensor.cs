@@ -14,8 +14,8 @@ namespace MetalTensors
 {
     public abstract class Tensor
     {
-        public const float DefaultLearningRate = 0.0001f;
-        public const int DefaultBatchSize = 32;
+        public const string DefaultLabelsLabel = "labels";
+        public const string DefaultLossLabel = "loss";
 
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
@@ -85,9 +85,9 @@ namespace MetalTensors
             return new LabelsTensor (label, shape);
         }
 
-        public Tensor Apply (Model model)
+        public static Tensor Labels (params int[] shape)
         {
-            return new ModelTensor (model, 0, this);
+            return new LabelsTensor (DefaultLabelsLabel, shape);
         }
 
         public Model Model (string? name = null, bool trainable = true)
@@ -252,27 +252,15 @@ namespace MetalTensors
             if (!Shape.ShapeEquals (labels.Shape)) {
                 throw new ArgumentOutOfRangeException (nameof (labels), "Labels shape must match the shape of this tensor");
             }
-            var layer = new LossLayer (lossType, reductionType);
+            var layer = new LossLayer (DefaultLossLabel, lossType, reductionType);
             return weights != null ?
                 layer.GetOutput (this, labels, weights) :
                 layer.GetOutput (this, labels);
         }
 
-        readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
-
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = 10, IMTLDevice? device = null)
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, IMTLDevice? device = null)
         {
-            var d = device.Current ();
-
-            var key = d.Handle;
-            if (!trainingGraphs.TryGetValue (key, out var g)) {
-                g = new TrainingGraph (this, d);
-                if (!trainingGraphs.TryAdd (key, g)) {
-                    g = trainingGraphs[key];
-                }
-            }
-
-            return g.Train (trainingData, learningRate, batchSize, numBatches);
+            return new Model (Label, true, this).Train (trainingData, learningRate, batchSize, numBatches, device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

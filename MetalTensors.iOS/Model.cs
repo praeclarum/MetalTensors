@@ -1,13 +1,19 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Metal;
+using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
     public class Model
     {
+        public const float DefaultLearningRate = 0.0001f;
+        public const int DefaultBatchSize = 32;
+        public const int DefaultNumBatches = 100;
+
         public string Label { get; }
         public bool IsTrainable { get; }
         public Tensor[] Outputs { get; }
@@ -19,6 +25,8 @@ namespace MetalTensors
         public Tensor[] Tensors { get; }
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
+
+        readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
 
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
@@ -92,7 +100,7 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
-        public override string ToString () => $"{Label} (trainable={IsTrainable})";
+        public override string ToString () => $"{Label} {{trainable:{IsTrainable}}}";
 
         public Model Lock ()
         {
@@ -132,7 +140,7 @@ namespace MetalTensors
         {
             var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label, IsTrainable, outputs);
+            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, outputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -145,17 +153,54 @@ namespace MetalTensors
             return new ModelTensor (this, outputIndex, inputModel.Outputs);
         }
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = Tensor.DefaultLearningRate, int batchSize = Tensor.DefaultBatchSize, int numBatches = 10, IMTLDevice? device = null)
+        const LossType DefaultLossType = LossType.MeanSquaredError;
+
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, IMTLDevice? device = null)
+        {
+            //
+            // Get training graph
+            //
+            var d = device.Current ();
+
+            var key = d.Handle;
+            if (!trainingGraphs.TryGetValue (key, out var g)) {
+                g = CreateTrainingGraph (d);
+                if (!trainingGraphs.TryAdd (key, g)) {
+                    g = trainingGraphs[key];
+                }
+            }
+
+            //
+            // Train
+            //
+            return g.Train (trainingData, learningRate, batchSize, numBatches);
+        }
+
+        TrainingGraph CreateTrainingGraph (IMTLDevice d)
         {
             var (flatModel, trainable) = Flatten ();
 
-            var trainingModel = flatModel;
+            //
+            // Auto add loss layer
+            //
+            Model trainingModel;
+            if (flatModel.Layers.OfType<LossLayer> ().Any ()) {
+                trainingModel = flatModel;
+            }
+            else {
+                var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + "_" + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
+                var losses = flatModel.Outputs.Select ((x, i) => x.Loss (labels[i], DefaultLossType)).ToArray ();
+                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, losses);
+            }
 
+            //
+            // Merge outputs in order to auto build gradients
+            //
             var trainingTensor = trainingModel.Outputs.Length == 1 ?
                 trainingModel.Outputs[0] :
                 Tensor.Add (trainingModel.Outputs);
 
-            return trainingTensor.Train (trainingData, learningRate, batchSize, numBatches, device);
+            return new TrainingGraph (trainingTensor, d);
         }
 
         (Model, Dictionary<Layer, bool>) Flatten ()
@@ -167,6 +212,7 @@ namespace MetalTensors
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
             var flatModel = new Model (Label, IsTrainable, flatOuts);
+
             return (flatModel, trainable);
 
             Tensor FlattenTensor (Tensor t)

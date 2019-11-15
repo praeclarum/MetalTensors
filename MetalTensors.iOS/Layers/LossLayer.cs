@@ -13,7 +13,8 @@ namespace MetalTensors.Layers
         public LossType LossType { get; }
         public MPSCnnReductionType ReductionType { get; }
 
-        public LossLayer (LossType lossType, MPSCnnReductionType reductionType)
+        public LossLayer (string? label, LossType lossType, MPSCnnReductionType reductionType)
+            : base (label)
         {
             LossType = lossType;
             ReductionType = reductionType;

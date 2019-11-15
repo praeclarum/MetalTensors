@@ -79,7 +79,7 @@ namespace MetalTensors.Layers
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity) :
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
 
-            SetOptimizationOptions (learningRate: Tensor.DefaultLearningRate);
+            SetOptimizationOptions (learningRate: Model.DefaultLearningRate);
         }
 
         public void SetOptimizationOptions (float learningRate)
