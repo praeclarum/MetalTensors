@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -30,6 +31,11 @@ namespace MetalTensors.Tensors
         public override MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device)
         {
             return Layer.GetMetalImageNode (LayerInputs, training, device);
+        }
+
+        public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)
+        {
+            return new LayerTensor (Layer, LayerInputs.Map (map));
         }
     }
 }

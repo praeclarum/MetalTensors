@@ -54,29 +54,39 @@ namespace Tests
         [Test]
         public void Gan ()
         {
-            var z = Tensor.InputImage ("z", 4, 4);
+            var height = 8;
+            var width = 8;
 
-            var generatedImage = z.Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Conv (3);
-            var generator = new Model (generatedImage);
+            var z = Tensor.InputImage ("z", 2, 2);
 
-            Assert.AreEqual (1, generator.Outputs.Length);
+            var generator = z.Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Upsample ().Conv (16).Tanh ().Conv (3).Model ();
+
             Assert.AreEqual (1, generator.Inputs.Length);
+            Assert.AreEqual (z, generator.Inputs[0]);
+            Assert.AreEqual (1, generator.Outputs.Length);
             Assert.AreEqual (0, generator.Labels.Length);
             Assert.AreEqual (1, generator.Sources.Length);
             Assert.AreEqual (9, generator.Layers.Length);
 
-            var discriminatedImage = z.Conv (16).Tanh ().Conv (32, stride:2).Tanh ().Conv (32, stride: 2).Tanh ().Conv (1);
+            var dinput = Tensor.InputImage ("dinput", height, width);
+            var discriminatedImage = dinput.Conv (16).Tanh ()
+                .Conv (32, stride: 2).Tanh ()
+                .Conv (32, stride: 2).Tanh ()
+                .Conv (32, stride: 2).Tanh ()
+                .Conv (1);
             var discriminator = new Model (discriminatedImage);
 
+            Assert.AreEqual (dinput, discriminator.Inputs[0]);
             Assert.AreEqual (1, discriminator.Outputs[0].Shape[0]);
             Assert.AreEqual (1, discriminator.Outputs[0].Shape[1]);
             Assert.AreEqual (1, discriminator.Outputs[0].Shape[2]);
 
-            var gan = generatedImage.Apply(discriminator);
+            var gan = discriminator.Apply (generator);
 
-            Assert.AreEqual (1, gan.Shape[0]);
-            Assert.AreEqual (1, gan.Shape[1]);
-            Assert.AreEqual (1, gan.Shape[2]);
+            Assert.AreEqual (z, gan.Inputs[0]);
+            Assert.AreEqual (1, gan.Outputs[0].Shape[0]);
+            Assert.AreEqual (1, gan.Outputs[0].Shape[1]);
+            Assert.AreEqual (1, gan.Outputs[0].Shape[2]);
 
         }
     }

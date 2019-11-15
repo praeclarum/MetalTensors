@@ -89,6 +89,16 @@ namespace MetalTensors
             return new ModelTensor (model, 0, this);
         }
 
+        public Model Model ()
+        {
+            return new Model (this);
+        }
+
+        public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
         public static Tensor Constant (float constant, params int[] shape)
         {
             return new ConstantTensor (constant, shape);
@@ -166,7 +176,7 @@ namespace MetalTensors
             return a.Subtract (b);
         }
 
-        public virtual Tensor Subtract (Tensor other)
+        public Tensor Subtract (Tensor other)
         {
             return new SubtractLayer ().GetOutput (this, other);
         }
@@ -176,7 +186,7 @@ namespace MetalTensors
             return a.Multiply (b);
         }
 
-        public virtual Tensor Multiply (Tensor other)
+        public Tensor Multiply (Tensor other)
         {
             return new MultiplyLayer ().GetOutput (this, other);
         }
@@ -186,57 +196,57 @@ namespace MetalTensors
             return a.Divide (b);
         }
 
-        public virtual Tensor Divide (Tensor other)
+        public Tensor Divide (Tensor other)
         {
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public virtual Tensor Conv (int featureChannels, int size = 3, int stride = 1, bool bias = true, ConvPadding padding = ConvPadding.Same)
+        public Tensor Conv (int featureChannels, int size = 3, int stride = 1, bool bias = true, ConvPadding padding = ConvPadding.Same)
         {
             return new ConvLayer (featureChannels, size, size, stride, stride, bias, padding).GetOutput (this);
         }
 
-        public virtual Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias = true, ConvPadding padding = ConvPadding.Same)
+        public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias = true, ConvPadding padding = ConvPadding.Same)
         {
             return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, bias, padding).GetOutput (this);
         }
 
-        public virtual Tensor Dense (int featureChannels, bool bias = true)
+        public Tensor Dense (int featureChannels, bool bias = true)
         {
             return new DenseLayer (featureChannels, bias).GetOutput (this);
         }
 
-        public virtual Tensor ReLU (float alpha = 0.2f)
+        public Tensor ReLU (float alpha = 0.2f)
         {
             return new ReLULayer (alpha).GetOutput (this);
         }
 
-        public virtual Tensor Tanh ()
+        public Tensor Tanh ()
         {
             return new TanhLayer ().GetOutput (this);
         }
 
-        public virtual Tensor MaxPool (int size = 2, int stride = 2)
+        public Tensor MaxPool (int size = 2, int stride = 2)
         {
             return new MaxPoolLayer (size, stride).GetOutput (this);
         }
 
-        public virtual Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY)
+        public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY)
         {
             return new MaxPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
         }
 
-        public virtual Tensor Upsample (int scaleX, int scaleY)
+        public Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
         }
 
-        public virtual Tensor Upsample (int scale = 2)
+        public Tensor Upsample (int scale = 2)
         {
             return Upsample (scale, scale);
         }
 
-        public virtual Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
+        public Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
         {
             if (!Shape.ShapeEquals (labels.Shape)) {
                 throw new ArgumentOutOfRangeException (nameof (labels), "Labels shape must match the shape of this tensor");
@@ -249,7 +259,7 @@ namespace MetalTensors
 
         readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
 
-        public virtual TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
         {
             var d = device.Current ();
 

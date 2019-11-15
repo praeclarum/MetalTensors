@@ -29,6 +29,8 @@ namespace MetalTensors
             this.label = string.IsNullOrWhiteSpace (label) ? GetType ().Name + id : label!;
         }
 
+        public override string ToString () => Label;
+
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
         public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, bool training, IMTLDevice device)

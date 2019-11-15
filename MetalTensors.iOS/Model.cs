@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
@@ -13,6 +14,7 @@ namespace MetalTensors
         public Tensor[] Labels { get; }
         public Tensor[] Tensors { get; }
         public Layer[] Layers { get; }
+        public Model[] Submodels { get; }
 
         public Tensor TrainingTensor { get; }
 
@@ -32,6 +34,7 @@ namespace MetalTensors
             var handledTensors = new List<Tensor> ();
             var tensorHandled = new HashSet<Tensor> ();
             var layers = new List<Layer> ();
+            var submodels = new List<Model> ();
             var sourceTensors = new List<Tensor> ();
             var inputTensors = new List<Tensor> ();
             var labelsTensors = new List<Tensor> ();
@@ -64,6 +67,10 @@ namespace MetalTensors
                             if (!layers.Contains (lt.Layer))
                                 layers.Add (lt.Layer);
                         }
+                        else if (t is ModelTensor mt) {
+                            if (!submodels.Contains (mt.BaseModel))
+                                submodels.Add (mt.BaseModel);
+                        }
                     }
                 }
                 tensors = nextTensors;
@@ -77,16 +84,42 @@ namespace MetalTensors
             Inputs = inputTensors.ToArray ();
             Labels = labelsTensors.ToArray ();
             Layers = layers.ToArray ();
+            Submodels = submodels.ToArray ();
         }
 
-        public Tensor GetOutput (params Tensor[] inputs)
+        public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
-            return new ModelTensor (this, 0, inputs);
+            var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
+            var nm = new Model (noutputs);
+            return nm;
         }
 
-        public Tensor GetOutput (Model inputModel)
+        public Model Apply (Model inputModel)
         {
-            return new ModelTensor (this, 0, inputModel.Outputs);
+            return Apply (inputModel.Outputs);
+        }
+
+        public Model Apply (params Tensor[] inputs)
+        {
+            if (inputs.Length != Inputs.Length)
+                throw new ArgumentOutOfRangeException ($"Model expects {Inputs.Length} inputs, {inputs.Length} provided");
+
+            var map = new Dictionary<Tensor, Tensor> ();
+            for (int i = 0; i < inputs.Length; i++) {
+                map[Inputs[i]] = inputs[i];
+            }
+
+            return MapInputs (map);
+        }
+
+        public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
+        {
+            return new ModelTensor (this, outputIndex, inputs);
+        }
+
+        public Tensor GetOutput (int outputIndex, Model inputModel)
+        {
+            return new ModelTensor (this, outputIndex, inputModel.Outputs);
         }
     }
 }
