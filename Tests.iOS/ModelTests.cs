@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using MetalTensors;
 using NUnit.Framework;
 
@@ -18,7 +20,6 @@ namespace Tests
             Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (0, m.Layers.Length);
-            Assert.AreEqual (x, m.TrainingTensor);
         }
 
         [Test]
@@ -48,7 +49,6 @@ namespace Tests
             Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (4, m.Layers.Length);
-            Assert.AreEqual (y, m.TrainingTensor);
         }
 
         [Test]
@@ -93,6 +93,14 @@ namespace Tests
             Assert.AreEqual (1, gan.Output.Shape[1]);
             Assert.AreEqual (1, gan.Output.Shape[2]);
             Assert.AreEqual (2, gan.Submodels.Length);
+
+            gan.Train (GetTrainingData);
+
+            IEnumerable<Tensor> GetTrainingData (TensorHandle[] handles)
+            {
+                Assert.AreEqual (1, handles.Length);
+                return new[] { Tensor.Ones (height, width, 3) };
+            }
         }
     }
 }

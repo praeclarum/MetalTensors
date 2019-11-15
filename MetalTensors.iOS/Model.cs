@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Metal;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
@@ -12,14 +13,12 @@ namespace MetalTensors
         public Tensor[] Outputs { get; }
 
         public Tensor[] Inputs { get; }
-        
+
         public Tensor[] Sources { get; }
         public Tensor[] Labels { get; }
         public Tensor[] Tensors { get; }
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
-
-        public Tensor TrainingTensor { get; }
 
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
@@ -33,9 +32,6 @@ namespace MetalTensors
             IsTrainable = trainable;
 
             Outputs = outputs;
-            TrainingTensor = outputs.Length == 1 ?
-                outputs[0] :
-                Tensor.Add (outputs);
 
             //
             // Build graph
@@ -147,6 +143,56 @@ namespace MetalTensors
         public Tensor GetOutput (int outputIndex, Model inputModel)
         {
             return new ModelTensor (this, outputIndex, inputModel.Outputs);
+        }
+
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = Tensor.DefaultLearningRate, int batchSize = Tensor.DefaultBatchSize, int numBatches = 10, IMTLDevice? device = null)
+        {
+            var (flatModel, trainable) = Flatten ();
+
+            var trainingModel = flatModel;
+
+            var trainingTensor = trainingModel.Outputs.Length == 1 ?
+                trainingModel.Outputs[0] :
+                Tensor.Add (trainingModel.Outputs);
+
+            return trainingTensor.Train (trainingData, learningRate, batchSize, numBatches, device);
+        }
+
+        (Model, Dictionary<Layer, bool>) Flatten ()
+        {
+            var trainable = new Dictionary<Layer, bool> ();
+            foreach (var l in Layers) {
+                trainable[l] = IsTrainable;
+            }
+
+            var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
+            var flatModel = new Model (Label, IsTrainable, flatOuts);
+            return (flatModel, trainable);
+
+            Tensor FlattenTensor (Tensor t)
+            {
+                if (t is ModelTensor m) {
+                    var inst = m.BaseModel.RebuildModelWithInputs (m.ModelInputs.Select (FlattenTensor).ToArray ());
+                    var o = FlattenTensor (inst.Outputs[m.OutputIndex]);
+                    foreach (var layer in GetAllLayers (o)) {
+                        trainable[layer] = m.BaseModel.IsTrainable;
+                    }
+                    return o;
+                }
+                return t;
+            }
+
+            static List<Layer> GetAllLayers (Tensor t)
+            {
+                var r = new List<Layer> ();
+                if (t is LayerTensor lt) {
+                    r.Add (lt.Layer);
+                }
+                foreach (var i in t.Inputs) {
+                    r.AddRange (GetAllLayers (i));
+                }
+                return r;
+            }
         }
     }
 }

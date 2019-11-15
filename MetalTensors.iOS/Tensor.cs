@@ -15,6 +15,7 @@ namespace MetalTensors
     public abstract class Tensor
     {
         public const float DefaultLearningRate = 0.0001f;
+        public const int DefaultBatchSize = 32;
 
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
@@ -259,7 +260,7 @@ namespace MetalTensors
 
         readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = 32, int numBatches = 10, IMTLDevice? device = null)
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = 10, IMTLDevice? device = null)
         {
             var d = device.Current ();
 
