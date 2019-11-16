@@ -28,6 +28,10 @@ namespace Tests.Mac
                     Console.WriteLine (ex);
                 }
             });
+
+            await Task.Delay (1000);
+
+            NSApplication.SharedApplication.Terminate (this);
         }
 
         void ShowTestResult (TestResult tr)

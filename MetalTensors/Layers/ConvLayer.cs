@@ -4,6 +4,11 @@ namespace MetalTensors.Layers
 {
     public class ConvLayer : ConvWeightsLayer
     {
+        static readonly MPSNNDefaultPadding samePadding = MPSNNDefaultPadding.Create (
+            MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeSame);
+        static readonly MPSNNDefaultPadding validPadding = MPSNNDefaultPadding.Create (
+            MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeValidOnly);
+
         public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
             : base (featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
         {
@@ -25,7 +30,9 @@ namespace MetalTensors.Layers
 
         protected override MPSNNFilterNode CreateConvWeightsNode (MPSNNImageNode imageNode, MPSCnnConvolutionDataSource convDataSource)
         {
-            return new MPSCnnConvolutionNode (imageNode, convDataSource);
+            return new MPSCnnConvolutionNode (imageNode, convDataSource) {
+                PaddingPolicy = Padding == ConvPadding.Same ? samePadding : validPadding,
+            };
         }
     }
 }
