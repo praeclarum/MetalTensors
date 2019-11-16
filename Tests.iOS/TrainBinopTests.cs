@@ -17,7 +17,7 @@ namespace Tests
         void TrainBinop (string opname, float minLoss, Func<bool, bool, bool> binop)
         {
             var x = Tensor.Input ("x", 2);
-            var y = x.Dense (8).Tanh ().Dense (1).Tanh ();
+            var y = x.Dense (8, biasInit: 0.1f).Tanh ().Dense (1, biasInit: 0.1f).Tanh ();
 
             var ylabels = Tensor.Labels ("ylabels", 1);
 

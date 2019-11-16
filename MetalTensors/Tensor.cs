@@ -202,19 +202,19 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public Tensor Conv (int featureChannels, int size = 3, int stride = 1, bool bias = true, ConvPadding padding = ConvPadding.Same)
+        public Tensor Conv (int featureChannels, int size = 3, int stride = 1, bool bias = true, float biasInit = 0.0f, ConvPadding padding = ConvPadding.Same)
         {
-            return new ConvLayer (featureChannels, size, size, stride, stride, bias, padding).GetOutput (this);
+            return new ConvLayer (featureChannels, size, size, stride, stride, bias, biasInit, padding).GetOutput (this);
         }
 
-        public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias = true, ConvPadding padding = ConvPadding.Same)
+        public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias = true, float biasInit = 0.0f, ConvPadding padding = ConvPadding.Same)
         {
-            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, bias, padding).GetOutput (this);
+            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, bias, biasInit, padding).GetOutput (this);
         }
 
-        public Tensor Dense (int featureChannels, int size = 1, bool bias = true)
+        public Tensor Dense (int featureChannels, int size = 1, bool bias = true, float biasInit = 0.0f)
         {
-            return new DenseLayer (featureChannels, size, size, bias).GetOutput (this);
+            return new DenseLayer (featureChannels, size, size, bias, biasInit).GetOutput (this);
         }
 
         public Tensor Dropout (float keepProbability)

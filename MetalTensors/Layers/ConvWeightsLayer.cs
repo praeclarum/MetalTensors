@@ -15,9 +15,10 @@ namespace MetalTensors.Layers
         public int StrideX { get; }
         public int StrideY { get; }
         public bool Bias { get; }
+        public float BiasInit { get; }
         public ConvPadding Padding { get; }
 
-        public ConvWeightsLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias, ConvPadding padding)
+        public ConvWeightsLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias, float biasInit, ConvPadding padding)
         {
             if (featureChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (featureChannels), "Number of feature channels must be > 0");
@@ -28,6 +29,7 @@ namespace MetalTensors.Layers
             StrideX = strideX;
             StrideY = strideY;
             Bias = bias;
+            BiasInit = biasInit;
             Padding = padding;
         }
 
@@ -57,7 +59,7 @@ namespace MetalTensors.Layers
             if (deviceWeights.TryGetValue (key, out var w))
                 return w;
 
-            w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, Bias, Label, device);
+            w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, Bias, BiasInit, Label, device);
 
             if (deviceWeights.TryAdd (key, w))
                 return w;

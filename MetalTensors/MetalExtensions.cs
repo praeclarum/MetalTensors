@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Foundation;
@@ -91,16 +92,27 @@ namespace MetalTensors
             var v = new MPSVector (device, descriptor);
             if (v.Data == null)
                 throw new Exception ($"Failed to create vector with length {descriptor.Length}");
-            var vectorByteSize = GetByteSize (descriptor);
-            if (vectorByteSize > 0) {
-                unsafe {
-                    float biasInit = initialValue;
-                    var biasInitPtr = (IntPtr)(float*)&biasInit;
-                    memset_pattern4 (v.Data.Contents, biasInitPtr, vectorByteSize);
-                }
-            }
+            Fill (v, initialValue);
             return v;
         }
+
+        public static void Zero (this MPSVector vector)
+        {
+            Fill (vector, 0);
+        }
+
+        public static void Fill (this MPSVector vector, float constant)
+        {
+            var vectorByteSize = GetByteSize (vector);
+            if (vectorByteSize > 0) {
+                unsafe {
+                    var biasInitPtr = stackalloc float[1];
+                    *biasInitPtr = constant;
+                    memset_pattern4 (vector.Data.Contents, (IntPtr)biasInitPtr, vectorByteSize);
+                }
+            }
+        }
+
         [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
         static extern void memset_pattern4 (IntPtr b, IntPtr pattern4, nint len);
 
@@ -125,6 +137,9 @@ namespace MetalTensors
             }
             return true;
         }
+
+        public static int GetByteSize (this MPSVector vector) =>
+            (int)vector.Length * GetByteSize (vector.DataType);
 
         public static int GetByteSize (this MPSVectorDescriptor descriptor) =>
             (int)descriptor.Length * GetByteSize (descriptor.DataType);

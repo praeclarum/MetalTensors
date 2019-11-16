@@ -20,6 +20,21 @@ def test_mnist():
     ])
     m.summary()
 
+def conv_def_weights():
+    w, h = 67, 29
+    x = layers.Conv2D(11, 5, input_shape=(h, w, 3), padding="same")
+    m = Sequential([
+        x,
+        layers.ReLU(),
+    ])
+    m.summary()
+    weights = x.get_weights()
+    for i, w in enumerate(weights):
+        print("CONV WEIGHTS {} SHAPED {}".format(i, w.shape))
+        print(np.reshape(w, -1))
+
+conv_def_weights()
+
 test_mnist()
 
 

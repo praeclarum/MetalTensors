@@ -16,6 +16,7 @@ namespace MetalTensors.Layers
 
         readonly string label;
         readonly bool bias;
+        private readonly float biasInit;
         readonly MPSCnnConvolutionDescriptor descriptor;
 
         nuint updateCount;
@@ -37,7 +38,7 @@ namespace MetalTensors.Layers
 
         public override IntPtr BiasTerms => biasVectors != null ? biasVectors.ValuePointer : IntPtr.Zero;
 
-        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, string label, IMTLDevice device)
+        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, float biasInit, string label, IMTLDevice device)
         {
             this.device = device;
 
@@ -53,6 +54,7 @@ namespace MetalTensors.Layers
             descriptor.StrideInPixelsX = (nuint)strideX;
             descriptor.StrideInPixelsY = (nuint)strideY;
             this.bias = bias;
+            this.biasInit = biasInit;
             this.label = string.IsNullOrEmpty (label) ? Guid.NewGuid ().ToString () : label;
 
             var lenWeights = inChannels * kernelSizeX * kernelSizeY * outChannels;
@@ -62,14 +64,14 @@ namespace MetalTensors.Layers
 
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
-                biasVectors = new OptimizableVector (device, vDescBiases, 0.1f);
+                biasVectors = new OptimizableVector (device, vDescBiases, biasInit);
             }
             else {
                 biasVectors = null;
             }
 
-            using var queue = device.CreateCommandQueue ();
-            RandomizeWeights ((nuint)DateTime.Now.Ticks, queue);
+            RandomizeUniformWeights ((nuint)DateTime.Now.Ticks, -0.2f, 0.2f);
+            //RandomizeGaussianWeights ((nuint)DateTime.Now.Ticks, 0, 0.02f);
 
             convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, biasVectors?.Value.Data);
             momentumVectors = biasVectors != null ?
@@ -143,16 +145,38 @@ namespace MetalTensors.Layers
             return r;
         }
 
-        public void RandomizeWeights (nuint seed, IMTLCommandQueue queue)
-        {
-            var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateUniform (-0.2f, 0.2f);
-            var randomKernel = new MPSMatrixRandomMTGP32 (device, MPSDataType.Float32, seed, randomDesc);
+        //void RandomizeGaussianWeights (nuint seed, float mean, float standardDeviation)
+        //{
+        //    var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateDefault ();
+        //    randomDesc.Mean = mean;
+        //    randomDesc.StandardDeviation = standardDeviation;
+        //    RadomizeWeights (seed, randomDesc);
+        //}
 
-            // Run on its own buffer so as not to bother others
+        void RandomizeUniformWeights (nuint seed, float min, float max)
+        {
+            // max = 0.2
+            var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateUniform (min, max);
+            RadomizeWeights (seed, randomDesc);
+        }
+
+        void RadomizeWeights (nuint seed, MPSMatrixRandomDistributionDescriptor randomDesc)
+        {
+            using var queue = device.CreateCommandQueue ();
+
+            var randomKernel = new MPSMatrixRandomMTGP32 (device, MPSDataType.Float32, seed, randomDesc);
+            //var randomKernel = new MPSMatrixRandomPhilox (device, MPSDataType.Float32, seed, randomDesc);
+
             using var commandBuffer = MPSCommandBuffer.Create (queue);
             randomKernel.EncodeToCommandBuffer (commandBuffer, weightVectors.Value);
             commandBuffer.Commit ();
             commandBuffer.WaitUntilCompleted ();
+
+            weightVectors.Momentum.Zero ();
+            weightVectors.Velocity.Zero ();
+            biasVectors?.Value.Fill (biasInit);
+            biasVectors?.Momentum.Zero ();
+            biasVectors?.Velocity.Zero ();
 
             SetVectorsModified ();
         }
@@ -237,6 +261,13 @@ namespace MetalTensors.Layers
         public bool WeightsAreValid ()
         {
             return Value.IsValid () && Momentum.IsValid () && Velocity.IsValid ();
+        }
+
+        public void Zero ()
+        {
+            Value.Zero ();
+            Velocity.Zero ();
+            Momentum.Zero ();
         }
 
 #if PB_SERIALIZATION
