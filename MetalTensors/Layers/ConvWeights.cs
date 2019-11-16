@@ -38,7 +38,7 @@ namespace MetalTensors.Layers
 
         public override IntPtr BiasTerms => biasVectors != null ? biasVectors.ValuePointer : IntPtr.Zero;
 
-        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, float biasInit, string label, IMTLDevice device)
+        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit, string label, IMTLDevice device)
         {
             this.device = device;
 
@@ -70,7 +70,7 @@ namespace MetalTensors.Layers
                 biasVectors = null;
             }
 
-            RandomizeUniformWeights ((nuint)DateTime.Now.Ticks, -0.2f, 0.2f);
+            RandomizeWeights ((nuint)DateTime.Now.Ticks, weightsInit);
             //RandomizeGaussianWeights ((nuint)DateTime.Now.Ticks, 0, 0.02f);
 
             convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, biasVectors?.Value.Data);
@@ -145,32 +145,12 @@ namespace MetalTensors.Layers
             return r;
         }
 
-        //void RandomizeGaussianWeights (nuint seed, float mean, float standardDeviation)
-        //{
-        //    var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateDefault ();
-        //    randomDesc.Mean = mean;
-        //    randomDesc.StandardDeviation = standardDeviation;
-        //    RadomizeWeights (seed, randomDesc);
-        //}
-
-        void RandomizeUniformWeights (nuint seed, float min, float max)
+        void RandomizeWeights (nuint seed, WeightsInit weightsInit)
         {
-            // max = 0.2
-            var randomDesc = MPSMatrixRandomDistributionDescriptor.CreateUniform (min, max);
-            RadomizeWeights (seed, randomDesc);
-        }
+            var length = weightVectors.Value.Length;
+            var a = weightsInit.GetWeights ((int)seed, (int)length);
 
-        void RadomizeWeights (nuint seed, MPSMatrixRandomDistributionDescriptor randomDesc)
-        {
-            using var queue = device.CreateCommandQueue ();
-
-            var randomKernel = new MPSMatrixRandomMTGP32 (device, MPSDataType.Float32, seed, randomDesc);
-            //var randomKernel = new MPSMatrixRandomPhilox (device, MPSDataType.Float32, seed, randomDesc);
-
-            using var commandBuffer = MPSCommandBuffer.Create (queue);
-            randomKernel.EncodeToCommandBuffer (commandBuffer, weightVectors.Value);
-            commandBuffer.Commit ();
-            commandBuffer.WaitUntilCompleted ();
+            weightVectors.Value.SetElements (a);
 
             weightVectors.Momentum.Zero ();
             weightVectors.Velocity.Zero ();
@@ -222,12 +202,6 @@ namespace MetalTensors.Layers
             SetVectorsModified ();
         }
 #endif
-    }
-
-    public enum ConvPadding
-    {
-        Same,
-        Valid
     }
 
     class OptimizableVector

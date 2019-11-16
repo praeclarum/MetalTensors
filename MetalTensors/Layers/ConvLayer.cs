@@ -4,8 +4,8 @@ namespace MetalTensors.Layers
 {
     public class ConvLayer : ConvWeightsLayer
     {
-        public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias, float biasInit, ConvPadding padding)
-            : base (featureChannels, sizeX, sizeY, strideX, strideY, bias, biasInit, padding)
+        public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
+            : base (featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
         {
         }
 

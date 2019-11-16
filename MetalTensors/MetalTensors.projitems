@@ -45,5 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)LossType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\DropoutLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\SoftMaxLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WeightsInit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConvPadding.cs" />
   </ItemGroup>
 </Project>

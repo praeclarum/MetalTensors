@@ -249,11 +249,12 @@ namespace MetalTensors
         {
             var (height, width) = (28, 28);
             var image = Tensor.InputImage ("image", height, width, 1);
+            var weights = WeightsInit.Uniform (-0.2f, 0.2f);
             var output =
                 image
-                .Conv (32, size: 5).ReLU (a: 0).MaxPool ()
-                .Conv (64, size: 5).ReLU (a: 0).MaxPool ()
-                .Dense (1024, size: 7).ReLU (a: 0)
+                .Conv (32, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
+                .Conv (64, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
+                .Dense (1024, size: 7, weightsInit: weights).ReLU (a: 0)
                 .Dropout (0.5f)
                 .Dense (10).SoftMax ();
             var model = output.Model ("mnist");

@@ -15,10 +15,11 @@ namespace MetalTensors.Layers
         public int StrideX { get; }
         public int StrideY { get; }
         public bool Bias { get; }
+        public WeightsInit WeightsInit { get; }
         public float BiasInit { get; }
         public ConvPadding Padding { get; }
 
-        public ConvWeightsLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, bool bias, float biasInit, ConvPadding padding)
+        public ConvWeightsLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
         {
             if (featureChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (featureChannels), "Number of feature channels must be > 0");
@@ -28,9 +29,10 @@ namespace MetalTensors.Layers
             SizeY = sizeY;
             StrideX = strideX;
             StrideY = strideY;
-            Bias = bias;
-            BiasInit = biasInit;
             Padding = padding;
+            Bias = bias;
+            WeightsInit = weightsInit;
+            BiasInit = biasInit;
         }
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
@@ -59,7 +61,7 @@ namespace MetalTensors.Layers
             if (deviceWeights.TryGetValue (key, out var w))
                 return w;
 
-            w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, Bias, BiasInit, Label, device);
+            w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, Bias, WeightsInit, BiasInit, Label, device);
 
             if (deviceWeights.TryAdd (key, w))
                 return w;
