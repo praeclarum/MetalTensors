@@ -15,7 +15,16 @@ namespace MetalTensors.Layers
         {
             var inputShape = inputs[0].Shape;
             var outputShape = new int[inputShape.Length];
-            Array.Copy (inputShape, outputShape, inputShape.Length);
+            for (var i = 0; i < inputShape.Length; i++) {
+                var s = inputShape[i];
+                if (i == 0) {
+                    s /= SizeY;
+                }
+                else if (i == 1) {
+                    s /= SizeX;
+                }
+                outputShape[i] = s;
+            }
             outputShape[^1] = FeatureChannels;
             return outputShape;
         }

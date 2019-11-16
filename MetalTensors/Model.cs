@@ -255,7 +255,7 @@ namespace MetalTensors
                 .Conv (64, size: 5).ReLU (a: 0).MaxPool ()
                 .Dense (1024, size: 7).ReLU (a: 0)
                 .Dropout (0.5f)
-                .Dense (10);
+                .Dense (10).SoftMax ();
             var model = output.Model ("mnist");
 
             return model;

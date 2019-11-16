@@ -44,5 +44,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)TensorHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LossType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\DropoutLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\SoftMaxLayer.cs" />
   </ItemGroup>
 </Project>

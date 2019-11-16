@@ -227,6 +227,11 @@ namespace MetalTensors
             return new ReLULayer (a).GetOutput (this);
         }
 
+        public Tensor SoftMax ()
+        {
+            return new SoftMaxLayer ().GetOutput (this);
+        }
+
         public Tensor Tanh ()
         {
             return new TanhLayer ().GetOutput (this);
