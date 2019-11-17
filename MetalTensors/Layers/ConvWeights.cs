@@ -192,20 +192,20 @@ namespace MetalTensors.Layers
             return convWtsAndBias;
         }
 
-        public Dictionary<string, float[]> GetWeights ()
-        {
-            var r = new Dictionary<string, float[]> {
-                [label + ".Weights.Value"] = weightVectors.Value.ToArray (),
-                //[label + ".Weights.Momentum"] = weightVectors.Momentum.ToArray(),
-                //[label + ".Weights.Velocity"] = weightVectors.Velocity.ToArray(),
-            };
-            if (biasVectors != null) {
-                r[label + ".Biases.Value"] = biasVectors.Value.ToArray ();
-                //[label + ".Biases.Momentum"] = biasVectors.Momentum.ToArray(),
-                //[label + ".Biases.Velocity"] = biasVectors.Velocity.ToArray(),
-            }
-            return r;
-        }
+        //public Dictionary<string, float[]> GetWeights ()
+        //{
+        //    var r = new Dictionary<string, float[]> {
+        //        [label + ".Weights.Value"] = weightVectors.Value.ToArray (),
+        //        //[label + ".Weights.Momentum"] = weightVectors.Momentum.ToArray(),
+        //        //[label + ".Weights.Velocity"] = weightVectors.Velocity.ToArray(),
+        //    };
+        //    if (biasVectors != null) {
+        //        r[label + ".Biases.Value"] = biasVectors.Value.ToArray ();
+        //        //[label + ".Biases.Momentum"] = biasVectors.Momentum.ToArray(),
+        //        //[label + ".Biases.Velocity"] = biasVectors.Velocity.ToArray(),
+        //    }
+        //    return r;
+        //}
 
         void RandomizeWeights (nuint seed, WeightsInit weightsInit)
         {
@@ -225,7 +225,7 @@ namespace MetalTensors.Layers
 
         public bool WeightsAreValid ()
         {
-            return weightVectors.WeightsAreValid () && (biasVectors != null ? biasVectors.WeightsAreValid () : true);
+            return weightVectors.IsValid () && (biasVectors != null ? biasVectors.IsValid () : true);
         }
 
         void SetVectorsModified ()
@@ -308,12 +308,12 @@ namespace MetalTensors.Layers
 
         public void DidModify ()
         {
-            Value.Data.DidModify (new NSRange (0, VectorByteSize));
-            Momentum.Data.DidModify (new NSRange (0, VectorByteSize));
-            Velocity.Data.DidModify (new NSRange (0, VectorByteSize));
+            Value.DidModify ();
+            Momentum.DidModify ();
+            Velocity.DidModify ();
         }
 
-        public bool WeightsAreValid ()
+        public bool IsValid ()
         {
             return Value.IsValid () && Momentum.IsValid () && Velocity.IsValid ();
         }

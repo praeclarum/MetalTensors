@@ -96,6 +96,24 @@ namespace MetalTensors
             return v;
         }
 
+        public static MPSVector Vector (IMTLDevice device, MPSVectorDescriptor descriptor, Tensor initialValue)
+        {
+            if (descriptor.Length <= 0)
+                throw new ArgumentOutOfRangeException (nameof (descriptor), "Vector lengths must be > 0");
+
+            var v = new MPSVector (device, descriptor);
+            if (v.Data == null)
+                throw new Exception ($"Failed to create vector with length {descriptor.Length}");
+            initialValue.Copy (v.ToSpan ());
+            return v;
+        }
+
+        public static void DidModify (this MPSVector vector)
+        {
+            var data = vector.Data;
+            data.DidModify (new NSRange (0, (nint)data.Length));
+        }
+
         public static unsafe Span<float> ToSpan (this MPSVector vector)
         {
             var vspan = new Span<float> ((float*)vector.Data.Contents, (int)vector.Length);

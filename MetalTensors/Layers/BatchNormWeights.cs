@@ -52,28 +52,35 @@ namespace MetalTensors.Layers
 
     class BatchNormDataSource : MPSCnnBatchNormalizationDataSource
     {
+        const float bnRunningUpdateMomentum = 0.9f;
+
         readonly BatchNormWeights batchNormWeights;
         readonly IMTLDevice device;
 
-        MPSNNOptimizerAdam? updater;
-
-        //readonly NSArray<MPSVector> momentumVectors;
-        //readonly NSArray<MPSVector> velocityVectors;
+        readonly MPSVectorDescriptor vectorDescriptor;
 
         readonly OptimizableVector betaVector;
         readonly OptimizableVector gammaVector;
         readonly MPSCnnNormalizationGammaAndBetaState gammaAndBeta;
-        readonly OptimizableVector meanVector;
-        readonly OptimizableVector varianceVector;
-        readonly MPSCnnNormalizationMeanAndVarianceState meanAndVariance;        
+
+        readonly MPSVector meanVector;
+        readonly MPSVector varianceVector;
+        readonly MPSCnnNormalizationMeanAndVarianceState meanAndVariance;
+
+        MPSNNOptimizerAdam? updater;
+        readonly MPSNNOptimizerStochasticGradientDescent meanUpdater;
+        readonly MPSNNOptimizerStochasticGradientDescent varianceUpdater;
+
+        readonly NSArray<MPSVector> momentumVectors;
+        readonly NSArray<MPSVector> velocityVectors;
 
         public override string Label => batchNormWeights.Label;
 
         public override IntPtr Beta => betaVector.ValuePointer;
         public override IntPtr Gamma => gammaVector.ValuePointer;
 
-        public override IntPtr Mean => meanVector.ValuePointer;
-        public override IntPtr Variance => varianceVector.ValuePointer;
+        public override IntPtr Mean => meanVector.Data.Contents;
+        public override IntPtr Variance => varianceVector.Data.Contents;
 
         public override nuint NumberOfFeatureChannels => (nuint)batchNormWeights.FeatureChannels;
 
@@ -84,28 +91,52 @@ namespace MetalTensors.Layers
             this.batchNormWeights = batchNormWeights;
             this.device = device;
 
-            var lenWeights = batchNormWeights.FeatureChannels;
+            vectorDescriptor = VectorDescriptor (batchNormWeights.FeatureChannels);
 
-            var vDescWeights = VectorDescriptor (lenWeights);
-
-            betaVector = new OptimizableVector (device, vDescWeights, batchNormWeights.Beta);
-            gammaVector = new OptimizableVector (device, vDescWeights, batchNormWeights.Gamma);
-            meanVector = new OptimizableVector (device, vDescWeights, batchNormWeights.MovingMean);
-            varianceVector = new OptimizableVector (device, vDescWeights, batchNormWeights.MovingVariance);
+            betaVector = new OptimizableVector (device, vectorDescriptor, batchNormWeights.Beta);
+            gammaVector = new OptimizableVector (device, vectorDescriptor, batchNormWeights.Gamma);
+            meanVector = Vector (device, vectorDescriptor, batchNormWeights.MovingMean);
+            varianceVector = Vector (device, vectorDescriptor, batchNormWeights.MovingVariance);
 
             SetVectorsModified ();
 
             gammaAndBeta = new MPSCnnNormalizationGammaAndBetaState (gammaVector.Value.Data, betaVector.Value.Data);
-            meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Value.Data, varianceVector.Value.Data);
+            meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Data, varianceVector.Data);
 
-            //momentumVectors = biasVectors != null ?
-            //    NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, biasVectors.Momentum) :
-            //    NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum);
-            //velocityVectors = biasVectors != null ?
-            //    NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity) :
-            //    NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
+            momentumVectors = NSArray<MPSVector>.FromNSObjects (gammaVector.Momentum, betaVector.Momentum);
+            velocityVectors = NSArray<MPSVector>.FromNSObjects (gammaVector.Velocity, betaVector.Velocity);
 
             SetOptimizationOptions (true, learningRate: Model.DefaultLearningRate);
+
+            /*
+              A note on how the batch norm update works.
+              What we want is to perform:
+                  value(t+1) = mu * value(t) + (1 - mu) * statistic(t)
+              Value is the batch norm statistics (global mean or variance), mu is the
+              momentum of the update, and statistic is either the mean or variance of the
+              current batch.
+              We use an SGD optimizer without moment and L2 weight decay, which performs:
+                  value(t+1) = value(t) - learningRate * (gradient(t) + value(t) * regularizationScale)
+              Solving this gives:
+                  learningRate = -(1 - mu)
+                  regularizationScale = -1
+                  gradient(t) = statistic(t)
+            */
+            var bnRunningOptDesc = new MPSNNOptimizerDescriptor (
+                learningRate: -(1 - bnRunningUpdateMomentum),
+                gradientRescale: 1.0f,
+                regularizationType: MPSNNRegularizationType.L2,
+                regularizationScale: -1.0f);
+            meanUpdater = new MPSNNOptimizerStochasticGradientDescent (
+                device: device,
+                momentumScale: 0.0f,
+                useNestrovMomentum: false,
+                optimizerDescriptor: bnRunningOptDesc);
+            varianceUpdater = new MPSNNOptimizerStochasticGradientDescent (
+                device: device,
+                momentumScale: 0.0f,
+                useNestrovMomentum: false,
+                optimizerDescriptor: bnRunningOptDesc);
         }
 
         public void SetOptimizationOptions (bool trainable, float learningRate)
@@ -126,14 +157,14 @@ namespace MetalTensors.Layers
         [DebuggerHidden]
         public override bool Load {
             get {
-                //Console.WriteLine ($"Load Conv2dDataSource {this.Label}");
+                //Console.WriteLine ($"Load BatchNormDataSource {this.Label}");
                 return true;
             }
         }
 
         public override void Purge ()
         {
-            //Console.WriteLine ($"Purge Conv2dDataSource {this.Label}");
+            //Console.WriteLine ($"Purge BatchNormDataSource {this.Label}");
         }
 
         public override MPSCnnNormalizationGammaAndBetaState UpdateGammaAndBeta (IMTLCommandBuffer commandBuffer, MPSCnnBatchNormalizationState batchNormalizationState)
@@ -141,35 +172,36 @@ namespace MetalTensors.Layers
             var u = updater;
 
             if (u != null) {
-                //u.Encode (commandBuffer, batchNormalizationState, momentumVectors, velocityVectors, gammaAndBeta);
+                //
+                // Update mean and variance
+                //
+                using var meanState = new MPSVector (batchNormalizationState.Mean, vectorDescriptor);
+                using var varianceState = new MPSVector (batchNormalizationState.Variance, vectorDescriptor);
+                meanUpdater.Encode (commandBuffer, inputGradientVector: meanState, inputValuesVector: meanVector, null, meanVector);
+                varianceUpdater.Encode (commandBuffer, inputGradientVector: varianceState, inputValuesVector: varianceVector, null, varianceVector);
+
+                //
+                // Update gamma and beta
+                // This update must come last, since the MPS API we use will decrement read counts.
+                //
+                u.Encode (commandBuffer, batchNormalizationState, momentumVectors, velocityVectors, gammaAndBeta);
             }
 
             return gammaAndBeta;
         }
 
-        public override MPSCnnNormalizationMeanAndVarianceState UpdateMeanAndVariance (IMTLCommandBuffer commandBuffer, MPSCnnBatchNormalizationState batchNormalizationState)
-        {
-            var u = updater;
-
-            if (u != null) {
-                //u.Encode (commandBuffer, batchNormalizationState, momentumVectors, velocityVectors, meanAndVariance);
-            }
-
-            return meanAndVariance;
-        }
-
-        public Dictionary<string, float[]> GetWeights ()
-        {
-            var r = new Dictionary<string, float[]> ();
-            return r;
-        }
+        //public Dictionary<string, float[]> GetWeights ()
+        //{
+        //    var r = new Dictionary<string, float[]> ();
+        //    return r;
+        //}
 
         public bool WeightsAreValid ()
         {
-            return betaVector.WeightsAreValid () &&
-                gammaVector.WeightsAreValid () &&
-                meanVector.WeightsAreValid () &&
-                varianceVector.WeightsAreValid ();
+            return betaVector.IsValid () &&
+                gammaVector.IsValid () &&
+                meanVector.IsValid () &&
+                varianceVector.IsValid ();
         }
 
         void SetVectorsModified ()
