@@ -32,10 +32,10 @@ namespace MetalTensors.Layers
         public override string Label => label;
 
         public override IntPtr Beta => betaVector.ValuePointer;
-        public override IntPtr Gamma => betaVector.ValuePointer;
+        public override IntPtr Gamma => gammaVector.ValuePointer;
 
-        public override IntPtr Mean => betaVector.ValuePointer;
-        public override IntPtr Variance => betaVector.ValuePointer;
+        public override IntPtr Mean => meanVector.ValuePointer;
+        public override IntPtr Variance => varianceVector.ValuePointer;
 
         public override nuint NumberOfFeatureChannels => (nuint)channels;
 
