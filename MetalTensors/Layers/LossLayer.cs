@@ -20,6 +20,19 @@ namespace MetalTensors.Layers
             ReductionType = reductionType;
         }
 
+        public override void ValidateInputShapes (params Tensor[] inputs)
+        {
+            base.ValidateInputShapes (inputs);
+            if (inputs.Length != 2) {
+                throw new ArgumentException ("Loss requires two inputs: data and labels", nameof (inputs));
+            }
+            var inputShape = inputs[0].Shape;
+            var labelsShape = inputs[1].Shape;
+            if (!inputShape.ShapeEquals (labelsShape)) {
+                throw new ArgumentException ("Labels shape must match the data shape", nameof (inputs));
+            }
+        }
+
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
             return inputs[0].Shape;

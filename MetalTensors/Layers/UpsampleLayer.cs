@@ -21,6 +21,15 @@ namespace MetalTensors.Layers
             ScaleY = scaleY;
         }
 
+        public override void ValidateInputShapes (params Tensor[] inputs)
+        {
+            base.ValidateInputShapes (inputs);
+
+            var inputShape = inputs[0].Shape;
+            if (inputShape.Length < 3)
+                throw new ArgumentException ($"Upsample inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
+        }
+
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
             var inShape = inputs[0].Shape;

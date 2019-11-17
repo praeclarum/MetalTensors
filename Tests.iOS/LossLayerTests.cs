@@ -44,7 +44,7 @@ namespace Tests
         {
             var output = Tensor.Zeros (2, 2, 1);
             var label = Tensor.Zeros (1, 1, 1);
-            Assert.Throws<ArgumentOutOfRangeException> (() => output.Loss (label, LossType.MeanSquaredError));
+            Assert.Throws<ArgumentException> (() => output.Loss (label, LossType.MeanSquaredError));
         }
     }
 }

@@ -269,9 +269,6 @@ namespace MetalTensors
 
         public Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
         {
-            if (!Shape.ShapeEquals (labels.Shape)) {
-                throw new ArgumentOutOfRangeException (nameof (labels), "Labels shape must match the shape of this tensor");
-            }
             var layer = new LossLayer (DefaultLossLabel, lossType, reductionType);
             return weights != null ?
                 layer.GetOutput (this, labels, weights) :

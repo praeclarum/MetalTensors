@@ -1,4 +1,5 @@
-﻿using MetalPerformanceShaders;
+﻿using System;
+using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
@@ -12,6 +13,15 @@ namespace MetalTensors.Layers
         public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
             : base (featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
         {
+        }
+
+        public override void ValidateInputShapes (params Tensor[] inputs)
+        {
+            base.ValidateInputShapes (inputs);
+
+            var inputShape = inputs[0].Shape;
+            if (inputShape.Length < 3)
+                throw new ArgumentException ($"Conv inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
         }
 
         public override int[] GetOutputShape (params Tensor[] inputs)

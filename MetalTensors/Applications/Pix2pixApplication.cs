@@ -4,22 +4,22 @@ namespace MetalTensors.Applications
 {
     public class Pix2pixApplication : GanApplication
     {
-        public Pix2pixApplication (int height = 256, int width = 256, int featureChannels = 3, int outputFeatureChannels = 3)
-            : base (MakeGenerator (height, width, featureChannels, outputFeatureChannels),
-                    MakeDiscriminator (height, width, outputFeatureChannels))
+        public Pix2pixApplication (int height = 256, int width = 256)
+            : base (MakeGenerator (height, width),
+                    MakeDiscriminator (height, width))
         {
         }
 
-        private static Model MakeGenerator (int height, int width, int featureChannels, int outputFeatureChannels)
+        private static Model MakeGenerator (int height, int width)
         {
-            var x = Tensor.InputImage ("image", height, width, featureChannels);
+            var x = Tensor.InputImage ("image", height, width);
 
             return x.Model ();
         }
 
-        private static Model MakeDiscriminator (int height, int width, int outputFeatureChannels)
+        private static Model MakeDiscriminator (int height, int width)
         {
-            var x = Tensor.InputImage ("image", height, width, outputFeatureChannels);
+            var x = Tensor.InputImage ("image", height, width);
 
             x = CFirstD (64, x);
             x = C (128, x);

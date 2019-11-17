@@ -31,6 +31,11 @@ namespace MetalTensors
 
         public override string ToString () => Label;
 
+        public virtual void ValidateInputShapes (params Tensor[] inputs)
+        {
+            // All input shapes are OK
+        }
+
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
         public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, bool training, IMTLDevice device)

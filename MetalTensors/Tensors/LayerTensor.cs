@@ -14,11 +14,12 @@ namespace MetalTensors.Tensors
 
         public override Tensor[] Inputs => LayerInputs;
 
-        public LayerTensor (Layer layer, params Tensor[] layerInputs)
+        public LayerTensor (Layer layer, Tensor[] inputs)
             : base (layer.Label)
         {
             Layer = layer;
-            LayerInputs = layerInputs;
+            LayerInputs = inputs;
+            Layer.ValidateInputShapes (inputs);
         }
 
         public override void Copy (Span<float> destination)

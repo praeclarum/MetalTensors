@@ -35,6 +35,15 @@ namespace MetalTensors.Layers
             Padding = ConvPadding.Same;
         }
 
+        public override void ValidateInputShapes (params Tensor[] inputs)
+        {
+            base.ValidateInputShapes (inputs);
+
+            var inputShape = inputs[0].Shape;
+            if (inputShape.Length < 3)
+                throw new ArgumentException ($"Pooling inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
+        }
+
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
             // https://github.com/keras-team/keras/blob/afff7b4326f380a54c73400d1e2ae03890162bdf/keras/layers/pooling.py#L180
