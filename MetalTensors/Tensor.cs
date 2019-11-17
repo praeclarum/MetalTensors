@@ -212,10 +212,10 @@ namespace MetalTensors
             return new AvgPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
         }
 
-        public Tensor BatchNorm ()
+        public Tensor BatchNorm (float epsilon = BatchNormLayer.DefaultEpsilon)
         {
             var inChannels = Shape[^1];
-            return new BatchNormLayer (inChannels).GetOutput (this);
+            return new BatchNormLayer (inChannels, epsilon).GetOutput (this);
         }
 
         public Tensor Concat (params Tensor[] others)

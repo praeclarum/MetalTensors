@@ -17,13 +17,14 @@ namespace MetalTensors.Layers
         public Tensor Gamma { get; }
         public Tensor MovingMean { get; }
         public Tensor MovingVariance { get; }
+        public float Epsilon { get; }
         public string Label { get; }
         public int FeatureChannels { get; }
 
         readonly ConcurrentDictionary<IntPtr, BatchNormDataSource> deviceWeights =
             new ConcurrentDictionary<IntPtr, BatchNormDataSource> ();
 
-        public BatchNormWeights (string label, int channels)
+        public BatchNormWeights (string label, int channels, float epsilon)
         {
             if (channels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (channels), "Number of batch normalization channels must be > 0");
@@ -34,6 +35,7 @@ namespace MetalTensors.Layers
             Gamma = Tensor.Ones (FeatureChannels);
             MovingMean = Tensor.Zeros (FeatureChannels);
             MovingVariance = Tensor.Ones (FeatureChannels);
+            Epsilon = epsilon;
         }
 
         public MPSCnnBatchNormalizationDataSource GetDataSource (IMTLDevice device)
@@ -83,6 +85,8 @@ namespace MetalTensors.Layers
         public override IntPtr Variance => varianceVector.Data.Contents;
 
         public override nuint NumberOfFeatureChannels => (nuint)batchNormWeights.FeatureChannels;
+
+        public override float Epsilon => batchNormWeights.Epsilon;
 
         public BatchNormDataSource (BatchNormWeights batchNormWeights, IMTLDevice device)
         {
