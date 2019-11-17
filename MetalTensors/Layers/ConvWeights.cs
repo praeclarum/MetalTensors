@@ -232,6 +232,13 @@ namespace MetalTensors.Layers
             Velocity.Synchronize (commandBuffer);
         }
 
+        public void DidModify ()
+        {
+            Value.Data.DidModify (new NSRange (0, VectorByteSize));
+            Momentum.Data.DidModify (new NSRange (0, VectorByteSize));
+            Velocity.Data.DidModify (new NSRange (0, VectorByteSize));
+        }
+
         public bool WeightsAreValid ()
         {
             return Value.IsValid () && Momentum.IsValid () && Velocity.IsValid ();

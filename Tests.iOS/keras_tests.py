@@ -33,6 +33,21 @@ def conv_def_weights():
         print("CONV WEIGHTS {} SHAPED {}".format(i, w.shape))
         print(np.reshape(w, -1))
 
+def conv_def_weights():
+    w, h = 67, 29
+    x = layers.BatchNormalization(11, 5, input_shape=(h, w, 3), padding="same")
+    m = Sequential([
+        x,
+        layers.ReLU(),
+    ])
+    m.summary()
+    weights = x.get_weights()
+    for i, w in enumerate(weights):
+        print("CONV WEIGHTS {} SHAPED {}".format(i, w.shape))
+        print(np.reshape(w, -1))
+
+batch_norm_def_weights()
+
 conv_def_weights()
 
 test_mnist()
