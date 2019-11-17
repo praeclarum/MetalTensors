@@ -18,7 +18,7 @@ namespace MetalTensors
         readonly MPSNNGraph trainingGraph;
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
-        readonly (ConvWeights Weights, bool Trainable)[] convWeights;
+        readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
 
         public TrainingGraph (Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device)
         {
@@ -32,7 +32,7 @@ namespace MetalTensors
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
-            var convWeightsL = new List<(ConvWeights, bool)> ();
+            var convWeightsL = new List<(ConvDataSource, bool)> ();
             var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
                 //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
                 gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
@@ -40,7 +40,7 @@ namespace MetalTensors
                     lossNodesIndex[ln.Handle] = ln;
                 }
                 else if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
-                         lh.Layer.GetMetalConvDataSource (device) is ConvWeights cw) {
+                         lh.Layer.GetMetalConvDataSource (device) is ConvDataSource cw) {
                     convWeightsL.Add ((cw, trainable[lh.Layer]));
                     //Console.WriteLine (lh);
                 }                

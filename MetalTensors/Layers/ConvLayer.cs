@@ -10,8 +10,8 @@ namespace MetalTensors.Layers
         static readonly MPSNNDefaultPadding validPadding = MPSNNDefaultPadding.Create (
             MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeValidOnly);
 
-        public ConvLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
-            : base (featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
+        public ConvLayer (int inFeaureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
+            : base (inFeaureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
         {
         }
 
@@ -19,9 +19,13 @@ namespace MetalTensors.Layers
         {
             base.ValidateInputShapes (inputs);
 
-            var inputShape = inputs[0].Shape;
-            if (inputShape.Length < 3)
-                throw new ArgumentException ($"Conv inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
+            foreach (var i in inputs) {
+                var inputShape = i.Shape;
+                if (inputShape.Length != 3)
+                    throw new ArgumentException ($"Conv inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
+                if (inputShape[^1] != InFeatureChannels)
+                    throw new ArgumentException ($"Expected input with {InFeatureChannels} channels, but got {inputShape[^1]}", nameof (inputs));
+            }
         }
 
         public override int[] GetOutputShape (params Tensor[] inputs)
@@ -35,7 +39,7 @@ namespace MetalTensors.Layers
             var kw = ConvOutputLength (w, SizeX, StrideX, Padding, 1);
             //var sh = kh / StrideY;
             //var sw = kw / StrideX;
-            return new[] { kh, kw, FeatureChannels };
+            return new[] { kh, kw, OutFeatureChannels };
         }
 
         protected override MPSNNFilterNode CreateConvWeightsNode (MPSNNImageNode imageNode, MPSCnnConvolutionDataSource convDataSource)

@@ -214,7 +214,8 @@ namespace MetalTensors
 
         public Tensor BatchNorm ()
         {
-            return new BatchNormLayer ().GetOutput (this);
+            var inChannels = Shape[^1];
+            return new BatchNormLayer (inChannels).GetOutput (this);
         }
 
         public Tensor Concat (params Tensor[] others)
@@ -224,17 +225,20 @@ namespace MetalTensors
 
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
-            return new ConvLayer (featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            var inChannels = Shape[^1];
+            return new ConvLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
         }
 
         public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
-            return new ConvLayer (featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            var inChannels = Shape[^1];
+            return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
         }
 
         public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
-            return new DenseLayer (featureChannels, size, size, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            var inChannels = Shape[^1];
+            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
         }
 
         public Tensor Dropout (float keepProbability)

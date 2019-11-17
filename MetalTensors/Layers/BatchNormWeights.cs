@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,12 +11,49 @@ using static MetalTensors.MetalExtensions;
 
 namespace MetalTensors.Layers
 {
-    class BatchNormWeights : MPSCnnBatchNormalizationDataSource
+    public class BatchNormWeights
     {
-        readonly IMTLDevice device;
+        public Tensor Beta { get; }
+        public Tensor Gamma { get; }
+        public Tensor MovingMean { get; }
+        public Tensor MovingVariance { get; }
+        public string Label { get; }
+        public int FeatureChannels { get; }
 
-        readonly string label;
-        private readonly int channels;
+        readonly ConcurrentDictionary<IntPtr, BatchNormDataSource> deviceWeights =
+            new ConcurrentDictionary<IntPtr, BatchNormDataSource> ();
+
+        public BatchNormWeights (string label, int channels)
+        {
+            if (channels <= 0)
+                throw new ArgumentOutOfRangeException (nameof (channels), "Number of batch normalization channels must be > 0");
+
+            Label = label;
+            FeatureChannels = channels;
+            Beta = Tensor.Zeros (FeatureChannels);
+            Gamma = Tensor.Ones (FeatureChannels);
+            MovingMean = Tensor.Zeros (FeatureChannels);
+            MovingVariance = Tensor.Ones (FeatureChannels);
+        }
+
+        public MPSCnnBatchNormalizationDataSource GetDataSource (IMTLDevice device)
+        {
+            var key = device.Handle;
+            if (deviceWeights.TryGetValue (key, out var w))
+                return w;
+
+            w = new BatchNormDataSource (this, device);
+
+            if (deviceWeights.TryAdd (key, w))
+                return w;
+            return deviceWeights[key];
+        }
+    }
+
+    class BatchNormDataSource : MPSCnnBatchNormalizationDataSource
+    {
+        readonly BatchNormWeights batchNormWeights;
+        readonly IMTLDevice device;
 
         MPSNNOptimizerAdam? updater;
 
@@ -27,9 +65,9 @@ namespace MetalTensors.Layers
         readonly MPSCnnNormalizationGammaAndBetaState gammaAndBeta;
         readonly OptimizableVector meanVector;
         readonly OptimizableVector varianceVector;
-        readonly MPSCnnNormalizationMeanAndVarianceState meanAndVariance;
+        readonly MPSCnnNormalizationMeanAndVarianceState meanAndVariance;        
 
-        public override string Label => label;
+        public override string Label => batchNormWeights.Label;
 
         public override IntPtr Beta => betaVector.ValuePointer;
         public override IntPtr Gamma => gammaVector.ValuePointer;
@@ -37,28 +75,23 @@ namespace MetalTensors.Layers
         public override IntPtr Mean => meanVector.ValuePointer;
         public override IntPtr Variance => varianceVector.ValuePointer;
 
-        public override nuint NumberOfFeatureChannels => (nuint)channels;
+        public override nuint NumberOfFeatureChannels => (nuint)batchNormWeights.FeatureChannels;
 
-        public BatchNormWeights (int channels, string label, IMTLDevice device)
+        public BatchNormDataSource (BatchNormWeights batchNormWeights, IMTLDevice device)
         {
             // https://github.com/apple/turicreate/blob/d332b2a856b0eadb97f6475a5728a624afe27e02/src/ml/neural_net/mps_weight.mm#L449
 
+            this.batchNormWeights = batchNormWeights;
             this.device = device;
-            this.channels = channels;
 
-            if (channels <= 0)
-                throw new ArgumentOutOfRangeException (nameof (channels), "Number of batch normalization channels must be > 0");
-
-            this.label = string.IsNullOrEmpty (label) ? Guid.NewGuid ().ToString () : label;
-
-            var lenWeights = channels;
+            var lenWeights = batchNormWeights.FeatureChannels;
 
             var vDescWeights = VectorDescriptor (lenWeights);
 
-            betaVector = new OptimizableVector (device, vDescWeights, 0.0f);
-            gammaVector = new OptimizableVector (device, vDescWeights, 1.0f);
-            meanVector = new OptimizableVector (device, vDescWeights, 0.0f);
-            varianceVector = new OptimizableVector (device, vDescWeights, 1.0f);
+            betaVector = new OptimizableVector (device, vDescWeights, batchNormWeights.Beta);
+            gammaVector = new OptimizableVector (device, vDescWeights, batchNormWeights.Gamma);
+            meanVector = new OptimizableVector (device, vDescWeights, batchNormWeights.MovingMean);
+            varianceVector = new OptimizableVector (device, vDescWeights, batchNormWeights.MovingVariance);
 
             SetVectorsModified ();
 

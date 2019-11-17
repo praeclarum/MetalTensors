@@ -9,64 +9,36 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 1;
 
-        public int FeatureChannels { get; }
-        public int SizeX { get; }
-        public int SizeY { get; }
-        public int StrideX { get; }
-        public int StrideY { get; }
-        public bool Bias { get; }
-        public WeightsInit WeightsInit { get; }
-        public float BiasInit { get; }
+        public int InFeatureChannels => Weights.InChannels;
+        public int OutFeatureChannels => Weights.OutChannels;
+        public int SizeX => Weights.SizeX;
+        public int SizeY => Weights.SizeY;
+        public int StrideX => Weights.StrideX;
+        public int StrideY => Weights.StrideY;
+        public bool Bias => Weights.Bias;
+        public WeightsInit WeightsInit => Weights.WeightsInit;
+        public float BiasInit => Weights.BiasInit;
         public ConvPadding Padding { get; }
 
-        public ConvWeightsLayer (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
-        {
-            if (featureChannels <= 0)
-                throw new ArgumentOutOfRangeException (nameof (featureChannels), "Number of feature channels must be > 0");
+        public ConvWeights Weights { get; }
 
-            FeatureChannels = featureChannels;
-            SizeX = sizeX;
-            SizeY = sizeY;
-            StrideX = strideX;
-            StrideY = strideY;
+        protected ConvWeightsLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
+        {
+            Weights = new ConvWeights (Label, inFeatureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, bias, weightsInit, biasInit);
             Padding = padding;
-            Bias = bias;
-            WeightsInit = weightsInit;
-            BiasInit = biasInit;
         }
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
-            var input = inputs[0];
-            int inChannels = input.Shape[^1];
-            return CreateConvWeightsNode (input.ImageNode, GetWeights (inChannels, device));
+            return CreateConvWeightsNode (inputs[0].ImageNode, GetMetalConvDataSource (device));
         }
 
-        public override MPSCnnConvolutionDataSource? GetMetalConvDataSource (IMTLDevice device)
+        public override MPSCnnConvolutionDataSource GetMetalConvDataSource (IMTLDevice device)
         {
-            var key = device.Handle;
-            if (deviceWeights.TryGetValue (key, out var w))
-                return w;
-            return null;
+            return Weights.GetDataSource (device);
         }
 
         protected abstract MPSNNFilterNode CreateConvWeightsNode (MPSNNImageNode imageNode, MPSCnnConvolutionDataSource convDataSource);
-
-        readonly ConcurrentDictionary<IntPtr, ConvWeights> deviceWeights =
-            new ConcurrentDictionary<IntPtr, ConvWeights> ();
-
-        ConvWeights GetWeights (int inChannels, IMTLDevice device)
-        {
-            var key = device.Handle;
-            if (deviceWeights.TryGetValue (key, out var w))
-                return w;
-
-            w = new ConvWeights (inChannels, FeatureChannels, SizeX, SizeY, StrideX, StrideY, Bias, WeightsInit, BiasInit, Label, device);
-
-            if (deviceWeights.TryAdd (key, w))
-                return w;
-            return deviceWeights[key];
-        }
 
         public static int ConvOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation)
         {

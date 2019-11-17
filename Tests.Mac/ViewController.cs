@@ -44,7 +44,7 @@ namespace Tests.Mac
             Console.WriteLine (tr);
             if (!tr.Success) {
                 var ex = tr.Exception;
-                while (ex.InnerException != null)
+                while (ex?.InnerException != null)
                     ex = ex.InnerException;
                 Console.WriteLine (ex);
                 var m = "\n" + ex;

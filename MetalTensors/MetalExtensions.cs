@@ -96,10 +96,15 @@ namespace MetalTensors
             return v;
         }
 
-        public static unsafe void SetElements (this MPSVector vector, Span<float> elements)
+        public static unsafe Span<float> ToSpan (this MPSVector vector)
         {
             var vspan = new Span<float> ((float*)vector.Data.Contents, (int)vector.Length);
-            elements.CopyTo (vspan);
+            return vspan;
+        }
+
+        public static void SetElements (this MPSVector vector, Span<float> elements)
+        {
+            elements.CopyTo (vector.ToSpan ());
         }
 
         public static void Zero (this MPSVector vector)

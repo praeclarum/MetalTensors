@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,7 +11,60 @@ using static MetalTensors.MetalExtensions;
 
 namespace MetalTensors.Layers
 {
-    class ConvWeights : MPSCnnConvolutionDataSource
+    public class ConvWeights
+    {
+        public string Label { get; }
+        public int InChannels { get; }
+        public int OutChannels { get; }
+        public int SizeX { get; }
+        public int SizeY { get; }
+        public int StrideX { get; }
+        public int StrideY { get; }
+        public bool Bias { get; }
+        public WeightsInit WeightsInit { get; }
+        public float BiasInit { get; }
+
+        readonly ConcurrentDictionary<IntPtr, ConvDataSource> deviceWeights =
+            new ConcurrentDictionary<IntPtr, ConvDataSource> ();
+
+        public ConvWeights (string label, int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit)
+        {
+            if (inChannels <= 0)
+                throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution input channels must be > 0");
+            if (outChannels <= 0)
+                throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution output channels must be > 0");
+
+            Label = label;
+            InChannels = inChannels;
+            OutChannels = outChannels;
+            SizeX = kernelSizeX;
+            SizeY = kernelSizeY;
+            StrideX = strideX;
+            StrideY = strideY;
+            Bias = bias;
+            WeightsInit = weightsInit;
+            BiasInit = biasInit;
+            //Beta = Tensor.Zeros (FeatureChannels);
+            //Gamma = Tensor.Ones (FeatureChannels);
+            //MovingMean = Tensor.Zeros (FeatureChannels);
+            //MovingVariance = Tensor.Ones (FeatureChannels);
+        }
+
+        public MPSCnnConvolutionDataSource GetDataSource (IMTLDevice device)
+        {
+            var key = device.Handle;
+            if (deviceWeights.TryGetValue (key, out var w))
+                return w;
+
+            w = new ConvDataSource (this, device);
+
+            if (deviceWeights.TryAdd (key, w))
+                return w;
+            return deviceWeights[key];
+        }
+    }
+
+    class ConvDataSource : MPSCnnConvolutionDataSource
     {
         readonly IMTLDevice device;
 
@@ -38,7 +92,15 @@ namespace MetalTensors.Layers
 
         public override IntPtr BiasTerms => biasVectors != null ? biasVectors.ValuePointer : IntPtr.Zero;
 
-        public ConvWeights (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit, string label, IMTLDevice device)
+        public ConvDataSource (ConvWeights convWeights, IMTLDevice device)
+            : this (convWeights.InChannels, convWeights.OutChannels,
+                    convWeights.SizeX, convWeights.SizeY, convWeights.StrideX, convWeights.StrideY,
+                    convWeights.Bias, convWeights.WeightsInit, convWeights.BiasInit,
+                    convWeights.Label, device)
+        {
+        }
+
+        public ConvDataSource (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit, string label, IMTLDevice device)
         {
             this.device = device;
 
@@ -214,15 +276,27 @@ namespace MetalTensors.Layers
         public readonly MPSVector Velocity;
         public readonly IntPtr ValuePointer;
 
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)
+        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor)
         {
             VectorLength = (int)descriptor.Length;
             VectorByteSize = descriptor.GetByteSize ();
             VectorDescriptor = descriptor;
-            Value = Vector (device, descriptor, initialValue);
+            Value = Vector (device, descriptor, 0.0f);
             Momentum = Vector (device, descriptor, 0.0f);
             Velocity = Vector (device, descriptor, 0.0f);
             ValuePointer = Value.Data.Contents;
+        }
+
+        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, Tensor initialValue)
+            : this (device, descriptor)
+        {
+            initialValue.Copy (Value.ToSpan ());
+        }
+
+        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)
+            : this (device, descriptor)
+        {
+            Value.Fill (initialValue);
         }
 
         public void Synchronize (IMTLCommandBuffer commandBuffer)

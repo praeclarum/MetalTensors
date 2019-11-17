@@ -14,6 +14,12 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
+        public ArrayTensor (int[] shape, float[] data)
+        {
+            this.data = data;
+            this.shape = shape;
+        }
+
         public ArrayTensor (float[] data)
         {
             this.data = data;

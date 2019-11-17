@@ -6,8 +6,8 @@ namespace MetalTensors.Layers
 {
     public class DenseLayer : ConvWeightsLayer
     {
-        public DenseLayer (int featureChannels, int sizeX, int sizeY, bool bias, WeightsInit weightsInit, float biasInit)
-            : base (featureChannels, sizeX, sizeY, 1, 1, ConvPadding.Valid, bias, weightsInit, biasInit)
+        public DenseLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, bool bias, WeightsInit weightsInit, float biasInit)
+            : base (inFeatureChannels, outFeatureChannels, sizeX, sizeY, 1, 1, ConvPadding.Valid, bias, weightsInit, biasInit)
         {
         }
 
@@ -25,7 +25,7 @@ namespace MetalTensors.Layers
                 }
                 outputShape[i] = s;
             }
-            outputShape[^1] = FeatureChannels;
+            outputShape[^1] = OutFeatureChannels;
             return outputShape;
         }
 
