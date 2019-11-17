@@ -217,6 +217,11 @@ namespace MetalTensors
             return new BatchNormLayer ().GetOutput (this);
         }
 
+        public Tensor Concat (params Tensor[] others)
+        {
+            return new ConcatLayer ().GetOutput (new[] { this }.Concat (others).ToArray ());
+        }
+
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             return new ConvLayer (featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);

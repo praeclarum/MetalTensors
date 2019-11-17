@@ -7,7 +7,7 @@ namespace MetalTensors.Layers
 {
     public class BatchNormLayer : Layer
     {
-        public override int InputCount => 1;
+        public override int MinInputCount => 1;
 
         public override int[] GetOutputShape (params Tensor[] inputs)
         {

@@ -9,7 +9,7 @@ namespace MetalTensors.Layers
         public int ScaleX { get; }
         public int ScaleY { get; }
 
-        public override int InputCount => 1;
+        public override int MinInputCount => 1;
 
         public UpsampleLayer (int scaleX, int scaleY)
         {

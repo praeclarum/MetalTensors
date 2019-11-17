@@ -19,7 +19,7 @@ namespace MetalTensors
         readonly ConcurrentDictionary<string, MPSNNFilterNode> deviceFilterNodes =
             new ConcurrentDictionary<string, MPSNNFilterNode> ();
 
-        public abstract int InputCount { get; }
+        public abstract int MinInputCount { get; }
 
         public string Label => label;
 
@@ -52,7 +52,7 @@ namespace MetalTensors
 
         public Task<Tensor> ExecuteAsync (Tensor[] inputs, IMTLDevice device)
         {
-            if (inputs.Length < InputCount)
+            if (inputs.Length < MinInputCount)
                 throw new ArgumentException (nameof (inputs));
 
             var tcs = new TaskCompletionSource<Tensor> ();

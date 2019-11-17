@@ -52,6 +52,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AvgPoolLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormWeights.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConcatLayer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

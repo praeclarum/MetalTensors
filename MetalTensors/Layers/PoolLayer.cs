@@ -9,7 +9,7 @@ namespace MetalTensors.Layers
         static readonly MPSNNDefaultPadding samePadding = MPSNNDefaultPadding.CreatePaddingForTensorflowAveragePooling ();
         static readonly MPSNNDefaultPadding validPadding = MPSNNDefaultPadding.CreatePaddingForTensorflowAveragePoolingValidOnly ();
 
-        public override int InputCount => 1;
+        public override int MinInputCount => 1;
 
         public int SizeX { get; }
         public int SizeY { get; }

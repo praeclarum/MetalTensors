@@ -8,7 +8,7 @@ namespace MetalTensors.Layers
 {
     public class LossLayer : Layer
     {
-        public override int InputCount => 2;
+        public override int MinInputCount => 2;
 
         public LossType LossType { get; }
         public MPSCnnReductionType ReductionType { get; }

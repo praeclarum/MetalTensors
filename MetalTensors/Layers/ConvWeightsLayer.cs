@@ -7,7 +7,7 @@ namespace MetalTensors.Layers
 {
     public abstract class ConvWeightsLayer : Layer
     {
-        public override int InputCount => 1;
+        public override int MinInputCount => 1;
 
         public int FeatureChannels { get; }
         public int SizeX { get; }

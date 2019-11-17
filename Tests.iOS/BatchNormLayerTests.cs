@@ -13,7 +13,7 @@ namespace Tests
             Assert.AreEqual (3, y.Shape[0]);
             Assert.AreEqual (5, y.Shape[1]);
             Assert.AreEqual (7, y.Shape[2]);
-            Assert.AreEqual (0.9f, y[0], 1e-6f);
+            Assert.AreEqual (0.9f, y[0], 1e-5f);
         }
     }
 }

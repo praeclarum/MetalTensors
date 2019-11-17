@@ -43,8 +43,11 @@ namespace Tests.Mac
         {
             Console.WriteLine (tr);
             if (!tr.Success) {
-                Console.WriteLine (tr.Exception);
-                var m = "\n" + tr.Exception;
+                var ex = tr.Exception;
+                while (ex.InnerException != null)
+                    ex = ex.InnerException;
+                Console.WriteLine (ex);
+                var m = "\n" + ex;
                 resultsTextView.Value += m;
                 SetOKColor (false);
                 resultsTextView.Hidden = false;

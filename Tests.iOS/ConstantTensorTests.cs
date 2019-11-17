@@ -8,6 +8,15 @@ namespace Tests.iOS
     public class ConstantTensorTests
     {
         [Test]
+        public void OnesNone ()
+        {
+            var t = Tensor.Ones ();
+            Assert.AreEqual (1, t.Shape.Length);
+            Assert.AreEqual (1, t.Shape[0]);
+            Assert.AreEqual (1.0f, t[0]);
+        }
+
+        [Test]
         public void ZerosSingle ()
         {
             var t = Tensor.Zeros (1);

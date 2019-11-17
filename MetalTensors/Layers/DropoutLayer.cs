@@ -6,7 +6,7 @@ namespace MetalTensors.Layers
 {
     public class DropoutLayer : Layer
     {
-        public override int InputCount => 1;
+        public override int MinInputCount => 1;
 
         public float KeepProbability { get; }
 
