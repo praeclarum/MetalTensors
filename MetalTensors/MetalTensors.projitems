@@ -47,5 +47,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\SoftMaxLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WeightsInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConvPadding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Applications\Pix2pixApplication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Applications\GanApplication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\AvgPoolLayer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Applications\" />
   </ItemGroup>
 </Project>

@@ -120,6 +120,7 @@
     <Compile Include="PlaceholderTensorTests.cs" />
     <Compile Include="TrainBinopTests.cs" />
     <Compile Include="ModelTests.cs" />
+    <Compile Include="Pix2pixApplicationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

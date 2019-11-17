@@ -1,24 +1,23 @@
 ﻿using System;
-using Metal;
 using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public class MaxPoolLayer : PoolLayer
+    public class AvgPoolLayer : PoolLayer
     {
-        public MaxPoolLayer (int sizeX, int sizeY, int strideX, int strideY)
+        public AvgPoolLayer (int sizeX, int sizeY, int strideX, int strideY)
             : base (sizeX, sizeY, strideX, strideY)
         {
         }
 
-        public MaxPoolLayer (int size = 2, int stride = 2)
+        public AvgPoolLayer (int size = 2, int stride = 2)
             : this (size, size, stride, stride)
         {
         }
 
         protected override MPSNNFilterNode CreatePoolNode (MPSNNImageNode imageNode)
         {
-            return new MPSCnnPoolingMaxNode (imageNode, (nuint)SizeX, (nuint)SizeY, (nuint)StrideX, (nuint)StrideY);
+            return new MPSCnnPoolingAverageNode (imageNode, (nuint)SizeX, (nuint)SizeY, (nuint)StrideX, (nuint)StrideY);
         }
     }
 }

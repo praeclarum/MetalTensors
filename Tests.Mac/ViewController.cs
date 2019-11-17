@@ -11,6 +11,8 @@ namespace Tests.Mac
 {
     public partial class ViewController : NSViewController
     {
+        bool allTestsPassed = false;
+
         public ViewController (IntPtr handle) : base (handle)
         {
         }
@@ -18,6 +20,8 @@ namespace Tests.Mac
         public override async void ViewDidLoad ()
         {
             base.ViewDidLoad ();
+
+            resultsTextView.Hidden = true;
 
             await Task.Run (() => {
                 try {
@@ -29,9 +33,10 @@ namespace Tests.Mac
                 }
             });
 
-            await Task.Delay (1000);
-
-            NSApplication.SharedApplication.Terminate (this);
+            if (allTestsPassed) {
+                await Task.Delay (1000);
+                NSApplication.SharedApplication.Terminate (this);
+            }
         }
 
         void ShowTestResult (TestResult tr)
@@ -39,19 +44,32 @@ namespace Tests.Mac
             Console.WriteLine (tr);
             if (!tr.Success) {
                 Console.WriteLine (tr.Exception);
+                var m = "\n" + tr.Exception;
+                resultsTextView.Value += m;
+                SetOKColor (false);
+                resultsTextView.Hidden = false;
             }
         }
 
         void ShowFinalResult (bool allOK)
         {
+            allTestsPassed = allOK;
+
             var m = $"ALL OK? {allOK}";
             Console.WriteLine (m);
+            resultsTextView.Value += m;
 
             NSWindow? w = this.View.Window;
             if (w != null) {
                 w.Title = m;
-                w.BackgroundColor = allOK ? NSColor.Green : NSColor.Red;
+                SetOKColor (allOK);
             }
+        }
+
+        void SetOKColor (bool allOK)
+        {
+            NSWindow? w = this.View.Window;
+            w.BackgroundColor = (allOK ? NSColor.Green : NSColor.Red).BlendedColor (0.5f, NSColor.WindowBackground);
         }
 
         void RunTests ()
@@ -60,13 +78,14 @@ namespace Tests.Mac
 
             var allOK = true;
 
-            foreach (var tf in tests) {
+            Parallel.ForEach (tests, tf => {
+                //Console.WriteLine (System.Threading.Thread.CurrentThread.ManagedThreadId);
                 foreach (var t in tf.Tests) {
                     var tr = RunTest (tf, t);
                     allOK = allOK && tr.Success;
                     BeginInvokeOnMainThread (() => ShowTestResult (tr));
                 }
-            }
+            });            
 
             BeginInvokeOnMainThread (() => ShowFinalResult (allOK));
         }

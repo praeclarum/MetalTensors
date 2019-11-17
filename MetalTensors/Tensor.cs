@@ -202,6 +202,16 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
+        public Tensor AvgPool (int size = 2, int stride = 2)
+        {
+            return new AvgPoolLayer (size, stride).GetOutput (this);
+        }
+
+        public Tensor AvgPool (int sizeX, int sizeY, int strideX, int strideY)
+        {
+            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
+        }
+
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             return new ConvLayer (featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
