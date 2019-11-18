@@ -1,23 +1,42 @@
 ﻿using System;
+using System.Linq;
+using MetalTensors.Tensors;
 
 namespace MetalTensors.Applications
 {
-    public class Pix2pixApplication : GanApplication
+    public class Pix2pixApplication
     {
         // The training objective is: GAN Loss + lambda_L1 * ||G(A)-B||_1
 
         const float lambdaL1 = 100.0f;
 
+        public Model Generator { get; }
+        public Model Discriminator { get; }
+        public Model Gan { get; }
+
         public Pix2pixApplication (int height = 256, int width = 256)
-            : base (MakeGenerator (height, width),
-                    MakeDiscriminator (height, width))
         {
+            var generator = MakeGenerator (height, width);
+            var genOut = generator.Output;
+            Generator = generator;
+
+            var discriminator = MakeDiscriminator (height, width);
+            var discOut = discriminator.Output;
+            var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
+            var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy);
+            Discriminator = discLoss.Model (discriminator.Label);
+
+            var gan = discriminator.Lock ().Apply (generator);
+            var ganOut = gan.Output;
+            var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
+            var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy);
+            var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError);
+            //var ganLoss = ganLossD + ganLossL1;
+            Gan = ganLossD.Model (gan.Label);
         }
 
         static Model MakeGenerator (int height, int width)
         {
-            var x = Tensor.InputImage ("image", height, width);
-
             var useDropout = true;
             var instanceNorm = false;
             var ngf = 64;
@@ -65,38 +84,38 @@ namespace MetalTensors.Applications
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model (label);
+                    var updrop = useDropout ? up.Dropout (0.5f) : up;
+                    return input.Concat (updrop).Model (label);
                 }
             }
         }
 
         static Model MakeDiscriminator (int height, int width)
         {
-            var x = Tensor.InputImage ("image", height, width);
+            // https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/1c733f5bd7a3aff886403a46baada1db62e2eca8/models/networks.py#L538
 
-            x = CFirst (64, x);
-            x = C (128, x);
-            x = C (256, x);
-            x = C (512, x);
+            var image = Tensor.InputImage ("image", height, width);
 
-            // Need to average to get 1x1x1
+            var instanceNorm = false;
+            var useBias = instanceNorm;
+            var nlayers = 3;
+            var kw = 4;
+            var ndf = 64;
 
-            return x.Model ();
-        }
+            var disc = image.Conv (ndf, size: kw, stride: 2).ReLU (a: 0.2f);
 
-        static Tensor C (int channels, Tensor input)
-        {
-            return input.Conv (channels, size: 4, stride: 2, bias: false).BatchNorm ().ReLU (a: 0.2f);
-        }
+            int nf_mult;
+            for (var n = 1; n < nlayers; n++) {
+                nf_mult = Math.Min (1 << n, 8);
+                disc = disc.Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
+            }
 
-        static Tensor CD (int channels, Tensor input)
-        {
-            return input.Conv (channels, size: 4, stride: 2, bias: false).BatchNorm ().Dropout (0.5f).ReLU (a: 0.0f);
-        }
+            nf_mult = Math.Min (1 << nlayers, 8);
+            disc = disc.Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
 
-        static Tensor CFirst (int channels, Tensor input)
-        {
-            return input.Conv (channels, size: 4, stride: 2, bias: true).ReLU (a: 0.2f);
+            disc = disc.Conv (1, size: kw, stride: 1, bias: true);
+
+            return disc.Model ();
         }
     }
 }

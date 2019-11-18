@@ -9,7 +9,7 @@ namespace MetalTensors
         Hinge = (int)MPSCnnLossType.Hinge,
         MeanAbsoluteError = (int)MPSCnnLossType.MeanAbsoluteError,
         MeanSquaredError = (int)MPSCnnLossType.MeanSquaredError,
-        //SigmoidCrossEntropy = (int)MPSCnnLossType.SigmoidCrossEntropy,
-        //SoftMaxCrossEntropy = (int)MPSCnnLossType.SoftMaxCrossEntropy,
+        SigmoidCrossEntropy = (int)MPSCnnLossType.SigmoidCrossEntropy,
+        SoftMaxCrossEntropy = (int)MPSCnnLossType.SoftMaxCrossEntropy,
     }
 }

@@ -48,7 +48,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)WeightsInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConvPadding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Applications\Pix2pixApplication.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Applications\GanApplication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AvgPoolLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormWeights.cs" />
