@@ -3,14 +3,14 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public class ConvLayer : ConvWeightsLayer
+    public class ConvTransposeLayer : ConvWeightsLayer
     {
         static readonly MPSNNDefaultPadding samePadding = MPSNNDefaultPadding.Create (
             MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeSame);
         static readonly MPSNNDefaultPadding validPadding = MPSNNDefaultPadding.Create (
             MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeValidOnly);
 
-        public ConvLayer (int inFeaureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
+        public ConvTransposeLayer (int inFeaureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
             : base (inFeaureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit)
         {
         }
@@ -22,9 +22,9 @@ namespace MetalTensors.Layers
             foreach (var i in inputs) {
                 var inputShape = i.Shape;
                 if (inputShape.Length != 3)
-                    throw new ArgumentException ($"Conv inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
+                    throw new ArgumentException ($"Conv transpose inputs must have 3 dimensions HxWxC ({inputs.Length} given)", nameof (inputs));
                 if (inputShape[^1] != InFeatureChannels)
-                    throw new ArgumentException ($"Expected conv input with {InFeatureChannels} channels, but got {inputShape[^1]}", nameof (inputs));
+                    throw new ArgumentException ($"Expected conv transpose input with {InFeatureChannels} channels, but got {inputShape[^1]}", nameof (inputs));
             }
         }
 
@@ -35,8 +35,8 @@ namespace MetalTensors.Layers
             var inputShape = inputs[0].Shape;
             var h = inputShape[0];
             var w = inputShape[1];
-            var kh = ConvOutputLength (h, SizeY, StrideY, Padding, 1);
-            var kw = ConvOutputLength (w, SizeX, StrideX, Padding, 1);
+            var kh = ConvTransposeOutputLength (h, SizeY, StrideY, Padding, 1, null);
+            var kw = ConvTransposeOutputLength (w, SizeX, StrideX, Padding, 1, null);
             //var sh = kh / StrideY;
             //var sw = kw / StrideX;
             return new[] { kh, kw, OutFeatureChannels };
@@ -44,7 +44,8 @@ namespace MetalTensors.Layers
 
         protected override MPSNNFilterNode CreateConvWeightsNode (MPSNNImageNode imageNode, MPSCnnConvolutionDataSource convDataSource)
         {
-            return new MPSCnnConvolutionNode (imageNode, convDataSource) {
+            MPSCnnConvolutionGradientStateNode? gradientStateNode = null;
+            return new MPSCnnConvolutionTransposeNode (imageNode, gradientStateNode, convDataSource) {
                 PaddingPolicy = Padding == ConvPadding.Same ? samePadding : validPadding,
             };
         }

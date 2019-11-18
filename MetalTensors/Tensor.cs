@@ -90,6 +90,11 @@ namespace MetalTensors
             return new LabelsTensor (DefaultLabelsLabel, shape);
         }
 
+        public Tensor Apply (Model model)
+        {
+            return model.GetOutput (0, this);
+        }
+
         public Model Model (string? name = null, bool trainable = true)
         {
             return new Model (name, trainable, this);
@@ -220,6 +225,8 @@ namespace MetalTensors
 
         public Tensor Concat (params Tensor[] others)
         {
+            if (others.Length == 0)
+                return this;
             return new ConcatLayer ().GetOutput (new[] { this }.Concat (others).ToArray ());
         }
 
@@ -233,6 +240,12 @@ namespace MetalTensors
         {
             var inChannels = Shape[^1];
             return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+        }
+
+        public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
+        {
+            var inChannels = Shape[^1];
+            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
         }
 
         public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)

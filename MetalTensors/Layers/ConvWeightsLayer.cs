@@ -43,7 +43,7 @@ namespace MetalTensors.Layers
         public static int ConvOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation)
         {
             if (inputLength < 0)
-                throw new ArgumentOutOfRangeException (nameof (inputLength), "Convolution input dimension must be >= 0");
+                throw new ArgumentOutOfRangeException (nameof (inputLength), "Conv input dimension must be >= 0");
 
             var dilatedFilterSize = (size - 1) * dilation + 1;
             var outputLength = padding switch
@@ -53,6 +53,45 @@ namespace MetalTensors.Layers
             };
             var r = (outputLength + stride - 1) / stride;
             return r;
+        }
+
+        public static int ConvTransposeOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation, int? outputPadding)
+        {
+            // https://github.com/keras-team/keras/blob/b75b2f7dcf5d3c83e33b8b2bc86f1d2543263a59/keras/utils/conv_utils.py#L138
+
+            if (inputLength < 0)
+                throw new ArgumentOutOfRangeException (nameof (inputLength), "Conv transpose input dimension must be >= 0");
+
+            var kernel_size = (size - 1) * dilation + 1;
+
+            var dim_size = inputLength;
+
+            if (outputPadding == null) {
+                switch (padding) {
+                    case ConvPadding.Same:
+                        dim_size = dim_size * stride;
+                        break;
+                    default:
+                    case ConvPadding.Valid:
+                        dim_size = dim_size * stride + Math.Max (kernel_size - stride, 0);
+                        break;
+                }
+            }
+            else {
+                int pad;
+                switch (padding) {
+                    case ConvPadding.Same:
+                        pad = kernel_size / 2;
+                        break;
+                    default:
+                    case ConvPadding.Valid:
+                        pad = 0;
+                        break;
+                }
+                dim_size = (dim_size - 1) * stride + kernel_size - 2 * pad + outputPadding.Value;
+            }
+
+            return dim_size;
         }
     }
 }

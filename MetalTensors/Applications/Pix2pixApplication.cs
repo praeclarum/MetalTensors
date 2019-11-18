@@ -4,36 +4,72 @@ namespace MetalTensors.Applications
 {
     public class Pix2pixApplication : GanApplication
     {
+        // The training objective is: GAN Loss + lambda_L1 * ||G(A)-B||_1
+
+        const float lambdaL1 = 100.0f;
+
         public Pix2pixApplication (int height = 256, int width = 256)
             : base (MakeGenerator (height, width),
                     MakeDiscriminator (height, width))
         {
         }
 
-        private static Model MakeGenerator (int height, int width)
+        static Model MakeGenerator (int height, int width)
         {
             var x = Tensor.InputImage ("image", height, width);
 
-            var e0 = CFirst (64, x);
-            var e1 = C (128, e0);
-            var e2 = C (256, e1);
-            var e3 = C (512, e2);
-            var e4 = C (512, e3);
-            var e5 = C (512, e4);
-            var e6 = C (512, e5);
-            var e7 = C (512, e6); // 1x1x512
+            var useDropout = true;
+            var instanceNorm = false;
+            var ngf = 64;
+            var numDowns = 8;
 
-            var d0 = D (512, e7);
+            var unet = UnetSkipConnection (ngf * 8, ngf * 8, inputNC: null, submodule: null, instanceNorm: instanceNorm, innermost: true);
+            for (var i = 0; i < numDowns - 5; i++) {
+                unet = UnetSkipConnection (ngf * 8, ngf * 8, inputNC: null, submodule: unet, instanceNorm: instanceNorm, useDropout: useDropout);
+            }
+            unet = UnetSkipConnection (ngf * 4, ngf * 8, inputNC: null, submodule: unet, instanceNorm: instanceNorm);
+            unet = UnetSkipConnection (ngf * 2, ngf * 4, inputNC: null, submodule: unet, instanceNorm: instanceNorm);
+            unet = UnetSkipConnection (ngf, ngf * 2, inputNC: null, submodule: unet, instanceNorm: instanceNorm);
+            unet = UnetSkipConnection (3, ngf, inputNC: null, submodule: unet, outermost: true, instanceNorm: instanceNorm);
 
-            return d0.Model ();
+            return unet;
 
-            Tensor D (int c, Tensor e)
+            // https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/1c733f5bd7a3aff886403a46baada1db62e2eca8/models/networks.py#L468
+            Model UnetSkipConnection (int outerNC, int innerNC, int? inputNC = null, Model? submodule = null, bool outermost = false, bool innermost = false, bool instanceNorm = false, bool useDropout = false)
             {
-                return CD (c, e);
+                var useBias = instanceNorm;
+                var inNC = inputNC ?? outerNC;
+
+                var size = submodule != null ? submodule.Output.Shape[0] * 2 : 2;
+                var input = Tensor.Input ("image", size, size, inNC);
+
+                if (outermost) {
+                    var downconv = input.Conv (innerNC, size: 4, stride: 2, bias: useBias);
+                    var down = downconv;
+                    var downsub = submodule != null ? down.Apply (submodule) : down;
+                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
+                    return up.Model ();
+                }
+                else if (innermost) {
+                    var downrelu = input.ReLU (a: 0.2f);
+                    var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
+                    var down = downconv;
+                    var up = down.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    return input.Concat (up).Model ();
+                }
+                else {
+                    var downrelu = input.ReLU (a: 0.2f);
+                    var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
+                    var downnorm = downconv.BatchNorm ();
+                    var down = downnorm;
+                    var downsub = submodule != null ? down.Apply (submodule) : down;
+                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    return input.Concat (up).Model ();
+                }
             }
         }
 
-        private static Model MakeDiscriminator (int height, int width)
+        static Model MakeDiscriminator (int height, int width)
         {
             var x = Tensor.InputImage ("image", height, width);
 
@@ -49,17 +85,17 @@ namespace MetalTensors.Applications
 
         static Tensor C (int channels, Tensor input)
         {
-            return input.Conv (channels, size: 4, stride: 2).BatchNorm ().ReLU (a: 0.2f);
+            return input.Conv (channels, size: 4, stride: 2, bias: false).BatchNorm ().ReLU (a: 0.2f);
         }
 
         static Tensor CD (int channels, Tensor input)
         {
-            return input.Conv (channels, size: 4, stride: 2).BatchNorm ().Dropout (0.5f).ReLU (a: 0.0f);
+            return input.Conv (channels, size: 4, stride: 2, bias: false).BatchNorm ().Dropout (0.5f).ReLU (a: 0.0f);
         }
 
         static Tensor CFirst (int channels, Tensor input)
         {
-            return input.Conv (channels, size: 4, stride: 2).ReLU (a: 0.2f);
+            return input.Conv (channels, size: 4, stride: 2, bias: true).ReLU (a: 0.2f);
         }
     }
 }

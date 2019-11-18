@@ -7,6 +7,15 @@ namespace Tests
     public class ConcatLayerTests
     {
         [Test]
+        public void None ()
+        {
+            var one = Tensor.Ones ();
+            var c = one.Concat ();
+
+            Assert.IsTrue (ReferenceEquals (one, c));
+        }
+
+        [Test]
         public void OneAndOne ()
         {
             var one = Tensor.Ones ();

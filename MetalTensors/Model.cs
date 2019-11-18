@@ -143,14 +143,15 @@ namespace MetalTensors
             return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, outputs);
         }
 
+        public Model Apply (params Tensor[] inputs)
+        {
+            var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
+            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, outputs);
+        }
+
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
         {
             return new ModelTensor (this, outputIndex, inputs);
-        }
-
-        public Tensor GetOutput (int outputIndex, Model inputModel)
-        {
-            return new ModelTensor (this, outputIndex, inputModel.Outputs);
         }
 
         const LossType DefaultLossType = LossType.MeanSquaredError;

@@ -9,6 +9,28 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 1;
 
+        public override void ValidateInputShapes (params Tensor[] inputs)
+        {
+            base.ValidateInputShapes (inputs);
+
+            var shape = inputs[0].Shape;
+            var nc = shape.Length - 1;
+            if (nc == 0)
+                return;
+
+            foreach (var i in inputs.Skip (1)) {
+                var s = i.Shape;
+                if (s.Length != shape.Length) {
+                    throw new ArgumentException ($"Mismatched input shape dimensions in concat", nameof (inputs));
+                }
+                for (var j = 0; j < nc; j++) {
+                    if (s[j] != shape[j]) {
+                        throw new ArgumentException ($"Mismatched input shapes in concat. Expected {shape.ToShapeString ()}, got {s.ToShapeString ()}.", nameof (inputs));
+                    }
+                }
+            }
+        }
+
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
             var inputShape = inputs[0].Shape;

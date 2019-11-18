@@ -5,6 +5,11 @@ namespace MetalTensors
 {
     public static class TensorExtensions
     {
+        public static string ToShapeString (this int[] shape)
+        {
+            return "(" + string.Join (", ", shape) + ")";
+        }
+
         public static int GetShapeLength (this int[] shape)
         {
             var r = 1;
