@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 using MetalTensors;
 
-namespace Tests.iOS
+namespace Tests
 {
     public class PlaceholderTensorTests
     {

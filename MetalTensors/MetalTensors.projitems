@@ -54,6 +54,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConcatLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvTransposeLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReductionType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Applications\MnistApplication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Application.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

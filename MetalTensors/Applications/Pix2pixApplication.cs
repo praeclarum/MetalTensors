@@ -6,7 +6,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors.Applications
 {
-    public class Pix2pixApplication
+    public class Pix2pixApplication : Application
     {
         // The training objective is: GAN Loss + lambda_L1 * ||G(A)-B||_1
 

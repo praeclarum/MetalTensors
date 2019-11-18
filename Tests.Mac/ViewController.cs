@@ -39,7 +39,7 @@ namespace Tests.Mac
             }
         }
 
-        void ShowTestResult (TestResult tr)
+        void ShowTestResult (Test test, TestResult tr)
         {
             Console.WriteLine (tr);
             if (!tr.Success) {
@@ -68,8 +68,8 @@ namespace Tests.Mac
                     return t.StartsWith ("at NUnit.");
                 }
 
+                glines.Insert (0, $"! {ex.GetType ().FullName} in {test}");
                 glines.Insert (0, ex.Message);
-                glines.Insert (0, ex.GetType ().FullName);
                 var m = "\n" + string.Join ("\n", glines);
                 resultsTextView.Value += m;
                 SetOKColor (false);
@@ -81,7 +81,7 @@ namespace Tests.Mac
         {
             allTestsPassed = allOK;
 
-            var m = $"\n\nALL OK? {allOK}";
+            var m = allOK ? $"\n\nALL OK!" : "\n\nFAILED :-(";
             Console.WriteLine (m);
             resultsTextView.Value += m;
 
@@ -109,7 +109,7 @@ namespace Tests.Mac
                 foreach (var t in tf.Tests) {
                     var tr = RunTest (tf, t);
                     allOK = allOK && tr.Success;
-                    BeginInvokeOnMainThread (() => ShowTestResult (tr));
+                    BeginInvokeOnMainThread (() => ShowTestResult (t, tr));
                 }
             });
 

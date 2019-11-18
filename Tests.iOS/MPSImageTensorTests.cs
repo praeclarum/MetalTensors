@@ -5,7 +5,7 @@ using NUnit.Framework;
 using MetalTensors;
 using MetalTensors.Tensors;
 
-namespace Tests.iOS
+namespace Tests
 {
     public class MPSImageTensorTests
     {

@@ -95,12 +95,17 @@ namespace MetalTensors
             return model.GetOutput (0, this);
         }
 
-        public Model Model (string? name = null, bool trainable = true)
+        public Model Model (string? name = null, bool trainable = true, bool ignoreDropoutDuringInference = true)
         {
-            return new Model (name, trainable, this);
+            return new Model (name, trainable, ignoreDropoutDuringInference, this);
         }
 
         public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
+        public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
         {
             return this;
         }
@@ -312,9 +317,9 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, IMTLDevice? device = null)
+        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, bool ignoreDropoutDuringInference = true, IMTLDevice? device = null)
         {
-            return new Model (Label, true, this).Train (trainingData, learningRate, batchSize, numBatches, device);
+            return new Model (Label, true, ignoreDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

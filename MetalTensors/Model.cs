@@ -16,6 +16,7 @@ namespace MetalTensors
 
         public string Label { get; }
         public bool IsTrainable { get; }
+        public bool IgnoreDropoutDuringInference { get; }
         public Tensor[] Outputs { get; }
 
         public Tensor[] Inputs { get; }
@@ -31,14 +32,14 @@ namespace MetalTensors
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
 
-        public Model (string? label, bool trainable, params Tensor[] outputs)
+        public Model (string? label, bool trainable, bool ignoreDropoutDuringInference, params Tensor[] outputs)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
             Label = label ?? outputs[0].Label;
             IsTrainable = trainable;
-
+            IgnoreDropoutDuringInference = ignoreDropoutDuringInference;
             Outputs = outputs;
 
             //
@@ -106,20 +107,20 @@ namespace MetalTensors
         {
             if (!IsTrainable)
                 return this;
-            return new Model (Label, false, Outputs);
+            return new Model (Label, false, IgnoreDropoutDuringInference, Outputs);
         }
 
         public Model Unlock ()
         {
             if (IsTrainable)
                 return this;
-            return new Model (Label, true, Outputs);
+            return new Model (Label, true, IgnoreDropoutDuringInference, Outputs);
         }
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, IsTrainable, noutputs);
+            var nm = new Model (Label, IsTrainable, IgnoreDropoutDuringInference, noutputs);
             return nm;
         }
 
@@ -140,13 +141,13 @@ namespace MetalTensors
         {
             var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, outputs);
+            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, IgnoreDropoutDuringInference, outputs);
         }
 
         public Model Apply (params Tensor[] inputs)
         {
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, outputs);
+            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, IgnoreDropoutDuringInference, outputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -191,7 +192,7 @@ namespace MetalTensors
             else {
                 var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + "_" + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
                 var losses = flatModel.Outputs.Select ((x, i) => x.Loss (labels[i], DefaultLossType)).ToArray ();
-                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, losses);
+                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.IgnoreDropoutDuringInference, losses);
             }
 
             //
@@ -212,7 +213,7 @@ namespace MetalTensors
             }
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
-            var flatModel = new Model (Label, IsTrainable, flatOuts);
+            var flatModel = new Model (Label, IsTrainable, IgnoreDropoutDuringInference, flatOuts);
 
             return (flatModel, trainable);
 
@@ -231,8 +232,7 @@ namespace MetalTensors
                     return o;
                 }
                 if (t is LayerTensor l) {
-                    var ins = l.LayerInputs.Select (FlattenTensor).ToArray ();
-                    return new LayerTensor (l.Layer, ins);
+                    return l.MapInputs (FlattenTensor);
                 }
                 return t;
             }

@@ -70,5 +70,18 @@ namespace MetalTensors
             }
             return r;
         }
+
+        public static Tensor[] Map (this Tensor[] tensors, Func<Tensor, Tensor> map)
+        {
+            var n = tensors.Length;
+            if (n == 0)
+                return Array.Empty<Tensor> ();
+
+            var r = new Tensor[n];
+            for (var i = 0; i < n; i++) {
+                r[i] = tensors[i].MapInputs (map);
+            }
+            return r;
+        }
     }
 }

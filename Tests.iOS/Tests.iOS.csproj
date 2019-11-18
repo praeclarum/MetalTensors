@@ -124,6 +124,7 @@
     <Compile Include="BatchNormLayerTests.cs" />
     <Compile Include="ConcatLayerTests.cs" />
     <Compile Include="ConvTransposeLayerTests.cs" />
+    <Compile Include="MnistApplicationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">
