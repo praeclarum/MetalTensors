@@ -25,7 +25,7 @@ namespace MetalTensors
         public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
 
         readonly Lazy<MPSNNImageNode> metalImageNode;
-        public virtual MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device) => metalImageNode.Value;
+        public virtual MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context) => metalImageNode.Value;
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
 
         protected Tensor (string? label = null)

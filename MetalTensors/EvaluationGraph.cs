@@ -15,16 +15,17 @@ namespace MetalTensors
     class EvaluationGraph : Graph
     {
         public EvaluationGraph (string label, Tensor trainingOutput, bool ignoreDropoutDuringInference, IMTLDevice device)
-            : base (label, CreateEvaluationGraph (trainingOutput, ignoreDropoutDuringInference, device), device)
+            : base (label, CreateEvaluationGraph (label, trainingOutput, ignoreDropoutDuringInference, device), device)
         {
         }
 
-        static MPSNNGraph CreateEvaluationGraph (Tensor output, bool ignoreDropoutDuringInference, IMTLDevice device)
+        static MPSNNGraph CreateEvaluationGraph (string label, Tensor trainingOutput, bool ignoreDropoutDuringInference, IMTLDevice device)
         {
             //
             // Build the training graph
             //
-            var thisImageNode = output.GetMetalImageNode (true, device);
+            var context = new MetalImageNodeContext (label, false, device);
+            var thisImageNode = trainingOutput.GetMetalImageNode (context);
 
             var evalGraph = MPSNNGraph.Create (device, thisImageNode, resultIsNeeded: true);
             var layers = thisImageNode;

@@ -28,9 +28,9 @@ namespace MetalTensors.Tensors
             BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination);
         }
 
-        public override MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device)
+        public override MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context)
         {
-            return BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].GetMetalImageNode (training, device);
+            return BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].GetMetalImageNode (context);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)

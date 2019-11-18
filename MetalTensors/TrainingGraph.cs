@@ -18,20 +18,21 @@ namespace MetalTensors
         readonly EvaluationGraph evalGraph;
 
         public TrainingGraph (string label, Tensor output, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
-            : base (label, CreateTrainingGraph (output, trainable, device, out var cweights), device)
+            : base (label, CreateTrainingGraph (label, output, trainable, device, out var cweights), device)
         {
             convWeights = cweights;
             this.evalGraph = evalGraph;
         }
 
-        static MPSNNGraph CreateTrainingGraph (Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
+        static MPSNNGraph CreateTrainingGraph (string label, Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
         {
             //stopwatch.Start ();
 
             //
             // Build the training graph
             //
-            var thisImageNode = output.GetMetalImageNode (true, device);
+            var context = new MetalImageNodeContext (label, false, device);
+            var thisImageNode = output.GetMetalImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
