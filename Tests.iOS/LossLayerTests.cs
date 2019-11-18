@@ -7,6 +7,32 @@ namespace Tests
     public class LossLayerTests
     {
         [Test]
+        public void MAESum ()
+        {
+            var x = Tensor.Constant (800, 3);
+            var y = Tensor.Constant (1000, 3);
+            var loss = x.Loss (y, LossType.MeanAbsoluteError, ReductionType.Sum);
+
+            Assert.AreEqual (1, loss.Shape.Length);
+            Assert.AreEqual (1, loss.Shape[0]);
+
+            Assert.AreEqual (Math.Abs (x[0] - y[0]) * 3, loss[0], 1.0e-4);
+        }
+
+        [Test]
+        public void MAEMean ()
+        {
+            var x = Tensor.Constant (800, 3);
+            var y = Tensor.Constant (1000, 3);
+            var loss = x.Loss (y, LossType.MeanAbsoluteError, ReductionType.Mean);
+
+            Assert.AreEqual (1, loss.Shape.Length);
+            Assert.AreEqual (1, loss.Shape[0]);
+
+            Assert.AreEqual (Math.Abs (x[0] - y[0]), loss[0], 1.0e-4);
+        }
+
+        [Test]
         public void MSE ()
         {
             var x = Tensor.Constant (800, 1);

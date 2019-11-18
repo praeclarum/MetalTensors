@@ -8,12 +8,14 @@ namespace MetalTensors.Layers
 {
     public class LossLayer : Layer
     {
+        static readonly int[] scalarShape = { 1 };
+
         public override int MinInputCount => 2;
 
         public LossType LossType { get; }
-        public MPSCnnReductionType ReductionType { get; }
+        public ReductionType ReductionType { get; }
 
-        public LossLayer (string? label, LossType lossType, MPSCnnReductionType reductionType)
+        public LossLayer (string? label, LossType lossType, ReductionType reductionType)
             : base (label)
         {
             LossType = lossType;
@@ -35,13 +37,13 @@ namespace MetalTensors.Layers
 
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
-            return inputs[0].Shape;
+            return ReductionType == ReductionType.None ? inputs[0].Shape : scalarShape;
         }
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
             var sourceNodes = inputs.Select (x => x.ImageNode).ToArray ();
-            var descriptor = MPSCnnLossDescriptor.Create ((MPSCnnLossType)LossType, ReductionType);
+            var descriptor = MPSCnnLossDescriptor.Create ((MPSCnnLossType)LossType, (MPSCnnReductionType)ReductionType);
             var ln = new MPSNNForwardLossNode (sourceNodes, descriptor);
             var resultImage = ln.ResultImage;
             resultImage.ExportFromGraph = true;

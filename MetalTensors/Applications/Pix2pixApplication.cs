@@ -23,16 +23,16 @@ namespace MetalTensors.Applications
             var discriminator = MakeDiscriminator (height, width);
             var discOut = discriminator.Output;
             var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
-            var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy);
+            var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
             Discriminator = discLoss.Model (discriminator.Label);
 
             var gan = discriminator.Lock ().Apply (generator);
             var ganOut = gan.Output;
             var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
-            var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy);
-            var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError);
-            //var ganLoss = ganLossD + ganLossL1;
-            Gan = ganLossD.Model (gan.Label);
+            var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
+            var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError, ReductionType.Sum);
+            var ganLoss = ganLossD + ganLossL1;
+            Gan = ganLoss.Model (gan.Label);
         }
 
         static Model MakeGenerator (int height, int width)

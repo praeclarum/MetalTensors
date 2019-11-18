@@ -294,7 +294,7 @@ namespace MetalTensors
             return Upsample (scale, scale);
         }
 
-        public Tensor Loss (Tensor labels, LossType lossType, MPSCnnReductionType reductionType = MPSCnnReductionType.None, Tensor? weights = null)
+        public Tensor Loss (Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
         {
             var layer = new LossLayer (DefaultLossLabel, lossType, reductionType);
             return weights != null ?

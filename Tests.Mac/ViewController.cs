@@ -47,7 +47,30 @@ namespace Tests.Mac
                 while (ex?.InnerException != null)
                     ex = ex.InnerException;
                 Console.WriteLine (ex);
-                var m = "\n" + ex;
+
+                var elines = (ex.StackTrace ?? "").Split ('\n');
+                var e = elines.Length;
+                while (e > 0 && SystemLine (elines[e - 1]))
+                    e--;
+                var s = 0;
+                while (s < e && TestLine (elines[s]))
+                    s++;
+                var glines = elines.Skip (s).Take (e - s).ToList ();
+                static bool SystemLine (string line)
+                {
+                    var t = line.TrimStart ();
+                    return t.StartsWith ("at System.") || t.StartsWith ("at (wr");
+                }
+
+                static bool TestLine (string line)
+                {
+                    var t = line.TrimStart ();
+                    return t.StartsWith ("at NUnit.");
+                }
+
+                glines.Insert (0, ex.Message);
+                glines.Insert (0, ex.GetType ().FullName);
+                var m = "\n" + string.Join ("\n", glines);
                 resultsTextView.Value += m;
                 SetOKColor (false);
                 resultsTextView.Hidden = false;
@@ -88,7 +111,7 @@ namespace Tests.Mac
                     allOK = allOK && tr.Success;
                     BeginInvokeOnMainThread (() => ShowTestResult (tr));
                 }
-            });            
+            });
 
             BeginInvokeOnMainThread (() => ShowFinalResult (allOK));
         }

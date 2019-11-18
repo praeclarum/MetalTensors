@@ -15,15 +15,13 @@ namespace Tests
             Assert.AreEqual (256, pix2pix.Generator.Input.Shape[1]);
             Assert.AreEqual (3, pix2pix.Generator.Input.Shape[2]);
 
-            //Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape[0]);
-            //Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape[1]);
-            //Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape[2]);
+            Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape.Length);
+            Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape[0]);
 
             Assert.NotNull (pix2pix.Gan);
 
-            //Assert.AreEqual (1, pix2pix.Gan.Output.Shape[0]);
-            //Assert.AreEqual (1, pix2pix.Gan.Output.Shape[1]);
-            //Assert.AreEqual (1, pix2pix.Gan.Output.Shape[2]);
+            Assert.AreEqual (1, pix2pix.Gan.Output.Shape.Length);
+            Assert.AreEqual (1, pix2pix.Gan.Output.Shape[0]);
         }
     }
 }
