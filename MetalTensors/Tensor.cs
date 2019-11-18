@@ -35,7 +35,7 @@ namespace MetalTensors
             metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
 
-        public override string ToString () => Label + " (" + string.Join (", ", Shape) + ")";
+        public override string ToString () => Label + " (" + string.Join (", ", Shape) + ") {type=" + GetType ().Name + "}";
 
         //public virtual Tensor Clone () => this;
 
@@ -190,6 +190,16 @@ namespace MetalTensors
         public static Tensor operator * (Tensor a, Tensor b)
         {
             return a.Multiply (b);
+        }
+
+        public static Tensor operator * (float a, Tensor b)
+        {
+            return Constant (a, b.Shape).Multiply (b);
+        }
+
+        public static Tensor operator * (Tensor a, float b)
+        {
+            return a.Multiply (Constant (b, a.Shape));
         }
 
         public Tensor Multiply (Tensor other)

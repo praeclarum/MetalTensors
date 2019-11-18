@@ -23,5 +23,16 @@ namespace Tests
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape.Length);
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape[0]);
         }
+
+
+        //[Test]
+        public void Train ()
+        {
+            var pix2pix = new Pix2pixApplication ();
+
+            var data = Pix2pixApplication.DataSet.LoadDirectory ("");
+
+            pix2pix.Train (data, epochs: 2);
+        }
     }
 }

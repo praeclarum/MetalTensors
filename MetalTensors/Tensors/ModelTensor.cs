@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Metal;
+using MetalPerformanceShaders;
 
 namespace MetalTensors.Tensors
 {
@@ -24,6 +26,11 @@ namespace MetalTensors.Tensors
         public override void Copy (Span<float> destination)
         {
             BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination);
+        }
+
+        public override MPSNNImageNode GetMetalImageNode (bool training, IMTLDevice device)
+        {
+            return BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].GetMetalImageNode (training, device);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)

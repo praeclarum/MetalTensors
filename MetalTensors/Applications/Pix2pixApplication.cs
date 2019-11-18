@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Metal;
 using MetalTensors.Tensors;
 
 namespace MetalTensors.Applications
@@ -16,11 +18,11 @@ namespace MetalTensors.Applications
 
         public Pix2pixApplication (int height = 256, int width = 256)
         {
-            var generator = MakeGenerator (height, width);
+            var generator = CreateGenerator (height, width);
             var genOut = generator.Output;
             Generator = generator;
 
-            var discriminator = MakeDiscriminator (height, width);
+            var discriminator = CreateDiscriminator (height, width);
             var discOut = discriminator.Output;
             var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
             var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
@@ -31,11 +33,11 @@ namespace MetalTensors.Applications
             var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
             var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
             var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError, ReductionType.Sum);
-            var ganLoss = ganLossD + ganLossL1;
+            var ganLoss = ganLossD + lambdaL1 * ganLossL1;
             Gan = ganLoss.Model (gan.Label);
         }
 
-        static Model MakeGenerator (int height, int width)
+        static Model CreateGenerator (int height, int width)
         {
             var useDropout = true;
             var instanceNorm = false;
@@ -90,7 +92,7 @@ namespace MetalTensors.Applications
             }
         }
 
-        static Model MakeDiscriminator (int height, int width)
+        static Model CreateDiscriminator (int height, int width)
         {
             // https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/1c733f5bd7a3aff886403a46baada1db62e2eca8/models/networks.py#L538
 
@@ -116,6 +118,34 @@ namespace MetalTensors.Applications
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
             return disc.Model ();
+        }
+
+        public void Train (DataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
+        {
+            var trainImageCount = dataSet.Length;
+
+            var numBatchesPerEpoch = trainImageCount / batchSize;
+
+            for (var epoch = 0; epoch < epochs; epoch++) {
+                //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
+                var discHistoryReal = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
+                var ganHistory = Gan.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
+            }
+        }
+
+        public class DataSet
+        {
+            public int Length = 100;
+
+            public IEnumerable<Tensor> LoadData (TensorHandle[] handles)
+            {
+                return new[] { Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros () };
+            }
+
+            public static DataSet LoadDirectory (string path, string aName = "A", string bName = "B")
+            {
+                return new DataSet ();
+            }
         }
     }
 }

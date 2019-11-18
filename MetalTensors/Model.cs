@@ -230,6 +230,10 @@ namespace MetalTensors
                     }
                     return o;
                 }
+                if (t is LayerTensor l) {
+                    var ins = l.LayerInputs.Select (FlattenTensor).ToArray ();
+                    return new LayerTensor (l.Layer, ins);
+                }
                 return t;
             }
 

@@ -41,7 +41,9 @@ namespace MetalTensors
                 }
                 else if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
                          lh.Layer.GetMetalConvDataSource (device) is ConvDataSource cw) {
-                    convWeightsL.Add ((cw, trainable[lh.Layer]));
+                    var train = trainable[lh.Layer];
+                    convWeightsL.Add ((cw, train));
+                    
                     //Console.WriteLine (lh);
                 }                
             });
@@ -230,6 +232,8 @@ namespace MetalTensors
                 //Console.WriteLine ($"GET BATCH IMAGE {i}");
                 var data = trainingData (sourceHandles);
                 var dataImages = data.Select (ImageFromTensor).ToList ();
+                if (dataImages.Count != sourceHandles.Length)
+                    throw new InvalidOperationException ($"{sourceHandles.Length} tensors are needed to train, {dataImages.Count} provided");
                 batch.Add (dataImages);
             }
 
