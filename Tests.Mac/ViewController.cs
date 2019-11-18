@@ -58,13 +58,13 @@ namespace Tests.Mac
         {
             allTestsPassed = allOK;
 
-            var m = $"ALL OK? {allOK}";
+            var m = $"\n\nALL OK? {allOK}";
             Console.WriteLine (m);
             resultsTextView.Value += m;
 
             NSWindow? w = this.View.Window;
             if (w != null) {
-                w.Title = m;
+                w.Title = m.Trim ();
                 SetOKColor (allOK);
             }
         }

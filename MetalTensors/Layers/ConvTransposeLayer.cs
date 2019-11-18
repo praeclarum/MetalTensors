@@ -30,15 +30,11 @@ namespace MetalTensors.Layers
 
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
-            // https://github.com/keras-team/keras/blob/f06524c44e5f6926968cb2bb3ddd1e523f5474c5/keras/utils/conv_utils.py#L85
-
             var inputShape = inputs[0].Shape;
             var h = inputShape[0];
             var w = inputShape[1];
             var kh = ConvTransposeOutputLength (h, SizeY, StrideY, Padding, 1, null);
             var kw = ConvTransposeOutputLength (w, SizeX, StrideX, Padding, 1, null);
-            //var sh = kh / StrideY;
-            //var sw = kw / StrideX;
             return new[] { kh, kw, OutFeatureChannels };
         }
 

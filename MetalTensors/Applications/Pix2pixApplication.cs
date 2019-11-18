@@ -42,20 +42,21 @@ namespace MetalTensors.Applications
 
                 var size = submodule != null ? submodule.Output.Shape[0] * 2 : 2;
                 var input = Tensor.Input ("image", size, size, inNC);
+                var label = "Unet" + size;
 
                 if (outermost) {
                     var downconv = input.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
-                    return up.Model ();
+                    return up.Model (label);
                 }
                 else if (innermost) {
                     var downrelu = input.ReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var up = down.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model ();
+                    return input.Concat (up).Model (label);
                 }
                 else {
                     var downrelu = input.ReLU (a: 0.2f);
@@ -64,7 +65,7 @@ namespace MetalTensors.Applications
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model ();
+                    return input.Concat (up).Model (label);
                 }
             }
         }
