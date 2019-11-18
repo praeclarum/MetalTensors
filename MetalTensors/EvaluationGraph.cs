@@ -27,8 +27,20 @@ namespace MetalTensors
             var context = new MetalImageNodeContext (label, false, device);
             var thisImageNode = trainingOutput.GetMetalImageNode (context);
 
+            //
+            // Export all losses and loss inputs
+            //
+            var (flatModel, _) = trainingOutput.Model ().Flatten ();
+            foreach (var t in flatModel.Tensors) {
+                if (t is LayerTensor lt && lt.Layer is LossLayer ll) {
+                    ExportTensor (t, context);
+                }
+            }
+
+            //
+            // Create the graph
+            //
             var evalGraph = MPSNNGraph.Create (device, thisImageNode, resultIsNeeded: true);
-            var layers = thisImageNode;
             evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
             return evalGraph;

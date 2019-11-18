@@ -100,7 +100,7 @@ namespace MetalTensors
             return null;
         }
 
-        MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
+        public MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
         {
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (context), x.Shape)).ToArray ();
 

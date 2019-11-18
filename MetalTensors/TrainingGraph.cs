@@ -24,7 +24,7 @@ namespace MetalTensors
             this.evalGraph = evalGraph;
         }
 
-        static MPSNNGraph CreateTrainingGraph (string label, Tensor output, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
+        static MPSNNGraph CreateTrainingGraph (string label, Tensor trainingOutput, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
         {
             //stopwatch.Start ();
 
@@ -32,7 +32,7 @@ namespace MetalTensors
             // Build the training graph
             //
             var context = new MetalImageNodeContext (label, false, device);
-            var thisImageNode = output.GetMetalImageNode (context);
+            var thisImageNode = trainingOutput.GetMetalImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
@@ -62,6 +62,19 @@ namespace MetalTensors
             var trainingGraphTerminiImageNodes = trainingGraphTermini.Select (x => x.ResultImage).ToArray ();
             var resultsNeeded = trainingGraphTerminiImageNodes.Select (x => true).ToArray ();
 
+            //
+            // Export all losses and loss inputs
+            //
+            var (flatModel, _) = trainingOutput.Model ().Flatten ();
+            foreach (var t in flatModel.Tensors) {
+                if (t is LayerTensor lt && lt.Layer is LossLayer ll) {
+                    ExportTensor (t, context);
+                }
+            }
+
+            //
+            // Create the graph
+            //
             var trainingGraph = MPSNNGraph.Create (device, trainingGraphTerminiImageNodes, resultsNeeded);
             trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
 

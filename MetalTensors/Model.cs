@@ -212,7 +212,7 @@ namespace MetalTensors
             return (evalGraph, trainingGraph);
         }
 
-        (Model, Dictionary<Layer, bool>) Flatten ()
+        public (Model, Dictionary<Layer, bool>) Flatten ()
         {
             var trainable = new Dictionary<Layer, bool> ();
             foreach (var l in Layers) {

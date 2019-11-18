@@ -45,14 +45,6 @@ namespace MetalTensors.Layers
             var sourceNodes = inputs.Select (x => x.ImageNode).ToArray ();
             var descriptor = MPSCnnLossDescriptor.Create ((MPSCnnLossType)LossType, (MPSCnnReductionType)ReductionType);
             var ln = new MPSNNForwardLossNode (sourceNodes, descriptor);
-
-            //
-            // TODO: Do this in Graph creation
-            //
-            var resultImage = ln.ResultImage;
-            resultImage.ExportFromGraph = true;
-            resultImage.SynchronizeResource = true;
-            resultImage.ImageAllocator = MPSImage.DefaultAllocator;
             return ln;
         }
     }
