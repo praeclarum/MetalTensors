@@ -16,16 +16,18 @@ namespace MetalTensors
     {
         public IMTLDevice Device { get; }
 
+        public string Label { get; }
         public MPSNNGraph MetalGraph { get; }
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
 
-        protected Graph (MPSNNGraph graph, IMTLDevice device)
+        protected Graph (string label, MPSNNGraph graph, IMTLDevice device)
         {
             this.Device = device;
+            Label = label;
             this.MetalGraph = graph;
+            graph.Label = Label;
             //stopwatch.Start ();
-
 
             sourceHandles = graph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
             //var resultStateHandles = trainingGraph.ResultStateHandles;
@@ -34,6 +36,8 @@ namespace MetalTensors
             //Console.WriteLine (intermediateHandles);
             //Console.WriteLine (trainingGraph.DebugDescription);
         }
+
+        public override string ToString () => Label;
 
         public MPSCommandBuffer BeginBatch (int batchIndex, LoadBatch trainingData, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
         {
@@ -90,27 +94,27 @@ namespace MetalTensors
                 semaphore.Release ();
 
                 if (cmdBuf.Error != null) {
-                    Console.WriteLine ("Command Buffer Error: " + cmdBuf.Error.Description);
+                    Console.WriteLine ($"Command Buffer Error on batch {batchIndex}: {cmdBuf.Error.Description}");
                 }
 
                 //
-                // Process the results
+                // Record results
                 //
-                if (returnBatch != null) {
-                    var results = returnBatch.ToArray ();
-                    foreach (var r in results) {
-                        //Console.WriteLine ($"BI{batchIndex} Results handle {r.Handle}");
-                        //Console.WriteLine (r.NumberOfImages);
-                    }
-                }
+                var results = returnBatch != null && returnBatch.Count > 0 ?
+                    returnBatch.Select (x => (Tensor)new MPSImageTensor (x)).ToArray () :
+                    Array.Empty<Tensor> ();
 
                 //
-                // Record history
+                // Record the loss history
                 //
                 //Console.WriteLine ($"{intermediateImages.Length} ims");                
                 var loss = intermediateImages.Length > 0 ?
                     intermediateImages[0].Select (x => new MPSImageTensor (x)).ToArray () :
-                    System.Array.Empty<Tensor> ();
+                    Array.Empty<Tensor> ();
+
+                //
+                // Record the intermediates
+                //
                 var bh = new Dictionary<string, Tensor[]> ();
                 if (intermediateImages.Length > 0) {
                     if (intermediateImages.Length - 1 != intermediateHandles.Length) {
@@ -121,7 +125,9 @@ namespace MetalTensors
                         bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
                     }
                 }
-                recordHistory (new TrainingHistory.BatchHistory (loss, bh));
+                var h = new TrainingHistory.BatchHistory (results, loss, bh);
+                OnBatchCompleted (h);
+                recordHistory (h);
 
                 //
                 // Free the temps
@@ -148,6 +154,10 @@ namespace MetalTensors
             commandBuffer.Commit ();
 
             return commandBuffer;
+        }
+
+        protected virtual void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
+        {
         }
 
         (NSArray<MPSImage>[], MPSImage[]) GetBatch (LoadBatch trainingData, int batchSize)

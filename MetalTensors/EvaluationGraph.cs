@@ -14,8 +14,8 @@ namespace MetalTensors
 {
     class EvaluationGraph : Graph
     {
-        public EvaluationGraph (Tensor trainingOutput, bool ignoreDropoutDuringInference, IMTLDevice device)
-            : base (CreateEvaluationGraph (trainingOutput, ignoreDropoutDuringInference, device), device)
+        public EvaluationGraph (string label, Tensor trainingOutput, bool ignoreDropoutDuringInference, IMTLDevice device)
+            : base (label, CreateEvaluationGraph (trainingOutput, ignoreDropoutDuringInference, device), device)
         {
         }
 
@@ -27,6 +27,7 @@ namespace MetalTensors
             var thisImageNode = output.GetMetalImageNode (true, device);
 
             var evalGraph = MPSNNGraph.Create (device, thisImageNode, resultIsNeeded: true);
+            var layers = thisImageNode;
             evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
             return evalGraph;
@@ -69,6 +70,13 @@ namespace MetalTensors
             }
 
             return new TrainingHistory (h);
+        }
+
+        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
+        {
+            //foreach (var r in batchResults.Results) {
+            //    Console.WriteLine (Label + " " + r);
+            //}
         }
     }
 }

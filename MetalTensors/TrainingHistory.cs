@@ -20,11 +20,13 @@ namespace MetalTensors
 
         public class BatchHistory
         {
+            public Tensor[] Results { get; }
             public Tensor[] Loss { get; }
             public Dictionary<string, Tensor[]> IntermediateValues { get; }
 
-            public BatchHistory (Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues)
+            public BatchHistory (Tensor[] results, Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues)
             {
+                Results = results;
                 Loss = loss;
                 IntermediateValues = intermediateValues;
             }

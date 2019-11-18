@@ -16,8 +16,10 @@ namespace MetalTensors
         static int nextId = 1;
         readonly string label;
 
-        readonly ConcurrentDictionary<string, MPSNNFilterNode> deviceFilterNodes =
+        readonly ConcurrentDictionary<string, MPSNNFilterNode> cachedFilterNodes =
             new ConcurrentDictionary<string, MPSNNFilterNode> ();
+        readonly ConcurrentBag<MPSNNFilterNode> filterNodes =
+            new ConcurrentBag<MPSNNFilterNode> ();
 
         public abstract int MinInputCount { get; }
 
@@ -40,7 +42,7 @@ namespace MetalTensors
 
         public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
-            var f = GetFilterNode (inputs, training, device);
+            var f = CreateFilterNode (inputs, training, device);
             //Console.WriteLine (f.ResultImage.DebugDescription);
             return f.ResultImage;
         }
@@ -62,7 +64,7 @@ namespace MetalTensors
             void StartGraph (object s)
             {
                 try {
-                    var node = GetFilterNode (inputs, false, device);
+                    var node = GetCachedFilterNode (inputs, false, device);
 
                     using var graph = new MPSNNGraph (device, node.ResultImage, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
@@ -99,25 +101,36 @@ namespace MetalTensors
             return null;
         }
 
-        MPSNNFilterNode GetFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
+        MPSNNFilterNode CreateFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
-            return GetFilterNode (inputImageNodes, training, device);
+            return CreateFilterNode (inputImageNodes, training, device);
         }
 
-        MPSNNFilterNode GetFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, bool training, IMTLDevice device)
+        MPSNNFilterNode GetCachedFilterNode (Tensor[] inputs, bool training, IMTLDevice device)
         {
-            var key = device.Handle + "-" + string.Join (",", inputs.Select (x => x.ImageNode.MPSHandle.Label));
-            if (deviceFilterNodes.TryGetValue (key, out var node))
+            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (training, device), x.Shape)).ToArray ();
+
+            var key = device.Handle + "-" + string.Join (",", inputImageNodes.Select (x => x.Item1.MPSHandle.Label));
+            if (cachedFilterNodes.TryGetValue (key, out var node))
                 return node;
 
-            node = CreateFilterNode (inputs, device);
+            node = CreateFilterNode (inputImageNodes, device);
+
+            if (cachedFilterNodes.TryAdd (key, node))
+                return node;
+            return cachedFilterNodes[key];
+        }
+
+        MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, bool training, IMTLDevice device)
+        {
+            var node = CreateFilterNode (inputs, device);
             node.ResultImage.MPSHandle = new LayerHandle (this);
             node.Label = Label;
 
-            if (deviceFilterNodes.TryAdd (key, node))
-                return node;
-            return deviceFilterNodes[key];
+            filterNodes.Add (node);
+
+            return node;
         }
 
         protected abstract MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device);

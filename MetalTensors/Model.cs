@@ -206,8 +206,8 @@ namespace MetalTensors
                 trainingModel.Outputs[0] :
                 Tensor.Add (trainingModel.Outputs);
 
-            var evalGraph = new EvaluationGraph (trainingTensor, IgnoreDropoutDuringInference, d);
-            var trainingGraph = new TrainingGraph (trainingTensor, trainable, evalGraph, d);
+            var evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, IgnoreDropoutDuringInference, d);
+            var trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, d);
 
             return (evalGraph, trainingGraph);
         }

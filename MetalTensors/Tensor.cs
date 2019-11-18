@@ -14,8 +14,7 @@ namespace MetalTensors
 {
     public abstract class Tensor
     {
-        public const string DefaultLabelsLabel = "labels";
-        public const string DefaultLossLabel = "loss";
+        public const string DefaultLabelsLabel = "Labels";
 
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
@@ -311,7 +310,7 @@ namespace MetalTensors
 
         public Tensor Loss (Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
         {
-            var layer = new LossLayer (DefaultLossLabel, lossType, reductionType);
+            var layer = new LossLayer (Label + " Loss", lossType, reductionType);
             return weights != null ?
                 layer.GetOutput (this, labels, weights) :
                 layer.GetOutput (this, labels);
