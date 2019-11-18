@@ -317,9 +317,9 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, bool ignoreDropoutDuringInference = true, IMTLDevice? device = null)
+        public TrainingHistory Train (LoadBatch trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool ignoreDropoutDuringInference = true, IMTLDevice? device = null)
         {
-            return new Model (Label, true, ignoreDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, device);
+            return new Model (Label, true, ignoreDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, validationInterval, device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

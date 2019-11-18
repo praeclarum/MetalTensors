@@ -8,11 +8,14 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
+    public delegate IEnumerable<Tensor> LoadBatch (TensorHandle[] handles);
+
     public class Model
     {
         public const float DefaultLearningRate = 0.001f;
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = 100;
+        public const int DefaultValidationInterval = 10;
 
         public string Label { get; }
         public bool IsTrainable { get; }
@@ -27,7 +30,8 @@ namespace MetalTensors
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
 
-        readonly ConcurrentDictionary<IntPtr, TrainingGraph> trainingGraphs = new ConcurrentDictionary<IntPtr, TrainingGraph> ();
+        readonly ConcurrentDictionary<IntPtr, (EvaluationGraph Evaluation, TrainingGraph Training)> graphs =
+            new ConcurrentDictionary<IntPtr, (EvaluationGraph Evaluation, TrainingGraph Training)> ();
 
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
@@ -157,7 +161,7 @@ namespace MetalTensors
 
         const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public TrainingHistory Train (Func<TensorHandle[], IEnumerable<Tensor>> trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, IMTLDevice? device = null)
+        public TrainingHistory Train (LoadBatch trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
         {
             //
             // Get training graph
@@ -165,20 +169,20 @@ namespace MetalTensors
             var d = device.Current ();
 
             var key = d.Handle;
-            if (!trainingGraphs.TryGetValue (key, out var g)) {
-                g = CreateTrainingGraph (d);
-                if (!trainingGraphs.TryAdd (key, g)) {
-                    g = trainingGraphs[key];
+            if (!graphs.TryGetValue (key, out var gs)) {
+                gs = CreateGraphs (d);
+                if (!graphs.TryAdd (key, gs)) {
+                    gs = graphs[key];
                 }
             }
 
             //
             // Train
             //
-            return g.Train (trainingData, learningRate, batchSize, numBatches);
+            return gs.Training.Train (trainingData, learningRate, batchSize, numBatches, validationInterval);
         }
 
-        TrainingGraph CreateTrainingGraph (IMTLDevice d)
+        (EvaluationGraph, TrainingGraph) CreateGraphs (IMTLDevice d)
         {
             var (flatModel, trainable) = Flatten ();
 
@@ -202,7 +206,10 @@ namespace MetalTensors
                 trainingModel.Outputs[0] :
                 Tensor.Add (trainingModel.Outputs);
 
-            return new TrainingGraph (trainingTensor, trainable, d);
+            var evalGraph = new EvaluationGraph (trainingTensor, IgnoreDropoutDuringInference, d);
+            var trainingGraph = new TrainingGraph (trainingTensor, trainable, evalGraph, d);
+
+            return (evalGraph, trainingGraph);
         }
 
         (Model, Dictionary<Layer, bool>) Flatten ()

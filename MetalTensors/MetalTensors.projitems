@@ -56,6 +56,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)ReductionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Applications\MnistApplication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Application.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Graph.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EvaluationGraph.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

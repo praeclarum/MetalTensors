@@ -30,7 +30,8 @@ namespace MetalTensors.Applications
             for (var epoch = 0; epoch < epochs; epoch++) {
                 Console.WriteLine ("MNIST EPOCH");
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var history = Classifier.Train (trainingData.NextRow, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
+                var history = Classifier.Train (trainingData.NextRow, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
+                Console.WriteLine (history);
             }
         }
 

@@ -18,6 +18,7 @@ namespace Tests
 
             var batchSize = 5;
             var numBatches = 10;
+            var valInterval = 2;
 
             var getDataCount = 0;
 
@@ -30,9 +31,9 @@ namespace Tests
                 getDataCount++;
 
                 return needed.Select (x => x.Tensor);
-            }, batchSize: batchSize, numBatches: numBatches);
+            }, batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
 
-            Assert.AreEqual (batchSize * numBatches, getDataCount);
+            Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);
 
             Assert.AreEqual (numBatches, history.Batches.Length);
             Assert.AreEqual (batchSize, history.Batches[0].Loss.Length);
