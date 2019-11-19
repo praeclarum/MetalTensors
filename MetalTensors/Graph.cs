@@ -129,7 +129,7 @@ namespace MetalTensors
             //
             var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
             var destinationStates = new NSMutableArray<NSArray<MPSState>> ();
-            NSArray<MPSImage>? returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, System.Array.Empty<NSArray<MPSState>> (), intermediateImagesMA, null);
+            NSArray<MPSImage>? returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, Array.Empty<NSArray<MPSState>> (), intermediateImagesMA, null);
             var intermediateImages = intermediateImagesMA.ToArray ();
 
             //

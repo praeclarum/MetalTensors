@@ -18,6 +18,7 @@ namespace Tests
         {
             var app = new MnistApplication ();
             var data = new MnistApplication.MnistDataSet ();
+
             //app.Train (data);
         }
 

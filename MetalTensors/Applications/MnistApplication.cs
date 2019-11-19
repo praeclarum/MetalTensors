@@ -39,7 +39,7 @@ namespace MetalTensors.Applications
         {
             var (height, width) = (28, 28);
             var image = Tensor.InputImage ("image", height, width, 1);
-            var labels = Tensor.Labels ("labels", height, width, 1);
+            var labels = Tensor.Labels ("labels", 1, 1, 10);
             var weights = WeightsInit.Uniform (-0.2f, 0.2f);
             var output =
                 image
@@ -47,7 +47,7 @@ namespace MetalTensors.Applications
                 .Conv (64, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
                 .Dense (1024, size: 7, weightsInit: weights).ReLU (a: 0)
                 .Dropout (0.5f)
-                .Dense (10).SoftMax ();
+                .Dense (10).Loss (labels, LossType.SoftMaxCrossEntropy, ReductionType.Sum);
             var model = output.Model ("mnist");
 
             return model;

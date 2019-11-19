@@ -31,7 +31,7 @@ namespace MetalTensors.Layers
             var inputShape = inputs[0].Shape;
             var labelsShape = inputs[1].Shape;
             if (!inputShape.ShapeEquals (labelsShape)) {
-                throw new ArgumentException ($"Labels shape ({labelsShape.ToShapeString ()}) must match the data shape ({inputShape.ToShapeString ()})", nameof (inputs));
+                throw new ArgumentException ($"Labels shape {labelsShape.ToShapeString ()} must match the data shape {inputShape.ToShapeString ()}", nameof (inputs));
             }
         }
 
