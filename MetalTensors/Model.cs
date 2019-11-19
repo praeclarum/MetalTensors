@@ -14,6 +14,7 @@ namespace MetalTensors
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = 100;
         public const int DefaultValidationInterval = 10;
+        public const int DefaultEpochs = 10;
 
         public string Label { get; }
         public bool IsTrainable { get; }
@@ -158,6 +159,12 @@ namespace MetalTensors
         }
 
         const LossType DefaultLossType = LossType.MeanSquaredError;
+
+        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        {
+            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
+            return Train (dataSet, learningRate, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
+        }
 
         public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
         {

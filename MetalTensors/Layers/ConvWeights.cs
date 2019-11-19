@@ -182,11 +182,7 @@ namespace MetalTensors.Layers
 
                 u.Encode (commandBuffer, gradientState, sourceState, momentumVectors, velocityVectors, convWtsAndBias);
 
-                if (updateCount != u.TimeStep) {
-                    throw new Exception ($"Update time step is out of synch");
-                }
-
-                //Console.WriteLine ($"UpdateWeights of ConvWeights {this.Label}");
+                //Console.WriteLine ($"Update of ConvDataSource {this.Label}");
             }
 
             return convWtsAndBias;

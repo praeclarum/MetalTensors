@@ -14,12 +14,14 @@ namespace Tests
         }
 
         [Test]
-        public void Train ()
+        public void TrainSmall ()
         {
             var app = new MnistApplication ();
-            var data = new MnistApplication.MnistDataSet ();
 
-            //app.Train (data);
+            var batchSize = 5;
+            var data = new MnistApplication.MnistDataSet ().Subset (0, 7 * batchSize);
+
+            app.Train (data, batchSize: batchSize, epochs: 3);
         }
 
     }

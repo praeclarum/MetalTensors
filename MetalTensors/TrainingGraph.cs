@@ -83,6 +83,9 @@ namespace MetalTensors
 
         public TrainingHistory Train (DataSet dataSet, float learningRate, int batchSize, int numBatches, int validateInterval)
         {
+            if (validateInterval <= 0)
+                throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
+
             //
             // Set the learning rate
             //
@@ -119,7 +122,7 @@ namespace MetalTensors
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
                 lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, q);
 
-                if (batchIndex % validateInterval == 0) {
+                if ((batchIndex + 1) % validateInterval == 0) {
                     lcb?.WaitUntilCompleted ();
                     lcb = null;
                     var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, q);

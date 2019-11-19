@@ -25,7 +25,7 @@ namespace Tests
 
             var rand = new Random ();
 
-            var history = loss.Train (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), learningRate: 0.01f, batchSize: 16, numBatches: 100);
+            var history = loss.Train (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), learningRate: 0.01f, batchSize: 16, numBatches: 100, validationInterval: 50);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, batch.Loss[0].Shape[0]);

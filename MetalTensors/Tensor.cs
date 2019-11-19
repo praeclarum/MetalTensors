@@ -346,6 +346,12 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
+        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        {
+            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
+            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, device);
+        }
+
         public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
             return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, numBatches, validationInterval, device);

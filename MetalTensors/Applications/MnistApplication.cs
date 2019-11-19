@@ -20,18 +20,17 @@ namespace MetalTensors.Applications
             Classifier = CreateModel ();
         }
 
-        public void Train (MnistDataSet trainingData, int epochs = 200, IMTLDevice? device = null)
+        public void Train (DataSet trainingData, int batchSize = 32, int epochs = 200, IMTLDevice? device = null)
         {
             var trainImageCount = trainingData.Count;
-            var batchSize = 32;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
 
             for (var epoch = 0; epoch < epochs; epoch++) {
                 Console.WriteLine ("MNIST EPOCH");
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var history = Classifier.Train (trainingData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
-                Console.WriteLine (history);
+                var history = Classifier.Train (trainingData, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                Console.WriteLine ("MNIST HISTORY: " + history);
             }
         }
 

@@ -127,9 +127,13 @@ namespace MetalTensors.Applications
             var numBatchesPerEpoch = trainImageCount / batchSize;
 
             for (var epoch = 0; epoch < epochs; epoch++) {
-                //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var discHistoryReal = Discriminator.Train (dataSet, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
-                var ganHistory = Gan.Train (dataSet, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
+                for (var batch = 0; batch < numBatchesPerEpoch; batch++) {
+                    //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
+                    var index = batch * batchSize;
+                    var subdata = dataSet.Subset (index, batchSize);
+                    var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                    var ganHistory = Gan.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                }
             }
         }
 

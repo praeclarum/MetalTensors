@@ -18,11 +18,16 @@ namespace MetalTensors
             return new SingleDataSet (column, input);
         }
 
+        public DataSet Subset (int index, int length)
+        {
+            return new SubsetDataSet (this, index, length);
+        }
+
         class GeneratedDataSet : DataSet
         {
-            private readonly string[] columns;
-            private readonly int count;
-            private readonly Func<int, Tensor[]> getRow;
+            readonly string[] columns;
+            readonly int count;
+            readonly Func<int, Tensor[]> getRow;
 
             public override int Count => count;
             public override string[] Columns => columns;
@@ -38,8 +43,8 @@ namespace MetalTensors
 
         class SingleDataSet : DataSet
         {
-            private string[] columns;
-            private Tensor[] row;
+            readonly string[] columns;
+            readonly Tensor[] row;
 
             public override int Count => 1;
             public override string[] Columns => columns;
@@ -49,6 +54,24 @@ namespace MetalTensors
             {
                 columns = new[] { column };
                 row = new[] { input };
+            }
+        }
+
+        class SubsetDataSet : DataSet
+        {
+            readonly DataSet parent;
+            readonly int index;
+            readonly int length;
+
+            public override int Count => length;
+            public override string[] Columns => parent.Columns;
+            public override Tensor[] GetRow (int index) => parent.GetRow(this.index + index);
+
+            public SubsetDataSet (DataSet parent, int index, int length)
+            {
+                this.parent = parent;
+                this.index = index;
+                this.length = length;
             }
         }
     }
