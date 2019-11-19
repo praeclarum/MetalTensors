@@ -151,7 +151,7 @@ namespace MetalTensors
         public Model Apply (params Tensor[] inputs)
         {
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, KeepDropoutDuringInference, outputs);
+            return new Model (Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")", IsTrainable, KeepDropoutDuringInference, outputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -163,23 +163,35 @@ namespace MetalTensors
 
         public TrainingHistory Train (LoadBatch trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
         {
-            //
-            // Get training graph
-            //
             var d = device.Current ();
+            var g = GetGraphs (d).Training;
+            return g.Train (trainingData, learningRate, batchSize, numBatches, validationInterval);
+        }
 
-            var key = d.Handle;
-            if (!graphs.TryGetValue (key, out var gs)) {
-                gs = CreateGraphs (d);
-                if (!graphs.TryAdd (key, gs)) {
-                    gs = graphs[key];
-                }
+        public TrainingHistory Predict (Tensor input, IMTLDevice? device = null)
+        {
+            var d = device.Current ();
+            var g = GetGraphs (d).Inference;
+            var batchSize = 1;
+            var numBatches = 1;
+
+            return g.Predict (LoadValue, batchSize, numBatches);
+
+            IEnumerable<Tensor> LoadValue (TensorHandle[] _)
+            {
+                return new[] { input };
             }
+        }
 
-            //
-            // Train
-            //
-            return gs.Training.Train (trainingData, learningRate, batchSize, numBatches, validationInterval);
+        (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training) GetGraphs (IMTLDevice d)
+        {
+            var key = d.Handle;
+            if (graphs.TryGetValue (key, out var gs))
+                return gs;
+            gs = CreateGraphs (d);
+            if (graphs.TryAdd (key, gs))
+                return gs;
+            return graphs[key];
         }
 
         (InferenceGraph, EvaluationGraph, TrainingGraph) CreateGraphs (IMTLDevice d)
