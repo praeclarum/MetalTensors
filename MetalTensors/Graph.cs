@@ -101,9 +101,9 @@ namespace MetalTensors
                 semaphore.Release ();
                 throw;
             }
-
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
+            // No using because it is returned
             var commandBuffer = MPSCommandBuffer.Create (queue);
 
             //
@@ -134,7 +134,7 @@ namespace MetalTensors
                 semaphore.Release ();
 
                 if (cmdBuf.Error != null) {
-                    Console.WriteLine ($"Command Buffer Error on batch {batchIndex}: {cmdBuf.Error.Description}");
+                    Console.WriteLine ($"{Label}: Command Buffer Error on batch {batchIndex}: {cmdBuf.Error.Description}");
                 }
 
                 //
@@ -181,7 +181,6 @@ namespace MetalTensors
                 // Free the temps
                 //
                 //var allocBefore = device.GetCurrentAllocatedSize ();
-
                 foreach (var t in temporaryBatchImages) {
                     t.Dispose ();
                 }
@@ -190,7 +189,6 @@ namespace MetalTensors
                     b.Dispose ();
                 }
                 batch = Array.Empty<NSArray<MPSImage>> ();
-
                 //var allocAfter = device.GetCurrentAllocatedSize ();
                 //Console.WriteLine ($"{stopwatch.Elapsed} ALLOCD {(long)allocBefore-(long)allocAfter:#,0} = {allocBefore:#,0} - {allocAfter:#,0} BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 

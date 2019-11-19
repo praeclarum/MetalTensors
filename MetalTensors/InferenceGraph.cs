@@ -31,6 +31,11 @@ namespace MetalTensors
         public TrainingHistory Predict (LoadBatch trainingData, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
+            // Refresh weights incase they changed since last time
+            //
+            MetalGraph.ReloadFromDataSources ();
+
+            //
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();
@@ -60,9 +65,9 @@ namespace MetalTensors
 
         protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
         {
-            foreach (var r in batchResults.Results) {
-                Console.WriteLine (Label + " " + r);
-            }
+            //foreach (var r in batchResults.Results) {
+            //    Console.WriteLine (Label + " Result = " + r);
+            //}
         }
     }
 }

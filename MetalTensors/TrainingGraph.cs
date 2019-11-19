@@ -91,6 +91,11 @@ namespace MetalTensors
             }
 
             //
+            // Refresh weights incase they changed since last time
+            //
+            MetalGraph.ReloadFromDataSources ();
+
+            //
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();

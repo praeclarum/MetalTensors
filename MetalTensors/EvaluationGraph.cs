@@ -34,6 +34,11 @@ namespace MetalTensors
         public TrainingHistory Evaluate (LoadBatch trainingData, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
+            // Refresh weights incase they changed since last time
+            //
+            MetalGraph.ReloadFromDataSources ();
+
+            //
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();
@@ -61,13 +66,6 @@ namespace MetalTensors
             return new TrainingHistory (h);
         }
 
-        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
-        {
-            foreach (var b in batchResults.IntermediateValues) {
-                Console.WriteLine (b);
-            }
-        }
-
         protected override TensorHandle[] GetBatchHandles ()
         {
             //
@@ -78,6 +76,13 @@ namespace MetalTensors
             r.AddRange (Losses.Select (x => x.Tensor.Inputs[1].Handle));
 
             return r.ToArray ();
+        }
+
+        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
+        {
+            //foreach (var r in batchResults.Results) {
+            //    Console.WriteLine (Label + " Result = " + r);
+            //}
         }
     }
 }
