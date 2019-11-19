@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using MetalTensors;
+using MetalTensors.Applications;
 using NUnit.Framework;
 
 namespace Tests
@@ -108,17 +109,17 @@ namespace Tests
         [Test]
         public void Mnist ()
         {
-            var mnist = Model.Mnist ();
+            var mnist = MnistApplication.CreateModel ();
 
             Assert.AreEqual (1, mnist.Inputs.Length);
-            Assert.AreEqual (28, mnist.Input.Shape[0]);
-            Assert.AreEqual (28, mnist.Input.Shape[1]);
+            Assert.AreEqual (28, mnist.Input!.Shape[0]);
+            Assert.AreEqual (28, mnist.Input!.Shape[1]);
             Assert.AreEqual (1, mnist.Input.Shape[2]);
             Assert.AreEqual (1, mnist.Outputs.Length);
-            Assert.AreEqual (3, mnist.Output.Shape.Length);
-            Assert.AreEqual (1, mnist.Output.Shape[0]);
-            Assert.AreEqual (1, mnist.Output.Shape[1]);
-            Assert.AreEqual (10, mnist.Output.Shape[2]);
+            Assert.AreEqual (3, mnist.Output!.Shape.Length);
+            Assert.AreEqual (1, mnist.Output!.Shape[0]);
+            Assert.AreEqual (1, mnist.Output!.Shape[1]);
+            Assert.AreEqual (10, mnist.Output!.Shape[2]);
         }
     }
 }

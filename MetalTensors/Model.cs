@@ -161,8 +161,7 @@ namespace MetalTensors
 
         public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
         {
-            var d = device.Current ();
-            var g = GetGraphs (d).Training;
+            var g = Compile (device).Training;
             return g.Train (dataSet, learningRate, batchSize, numBatches, validationInterval);
         }
 
@@ -171,8 +170,7 @@ namespace MetalTensors
             if (Inputs.Length != 1)
                 throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
 
-            var d = device.Current ();
-            var g = GetGraphs (d).Inference;
+            var g = Compile (device).Inference;
             var batchSize = 1;
             var numBatches = 1;
 
@@ -181,18 +179,19 @@ namespace MetalTensors
             return h.Batches[0].Results[0];
         }
 
-        (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training) GetGraphs (IMTLDevice d)
+        (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training) Compile (IMTLDevice? device)
         {
+            var d = device.Current ();
             var key = d.Handle;
             if (graphs.TryGetValue (key, out var gs))
                 return gs;
-            gs = CreateGraphs (d);
+            gs = CreateCompiledModel (d);
             if (graphs.TryAdd (key, gs))
                 return gs;
             return graphs[key];
         }
 
-        (InferenceGraph, EvaluationGraph, TrainingGraph) CreateGraphs (IMTLDevice d)
+        (InferenceGraph, EvaluationGraph, TrainingGraph) CreateCompiledModel (IMTLDevice d)
         {
             var (flatModel, trainable) = Flatten ();
 
@@ -205,7 +204,7 @@ namespace MetalTensors
             }
             else {
                 var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + " " + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
-                var losses = flatModel.Outputs.Select ((x, i) => x.Loss (labels[i], DefaultLossType)).ToArray ();
+                var losses = flatModel.Outputs.Select ((x, i) => CreateAutoLoss (x, labels[i])).ToArray ();
                 trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.KeepDropoutDuringInference, losses);
             }
 
@@ -224,6 +223,23 @@ namespace MetalTensors
             var trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, d);
 
             return (infGraph, evalGraph, trainingGraph);
+
+            Tensor CreateAutoLoss (Tensor input, Tensor label)
+            {
+                var i = input;
+                var lossType = DefaultLossType;
+                if (input is LayerTensor lt) {
+                    if (lt.Layer is SigmoidLayer) {
+                        i = lt.Inputs[0];
+                        lossType = LossType.SigmoidCrossEntropy;
+                    }
+                    else if (lt.Layer is SoftMaxLayer) {
+                        i = lt.Inputs[0];
+                        lossType = LossType.SoftMaxCrossEntropy;
+                    }
+                }
+                return i.Loss (label, lossType);
+            }
         }
 
         public (Model, Dictionary<Layer, bool>) Flatten ()
@@ -269,23 +285,6 @@ namespace MetalTensors
                 }
                 return r;
             }
-        }
-
-        public static Model Mnist ()
-        {
-            var (height, width) = (28, 28);
-            var image = Tensor.InputImage ("image", height, width, 1);
-            var weights = WeightsInit.Uniform (-0.2f, 0.2f);
-            var output =
-                image
-                .Conv (32, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
-                .Conv (64, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
-                .Dense (1024, size: 7, weightsInit: weights).ReLU (a: 0)
-                .Dropout (0.5f)
-                .Dense (10).SoftMax ();
-            var model = output.Model ("mnist");
-
-            return model;
         }
     }
 }

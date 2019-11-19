@@ -61,6 +61,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MetalImageNodeContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InferenceGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\SigmoidLayer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

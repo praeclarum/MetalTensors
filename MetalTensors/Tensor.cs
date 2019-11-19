@@ -303,6 +303,11 @@ namespace MetalTensors
             return new ReLULayer (a).GetOutput (this);
         }
 
+        public Tensor Sigmoid ()
+        {
+            return new SigmoidLayer ().GetOutput (this);
+        }
+
         public Tensor SoftMax ()
         {
             return new SoftMaxLayer ().GetOutput (this);

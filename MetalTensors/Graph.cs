@@ -52,21 +52,39 @@ namespace MetalTensors
             var context = new MetalImageNodeContext (label, false, device);
 
             //
-            // Export all losses and loss inputs
+            // Find all losses and loss inputs
             //
-            var outputs = new List<Tensor> ();
-            var lossesL = new List<(LayerTensor, LossLayer)> ();
+            var lossesL = new List<(Tensor Output, (LayerTensor, LossLayer) Loss)> ();
             var (flatModel, _) = graphOutputTensor.Model ().Flatten ();
             foreach (var t in flatModel.Tensors) {
                 if (t is LayerTensor lt && lt.Layer is LossLayer ll) {
                     var o = lt.Inputs[0];
-                    outputs.Add (o);
-                    lossesL.Add ((lt, ll));
+                    lossesL.Add ((o, (lt, ll)));
                 }
             }
-            losses = lossesL.ToArray ();
-            Console.WriteLine (outputs);
-            Console.WriteLine (losses);
+            losses = lossesL.Select (x => x.Loss).ToArray ();
+            //Console.WriteLine (outputs);
+            //Console.WriteLine (losses);
+
+            //
+            // Get inputs
+            //
+            var outputs = new List<Tensor> ();
+            foreach (var l in lossesL) {
+                var o = l.Output;
+                var lossType = l.Loss.Item2.LossType;
+                if (lossType == LossType.SigmoidCrossEntropy) {
+                    o = o.Sigmoid ();
+                }
+                else if (lossType == LossType.SoftMaxCrossEntropy) {
+                    o = o.SoftMax ();
+                }
+                outputs.Add (o);
+            }
+
+            if (outputs.Count == 0)
+                throw new InvalidOperationException ("Cannot create a graph without one or more outputs");
+
 
             //
             // Create the graph
@@ -225,7 +243,7 @@ namespace MetalTensors
             //
             var cols = dataSet.Columns;
             var dataCols = new List<(int HandleIndex, int ColumnIndex)> ();
-            var missingCols = new List<string> (0);
+            var missingHandles = new List<int> (0);
             for (var i = 0; i < batchHandles.Length; i++) {
                 var bh = batchHandles[i];
                 var col = bh.Label;
@@ -235,11 +253,19 @@ namespace MetalTensors
                 }
                 else {
                     if (bh.Tensor is PlaceholderTensor)
-                        missingCols.Add (col);
+                        missingHandles.Add (i);
                 }
             }
-            if (missingCols.Count > 0)
-                throw new InvalidOperationException ($"Data set is missing required columns: {string.Join (", ", missingCols)}");
+            if (missingHandles.Count == 1 && dataCols.Count == 1 && cols.Length == 2) {
+                // Auto-match missing column
+                var aci = 1 - dataCols[0].ColumnIndex;
+                dataCols.Add ((missingHandles[0], aci));
+                missingHandles.RemoveAt (0);
+            }
+            if (missingHandles.Count > 0) {
+                var mcols = string.Join (", ", missingHandles.Select (x => "\"" + batchHandles[x].Label + "\""));
+                throw new InvalidOperationException ($"Data set is missing required columns {mcols}");
+            }
 
             var constantImages = batchHandles.Select (x => ImageFromTensor (x.Tensor)).ToList ();
 
@@ -257,7 +283,7 @@ namespace MetalTensors
                     }
                     var t = row[ci];
                     if (t == null)
-                        throw new InvalidOperationException ($"Data source returned a row with a null tensor in column {cols[ci]}");
+                        throw new InvalidOperationException ($"Data source returned a row with a null tensor in column \"{cols[ci]}\"");
                     rowImages[hi] = ImageFromTensor (t);
                 }
                 batch.Add (rowImages);
