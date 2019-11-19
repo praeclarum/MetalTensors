@@ -94,9 +94,9 @@ namespace MetalTensors
             return model.GetOutput (0, this);
         }
 
-        public Model Model (string? name = null, bool trainable = true, bool ignoreDropoutDuringInference = true)
+        public Model Model (string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
         {
-            return new Model (name, trainable, ignoreDropoutDuringInference, this);
+            return new Model (name, trainable, keepDropoutDuringInference, this);
         }
 
         public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
@@ -107,6 +107,26 @@ namespace MetalTensors
         public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
         {
             return this;
+        }
+
+        public Tensor Map (Func<Tensor, Tensor> map)
+        {
+            return map (MapInputs (map));
+        }
+
+        public Tensor RemoveLayers (Func<Layer, bool> predicate)
+        {
+            return Map (t => {
+                if (t is LayerTensor lt && predicate (lt.Layer)) {
+                    return Add (lt.Inputs);
+                }
+                return t;
+            });
+        }
+
+        public Tensor RemoveLayers<T> () where T : Layer
+        {
+            return RemoveLayers (l => l is T);
         }
 
         public static Tensor Constant (float constant, params int[] shape)
@@ -316,9 +336,9 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public TrainingHistory Train (LoadBatch trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool ignoreDropoutDuringInference = true, IMTLDevice? device = null)
+        public TrainingHistory Train (LoadBatch trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
-            return new Model (Label, true, ignoreDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, validationInterval, device);
+            return new Model (Label, true, keepDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, validationInterval, device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

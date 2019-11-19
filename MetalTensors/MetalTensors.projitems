@@ -59,6 +59,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Graph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EvaluationGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MetalImageNodeContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InferenceGraph.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

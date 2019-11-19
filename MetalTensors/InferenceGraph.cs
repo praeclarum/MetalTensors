@@ -12,26 +12,23 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class EvaluationGraph : Graph
+    class InferenceGraph : Graph
     {
-        public (LayerTensor Tensor, LossLayer Layer)[] Losses { get; }
-
-        public EvaluationGraph (string label, Tensor trainingOutput, bool keepDropoutDuringInference, IMTLDevice device)
-            : base (label, CreateEvaluationGraph (label, trainingOutput, keepDropoutDuringInference, out var losses, device), device)
+        public InferenceGraph (string label, MPSNNGraph graph)
+            : base (label, graph, graph.Device)
         {
-            Losses = losses;
         }
 
-        public TrainingHistory Evaluate (LoadBatch trainingData, int batchSize, int numBatches)
+        public TrainingHistory Predict (LoadBatch trainingData, int batchSize, int numBatches)
         {
             using var q = Device.CreateCommandQueue ();
 
             var semaphore = new Semaphore (2, 2);
 
-            return Evaluate (trainingData, batchSize, numBatches, semaphore, q);
+            return Predict (trainingData, batchSize, numBatches, semaphore, q);
         }
 
-        public TrainingHistory Evaluate (LoadBatch trainingData, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
+        public TrainingHistory Predict (LoadBatch trainingData, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
             // Init history
@@ -45,7 +42,7 @@ namespace MetalTensors
             }
 
             //
-            // Train
+            // Evaluate
             //
             var stopwatch = new Stopwatch ();
             stopwatch.Restart ();
@@ -63,21 +60,9 @@ namespace MetalTensors
 
         protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
         {
-            foreach (var b in batchResults.IntermediateValues) {
-                Console.WriteLine (b);
+            foreach (var r in batchResults.Results) {
+                Console.WriteLine (Label + " " + r);
             }
-        }
-
-        protected override TensorHandle[] GetBatchHandles ()
-        {
-            //
-            // Add Labels
-            //
-            var r = base.GetBatchHandles ().ToList ();
-
-            r.AddRange (Losses.Select (x => x.Tensor.Inputs[1].Handle));
-
-            return r.ToArray ();
         }
     }
 }

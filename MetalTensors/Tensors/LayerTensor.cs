@@ -38,10 +38,5 @@ namespace MetalTensors.Tensors
         {
             return new LayerTensor (Layer, LayerInputs.Map (map));
         }
-
-        public override Tensor MapInputs (Func<Tensor, Tensor> map)
-        {
-            return new LayerTensor (Layer, LayerInputs.Map (map));
-        }
     }
 }

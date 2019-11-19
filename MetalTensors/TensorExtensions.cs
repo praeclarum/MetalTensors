@@ -79,7 +79,7 @@ namespace MetalTensors
 
             var r = new Tensor[n];
             for (var i = 0; i < n; i++) {
-                r[i] = tensors[i].MapInputs (map);
+                r[i] = tensors[i].Map (map);
             }
             return r;
         }

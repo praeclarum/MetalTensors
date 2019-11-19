@@ -19,7 +19,7 @@ namespace MetalTensors
 
         public string Label { get; }
         public bool IsTrainable { get; }
-        public bool IgnoreDropoutDuringInference { get; }
+        public bool KeepDropoutDuringInference { get; }
         public Tensor[] Outputs { get; }
 
         public Tensor[] Inputs { get; }
@@ -30,20 +30,20 @@ namespace MetalTensors
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
 
-        readonly ConcurrentDictionary<IntPtr, (EvaluationGraph Evaluation, TrainingGraph Training)> graphs =
-            new ConcurrentDictionary<IntPtr, (EvaluationGraph Evaluation, TrainingGraph Training)> ();
+        readonly ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> graphs =
+            new ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> ();
 
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
 
-        public Model (string? label, bool trainable, bool ignoreDropoutDuringInference, params Tensor[] outputs)
+        public Model (string? label, bool trainable, bool keepDropoutDuringInference, params Tensor[] outputs)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
             Label = label ?? outputs[0].Label;
             IsTrainable = trainable;
-            IgnoreDropoutDuringInference = ignoreDropoutDuringInference;
+            KeepDropoutDuringInference = keepDropoutDuringInference;
             Outputs = outputs;
 
             //
@@ -111,20 +111,20 @@ namespace MetalTensors
         {
             if (!IsTrainable)
                 return this;
-            return new Model (Label, false, IgnoreDropoutDuringInference, Outputs);
+            return new Model (Label, false, KeepDropoutDuringInference, Outputs);
         }
 
         public Model Unlock ()
         {
             if (IsTrainable)
                 return this;
-            return new Model (Label, true, IgnoreDropoutDuringInference, Outputs);
+            return new Model (Label, true, KeepDropoutDuringInference, Outputs);
         }
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, IsTrainable, IgnoreDropoutDuringInference, noutputs);
+            var nm = new Model (Label, IsTrainable, KeepDropoutDuringInference, noutputs);
             return nm;
         }
 
@@ -145,13 +145,13 @@ namespace MetalTensors
         {
             var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, IgnoreDropoutDuringInference, outputs);
+            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, KeepDropoutDuringInference, outputs);
         }
 
         public Model Apply (params Tensor[] inputs)
         {
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, IgnoreDropoutDuringInference, outputs);
+            return new Model (Label + "(" + string.Join (", ", inputs.Select(x => x.Label)) + ")", IsTrainable, KeepDropoutDuringInference, outputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -182,7 +182,7 @@ namespace MetalTensors
             return gs.Training.Train (trainingData, learningRate, batchSize, numBatches, validationInterval);
         }
 
-        (EvaluationGraph, TrainingGraph) CreateGraphs (IMTLDevice d)
+        (InferenceGraph, EvaluationGraph, TrainingGraph) CreateGraphs (IMTLDevice d)
         {
             var (flatModel, trainable) = Flatten ();
 
@@ -194,9 +194,9 @@ namespace MetalTensors
                 trainingModel = flatModel;
             }
             else {
-                var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + "_" + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
+                var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + " " + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
                 var losses = flatModel.Outputs.Select ((x, i) => x.Loss (labels[i], DefaultLossType)).ToArray ();
-                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.IgnoreDropoutDuringInference, losses);
+                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.KeepDropoutDuringInference, losses);
             }
 
             //
@@ -206,10 +206,14 @@ namespace MetalTensors
                 trainingModel.Outputs[0] :
                 Tensor.Add (trainingModel.Outputs);
 
-            var evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, IgnoreDropoutDuringInference, d);
+            //
+            // Build the graphs
+            //
+            var evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, KeepDropoutDuringInference, d);
+            var infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph.MetalGraph);
             var trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, d);
 
-            return (evalGraph, trainingGraph);
+            return (infGraph, evalGraph, trainingGraph);
         }
 
         public (Model, Dictionary<Layer, bool>) Flatten ()
@@ -220,7 +224,7 @@ namespace MetalTensors
             }
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
-            var flatModel = new Model (Label, IsTrainable, IgnoreDropoutDuringInference, flatOuts);
+            var flatModel = new Model (Label, IsTrainable, KeepDropoutDuringInference, flatOuts);
 
             return (flatModel, trainable);
 

@@ -39,6 +39,46 @@ namespace MetalTensors
 
         public override string ToString () => Label;
 
+        protected static MPSNNGraph CreateEvaluationGraph (string label, Tensor trainingOutput, bool keepDropoutDuringInference, out (LayerTensor, LossLayer)[] losses, IMTLDevice device)
+        {
+            var graphOutputTensor = trainingOutput;
+            if (!keepDropoutDuringInference) {
+                graphOutputTensor = trainingOutput.RemoveLayers<DropoutLayer> ();
+            }
+
+            //
+            // Build the training graph
+            //
+            var context = new MetalImageNodeContext (label, false, device);
+
+            //
+            // Export all losses and loss inputs
+            //
+            var outputs = new List<Tensor> ();
+            var lossesL = new List<(LayerTensor, LossLayer)> ();
+            var (flatModel, _) = graphOutputTensor.Model ().Flatten ();
+            foreach (var t in flatModel.Tensors) {
+                if (t is LayerTensor lt && lt.Layer is LossLayer ll) {
+                    var o = lt.Inputs[0];
+                    outputs.Add (o);
+                    lossesL.Add ((lt, ll));
+                }
+            }
+            losses = lossesL.ToArray ();
+            Console.WriteLine (outputs);
+            Console.WriteLine (losses);
+
+            //
+            // Create the graph
+            //
+            var outputImageNodes = outputs.Select (x => x.GetMetalImageNode (context)).ToArray ();
+            var resultsAreNeeded = outputs.Select (x => true).ToArray ();
+            var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
+            evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
+
+            return evalGraph;
+        }
+
         public MPSCommandBuffer BeginBatch (int batchIndex, LoadBatch trainingData, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
@@ -117,12 +157,20 @@ namespace MetalTensors
                 //
                 var bh = new Dictionary<string, Tensor[]> ();
                 if (intermediateImages.Length > 0) {
-                    if (intermediateImages.Length - 1 != intermediateHandles.Length) {
-                        throw new ApplicationException ("Intermediate images without handles");
+                    if (intermediateImages.Length == intermediateHandles.Length) {
+                        for (var imi = 0; imi < intermediateImages.Length; imi++) {
+                            var key = intermediateHandles[imi].Label;
+                            bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
+                        }
                     }
-                    for (var imi = 1; imi < intermediateImages.Length; imi++) {
-                        var key = intermediateHandles[imi - 1].Label;
-                        bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
+                    else if (intermediateImages.Length - 1 != intermediateHandles.Length) {
+                        Console.WriteLine ($"! Intermediate images without handles {intermediateImages.Length} vs {intermediateHandles.Length}");
+                    }
+                    else {
+                        for (var imi = 1; imi < intermediateImages.Length; imi++) {
+                            var key = intermediateHandles[imi - 1].Label;
+                            bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
+                        }
                     }
                 }
                 var h = new TrainingHistory.BatchHistory (results, loss, bh);
@@ -160,18 +208,24 @@ namespace MetalTensors
         {
         }
 
+        protected virtual TensorHandle[] GetBatchHandles ()
+        {
+            return sourceHandles;
+        }
+
         (NSArray<MPSImage>[], MPSImage[]) GetBatch (LoadBatch trainingData, int batchSize)
         {
             var temps = new List<MPSImage> ();
 
-            var nsources = sourceHandles.Length;
+            var batchHandles = GetBatchHandles ();
+            var nsources = batchHandles.Length;
             var batch = new List<List<MPSImage>> (batchSize);
             for (var i = 0; i < batchSize; i++) {
                 //Console.WriteLine ($"GET BATCH IMAGE {i}");
-                var data = trainingData (sourceHandles);
+                var data = trainingData (batchHandles);
                 var dataImages = data.Select (ImageFromTensor).ToList ();
-                if (dataImages.Count != sourceHandles.Length)
-                    throw new InvalidOperationException ($"{sourceHandles.Length} tensors are needed to train, {dataImages.Count} provided");
+                if (dataImages.Count != batchHandles.Length)
+                    throw new InvalidOperationException ($"{batchHandles.Length} tensors are needed to train, {dataImages.Count} provided");
                 batch.Add (dataImages);
             }
 
