@@ -78,28 +78,27 @@ namespace Tests
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (1)
+                .Loss (Tensor.Labels ("realOrFake", 1, 1, 1), LossType.SigmoidCrossEntropy)
                 .Model ("discriminator");
 
             Assert.AreEqual (dinput, discriminator.Input);
-            Assert.AreEqual (1, discriminator.Output.Shape[0]);
-            Assert.AreEqual (1, discriminator.Output.Shape[1]);
-            Assert.AreEqual (1, discriminator.Output.Shape[2]);
+            Assert.AreEqual (1, discriminator.Output!.Shape[0]);
+            Assert.AreEqual (1, discriminator.Output!.Shape[1]);
+            Assert.AreEqual (1, discriminator.Output!.Shape[2]);
 
             var gan = discriminator.Lock ().Apply (generator);
 
             Assert.AreEqual (1, gan.Inputs.Length);
             Assert.AreEqual (z, gan.Input);
-            Assert.AreEqual (1, gan.Output.Shape[0]);
-            Assert.AreEqual (1, gan.Output.Shape[1]);
-            Assert.AreEqual (1, gan.Output.Shape[2]);
+            Assert.AreEqual (1, gan.Output!.Shape[0]);
+            Assert.AreEqual (1, gan.Output!.Shape[1]);
+            Assert.AreEqual (1, gan.Output!.Shape[2]);
             Assert.AreEqual (2, gan.Submodels.Length);
 
-            var h = gan.Train (GetTrainingData, batchSize: 5, numBatches: 7);
+            var h = gan.Train (DataSet.Generated (GetTrainingData, 100, "z", "realOrFake"), batchSize: 5, numBatches: 7);
 
-            IEnumerable<Tensor> GetTrainingData (TensorHandle[] handles)
+            Tensor[] GetTrainingData (int _)
             {
-                Assert.AreEqual (2, handles.Length);
-                Assert.AreEqual ("z", handles[0].Label);
                 return new[] { Tensor.Ones (height, width, 3), Tensor.Ones (1, 1, 1) };
             }
 

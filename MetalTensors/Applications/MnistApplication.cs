@@ -20,9 +20,9 @@ namespace MetalTensors.Applications
             Classifier = Model.Mnist ();
         }
 
-        public void Train (DataSet trainingData, int epochs = 200, IMTLDevice? device = null)
+        public void Train (MnistDataSet trainingData, int epochs = 200, IMTLDevice? device = null)
         {
-            var trainImageCount = trainingData.Length;
+            var trainImageCount = trainingData.Count;
             var batchSize = 32;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
@@ -30,26 +30,30 @@ namespace MetalTensors.Applications
             for (var epoch = 0; epoch < epochs; epoch++) {
                 Console.WriteLine ("MNIST EPOCH");
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var history = Classifier.Train (trainingData.NextRow, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
+                var history = Classifier.Train (trainingData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
                 Console.WriteLine (history);
             }
         }
 
-        public class DataSet
+        public class MnistDataSet : DataSet
         {
+            public const int ImageSize = 28;
+            const int ImagesPrefixSize = 16;
+            const int LabelsPrefixSize = 8;
+
             readonly int numImages;
             readonly byte[] imagesData;
             readonly byte[] labelsData;
             private readonly MPSImageDescriptor trainImageDesc;
             readonly Random random;
 
-            public int Length => numImages;
+            static readonly string[] cols = { "image", "labels" };
 
-            public const int ImageSize = 28;
-            const int ImagesPrefixSize = 16;
-            const int LabelsPrefixSize = 8;
+            public override int Count => numImages;
 
-            public DataSet ()
+            public override string[] Columns => cols;
+
+            public MnistDataSet ()
             {
                 random = new Random ();
                 trainImageDesc = MPSImageDescriptor.GetImageDescriptor (
@@ -62,7 +66,7 @@ namespace MetalTensors.Applications
                 numImages = labelsData.Length - LabelsPrefixSize;
             }
 
-            public unsafe IEnumerable<Tensor> NextRow (TensorHandle[] handles)
+            public override unsafe Tensor[] GetRow (int index)
             {
                 var device = MetalExtensions.Current (null);
 

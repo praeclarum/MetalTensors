@@ -22,16 +22,10 @@ namespace Tests
 
             var getDataCount = 0;
 
-            var history = loss.Train (needed => {
-                Assert.AreEqual (2, needed.Length);
-                Assert.AreEqual (input.Label, needed[0].Label);
-                Assert.AreEqual ("input image", needed[0].Label);
-                Assert.AreEqual (label.Label, needed[1].Label);
-                Assert.AreEqual ("label image", needed[1].Label);
+            var history = loss.Train (DataSet.Generated (_ => {
                 getDataCount++;
-
-                return needed.Select (x => x.Tensor);
-            }, batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
+                return new Tensor[] { input, label };
+            }, 100, "input image", "label image"), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
 
             Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);
 

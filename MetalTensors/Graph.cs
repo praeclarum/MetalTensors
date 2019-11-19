@@ -79,7 +79,7 @@ namespace MetalTensors
             return evalGraph;
         }
 
-        public MPSCommandBuffer BeginBatch (int batchIndex, LoadBatch trainingData, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
+        public MPSCommandBuffer BeginBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
             // This pool is necessary for Metal to clean up its objects
@@ -95,7 +95,7 @@ namespace MetalTensors
             NSArray<MPSImage>[] batch;
             MPSImage[] temporaryBatchImages;
             try {
-                (batch, temporaryBatchImages) = GetBatch (trainingData, batchSize);
+                (batch, temporaryBatchImages) = GetBatch (batchIndex, dataSet, batchSize);
             }
             catch {
                 semaphore.Release ();
@@ -209,24 +209,63 @@ namespace MetalTensors
         protected virtual TensorHandle[] GetBatchHandles ()
         {
             return sourceHandles;
+
         }
 
-        (NSArray<MPSImage>[], MPSImage[]) GetBatch (LoadBatch trainingData, int batchSize)
+        (NSArray<MPSImage>[], MPSImage[]) GetBatch (int batchIndex, DataSet dataSet, int batchSize)
         {
             var temps = new List<MPSImage> ();
 
             var batchHandles = GetBatchHandles ();
             var nsources = batchHandles.Length;
-            var batch = new List<List<MPSImage>> (batchSize);
+            var batch = new List<MPSImage[]> (batchSize);
+
+            //
+            // Map to dataset
+            //
+            var cols = dataSet.Columns;
+            var dataCols = new List<(int HandleIndex, int ColumnIndex)> ();
+            var missingCols = new List<string> (0);
+            for (var i = 0; i < batchHandles.Length; i++) {
+                var bh = batchHandles[i];
+                var col = bh.Label;
+                var ci = Array.IndexOf<string> (cols, col);
+                if (ci >= 0) {
+                    dataCols.Add ((i, ci));
+                }
+                else {
+                    if (bh.Tensor is PlaceholderTensor)
+                        missingCols.Add (col);
+                }
+            }
+            if (missingCols.Count > 0)
+                throw new InvalidOperationException ($"Data set is missing required columns: {string.Join (", ", missingCols)}");
+
+            var constantImages = batchHandles.Select (x => ImageFromTensor (x.Tensor)).ToList ();
+
+            //
+            // Get Data
+            //
             for (var i = 0; i < batchSize; i++) {
                 //Console.WriteLine ($"GET BATCH IMAGE {i}");
-                var data = trainingData (batchHandles);
-                var dataImages = data.Select (ImageFromTensor).ToList ();
-                if (dataImages.Count != batchHandles.Length)
-                    throw new InvalidOperationException ($"{batchHandles.Length} tensors are needed to train, {dataImages.Count} provided");
-                batch.Add (dataImages);
+                Tensor?[] row = dataSet.GetRow (batchIndex * batchSize + i);
+                // Make sure this is a new array
+                var rowImages = constantImages.ToArray ();
+                foreach (var (hi, ci) in dataCols) {
+                    if (ci >= row.Length) {
+                        throw new InvalidOperationException ($"Data source returned a row with {row.Length} columns, but {cols.Length} were expected");
+                    }
+                    var t = row[ci];
+                    if (t == null)
+                        throw new InvalidOperationException ($"Data source returned a row with a null tensor in column {cols[ci]}");
+                    rowImages[hi] = ImageFromTensor (t);
+                }
+                batch.Add (rowImages);
             }
 
+            //
+            // Sort into batches
+            //
             var sources = new NSArray<MPSImage>[nsources];
             for (var si = 0; si < nsources; si++) {
                 var b = new MPSImage[batchSize];
@@ -245,8 +284,8 @@ namespace MetalTensors
                 }
                 else {
                     var i = t.GetMetalImage (Device);
-                    temps.Add (i);
-                    return i;
+                    temps.Add (i!);
+                    return i!;
                 }
             }
         }

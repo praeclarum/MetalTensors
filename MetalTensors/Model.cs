@@ -8,8 +8,6 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public delegate IEnumerable<Tensor> LoadBatch (TensorHandle[] handles);
-
     public class Model
     {
         public const float DefaultLearningRate = 0.001f;
@@ -33,8 +31,8 @@ namespace MetalTensors
         readonly ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> graphs =
             new ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> ();
 
-        public Tensor Output => Outputs[0];
-        public Tensor Input => Inputs[0];
+        public Tensor? Output => Outputs.Length > 0 ? Outputs[0] : null;
+        public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
         public Model (string? label, bool trainable, bool keepDropoutDuringInference, params Tensor[] outputs)
         {
@@ -161,26 +159,26 @@ namespace MetalTensors
 
         const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public TrainingHistory Train (LoadBatch trainingData, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
+        public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
         {
             var d = device.Current ();
             var g = GetGraphs (d).Training;
-            return g.Train (trainingData, learningRate, batchSize, numBatches, validationInterval);
+            return g.Train (dataSet, learningRate, batchSize, numBatches, validationInterval);
         }
 
-        public TrainingHistory Predict (Tensor input, IMTLDevice? device = null)
+        public Tensor Predict (Tensor input, IMTLDevice? device = null)
         {
+            if (Inputs.Length != 1)
+                throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
+
             var d = device.Current ();
             var g = GetGraphs (d).Inference;
             var batchSize = 1;
             var numBatches = 1;
 
-            return g.Predict (LoadValue, batchSize, numBatches);
+            var h = g.Predict (DataSet.Single (Inputs[0].Label, input), batchSize, numBatches);
 
-            IEnumerable<Tensor> LoadValue (TensorHandle[] _)
-            {
-                return new[] { input };
-            }
+            return h.Batches[0].Results[0];
         }
 
         (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training) GetGraphs (IMTLDevice d)

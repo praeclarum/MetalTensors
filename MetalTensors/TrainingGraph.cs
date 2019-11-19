@@ -81,7 +81,7 @@ namespace MetalTensors
             return trainingGraph;
         }
 
-        public TrainingHistory Train (LoadBatch trainingData, float learningRate, int batchSize, int numBatches, int validateInterval)
+        public TrainingHistory Train (DataSet dataSet, float learningRate, int batchSize, int numBatches, int validateInterval)
         {
             //
             // Set the learning rate
@@ -117,12 +117,12 @@ namespace MetalTensors
 
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, trainingData, batchSize, AddHistory, stopwatch, semaphore, q);
+                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, q);
 
                 if (batchIndex % validateInterval == 0) {
                     lcb?.WaitUntilCompleted ();
                     lcb = null;
-                    var evalHistory = evalGraph.Evaluate (trainingData, batchSize, 1, semaphore, q);
+                    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, q);
                     //Console.WriteLine (evalHistory);
                 }
             }

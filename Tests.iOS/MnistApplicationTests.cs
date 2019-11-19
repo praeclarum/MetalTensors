@@ -9,15 +9,15 @@ namespace Tests
         [Test]
         public void LoadData ()
         {
-            var data = new MnistApplication.DataSet ();
-            Assert.AreEqual (60_000, data.Length);
+            var data = new MnistApplication.MnistDataSet ();
+            Assert.AreEqual (60_000, data.Count);
         }
 
         [Test]
         public void Train ()
         {
             var app = new MnistApplication ();
-            var data = new MnistApplication.DataSet ();
+            var data = new MnistApplication.MnistDataSet ();
             //app.Train (data);
         }
 

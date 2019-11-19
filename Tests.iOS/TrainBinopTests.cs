@@ -25,7 +25,7 @@ namespace Tests
 
             var rand = new Random ();
 
-            var history = loss.Train (GenTrainingData, learningRate: 0.01f, batchSize: 16, numBatches: 100);
+            var history = loss.Train (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), learningRate: 0.01f, batchSize: 16, numBatches: 100);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, batch.Loss[0].Shape[0]);
@@ -48,9 +48,9 @@ namespace Tests
             }
             Assert.IsTrue (belowMinLoss, "Did not train well");
 
-            IEnumerable<Tensor> GenTrainingData (TensorHandle[] handles)
+            Tensor[] GenTrainingData (int _)
             {
-                var r = new Tensor[handles.Length];
+                var r = new Tensor[2];
 
                 var x0 = rand.NextDouble ();
                 var x1 = rand.NextDouble ();
@@ -60,14 +60,8 @@ namespace Tests
                 var y0 = (yb ? 1.0 : 0.0) + (rand.NextDouble () - 0.5) * 0.001;
                 //Console.WriteLine ($"{x0} {opname} {x1} = {y0}");
 
-                for (var i = 0; i < handles.Length; i++) {
-                    if (handles[i].Label == "x") {
-                        r[i] = Tensor.Array (x0, x1);
-                    }
-                    else {
-                        r[i] = Tensor.Array (y0);
-                    }
-                }
+                r[0] = Tensor.Array (x0, x1);
+                r[1] = Tensor.Array (y0);
                 return r;
             }
         }

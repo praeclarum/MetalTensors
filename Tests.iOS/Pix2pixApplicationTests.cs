@@ -30,7 +30,7 @@ namespace Tests
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = Pix2pixApplication.DataSet.LoadDirectory ("");
+            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory ("");
 
             pix2pix.Train (data, epochs: 2);
         }

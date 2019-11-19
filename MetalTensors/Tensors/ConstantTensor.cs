@@ -16,10 +16,16 @@ namespace MetalTensors.Tensors
 
         public float ConstantValue { get; }
 
-        public ConstantTensor (float constant, params int[] shape)
+        public ConstantTensor (string? label, float constant, params int[] shape)
+            : base (label)
         {
             ConstantValue = constant;
             this.shape = shape.NormalizeShape ();
+        }
+
+        public ConstantTensor (float constant, params int[] shape)
+            : this (null, constant, shape)
+        {
         }
 
         public override void Copy (Span<float> destination)

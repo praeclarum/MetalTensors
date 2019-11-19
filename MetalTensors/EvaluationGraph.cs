@@ -22,16 +22,16 @@ namespace MetalTensors
             Losses = losses;
         }
 
-        public TrainingHistory Evaluate (LoadBatch trainingData, int batchSize, int numBatches)
+        public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches)
         {
             using var q = Device.CreateCommandQueue ();
 
             var semaphore = new Semaphore (2, 2);
 
-            return Evaluate (trainingData, batchSize, numBatches, semaphore, q);
+            return Evaluate (dataSet, batchSize, numBatches, semaphore, q);
         }
 
-        public TrainingHistory Evaluate (LoadBatch trainingData, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
+        public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
             // Refresh weights incase they changed since last time
@@ -57,7 +57,7 @@ namespace MetalTensors
 
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, trainingData, batchSize, AddHistory, stopwatch, semaphore, queue);
+                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, queue);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();

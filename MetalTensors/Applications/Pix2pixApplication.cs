@@ -19,17 +19,17 @@ namespace MetalTensors.Applications
         public Pix2pixApplication (int height = 256, int width = 256)
         {
             var generator = CreateGenerator (height, width);
-            var genOut = generator.Output;
+            var genOut = generator.Outputs[0];
             Generator = generator;
 
             var discriminator = CreateDiscriminator (height, width);
-            var discOut = discriminator.Output;
+            var discOut = discriminator.Outputs[0];
             var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
             var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
             Discriminator = discLoss.Model (discriminator.Label);
 
             var gan = discriminator.Lock ().Apply (generator);
-            var ganOut = gan.Output;
+            var ganOut = gan.Outputs[0];
             var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
             var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
             var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError, ReductionType.Sum);
@@ -61,7 +61,7 @@ namespace MetalTensors.Applications
                 var useBias = instanceNorm;
                 var inNC = inputNC ?? outerNC;
 
-                var size = submodule != null ? submodule.Output.Shape[0] * 2 : 2;
+                var size = submodule != null ? submodule.Outputs[0].Shape[0] * 2 : 2;
                 var input = Tensor.Input ("image", size, size, inNC);
                 var label = "Unet" + size;
 
@@ -120,31 +120,34 @@ namespace MetalTensors.Applications
             return disc.Model ();
         }
 
-        public void Train (DataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
+        public void Train (Pix2pixDataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
         {
-            var trainImageCount = dataSet.Length;
+            var trainImageCount = dataSet.Count;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
 
             for (var epoch = 0; epoch < epochs; epoch++) {
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var discHistoryReal = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
-                var ganHistory = Gan.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
+                var discHistoryReal = Discriminator.Train (dataSet, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
+                var ganHistory = Gan.Train (dataSet, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, validationInterval: numBatchesPerEpoch, device: device);
             }
         }
 
-        public class DataSet
+        public class Pix2pixDataSet : DataSet
         {
-            public int Length = 100;
+            static readonly string[] cols = { "something" };
 
-            public IEnumerable<Tensor> LoadData (TensorHandle[] handles)
+            public override int Count => 2;
+            public override string[] Columns => cols;
+
+            public override Tensor[] GetRow (int index)
             {
                 return new[] { Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros () };
             }
 
-            public static DataSet LoadDirectory (string path, string aName = "A", string bName = "B")
+            public static Pix2pixDataSet LoadDirectory (string path, string aName = "A", string bName = "B")
             {
-                return new DataSet ();
+                return new Pix2pixDataSet ();
             }
         }
     }

@@ -134,6 +134,11 @@ namespace MetalTensors
             return new ConstantTensor (constant, shape);
         }
 
+        public static Tensor Constant (string label, float constant, params int[] shape)
+        {
+            return new ConstantTensor (label, constant, shape);
+        }
+
         public static Tensor Zeros (params int[] shape)
         {
             return new ConstantTensor (0.0f, shape);
@@ -336,9 +341,9 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public TrainingHistory Train (LoadBatch trainingData, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
-            return new Model (Label, true, keepDropoutDuringInference, this).Train (trainingData, learningRate, batchSize, numBatches, validationInterval, device);
+            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, numBatches, validationInterval, device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)
