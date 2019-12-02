@@ -103,15 +103,16 @@ namespace Tests.Mac
             var tests = FindTests ();
 
             var allOK = true;
-
-            Parallel.ForEach (tests, tf => {
+            foreach (var tf in tests) {
+                //Parallel.ForEach (tests, tf => {
                 //Console.WriteLine (System.Threading.Thread.CurrentThread.ManagedThreadId);
                 foreach (var t in tf.Tests) {
                     var tr = RunTest (tf, t);
                     allOK = allOK && tr.Success;
                     BeginInvokeOnMainThread (() => ShowTestResult (t, tr));
                 }
-            });
+            //});
+            }
 
             BeginInvokeOnMainThread (() => ShowFinalResult (allOK));
         }

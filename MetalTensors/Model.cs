@@ -127,6 +127,13 @@ namespace MetalTensors
             return nm;
         }
 
+        public Model MapInputs (Func<Tensor, Tensor> map)
+        {
+            var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
+            var nm = new Model (Label, IsTrainable, KeepDropoutDuringInference, noutputs);
+            return nm;
+        }
+
         public Model RebuildModelWithInputs (params Tensor[] inputs)
         {
             if (inputs.Length != Inputs.Length)
@@ -160,7 +167,7 @@ namespace MetalTensors
 
         const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int epochs = DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
             var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
             return Train (dataSet, learningRate, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
@@ -255,6 +262,7 @@ namespace MetalTensors
             foreach (var l in Layers) {
                 trainable[l] = IsTrainable;
             }
+            var flattened = new Dictionary<Tensor, Tensor> ();
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
             var flatModel = new Model (Label, IsTrainable, KeepDropoutDuringInference, flatOuts);
@@ -263,6 +271,8 @@ namespace MetalTensors
 
             Tensor FlattenTensor (Tensor t)
             {
+                if (flattened.TryGetValue (t, out var ft))
+                    return ft;
                 if (t is ModelTensor m) {
                     var inst = m.BaseModel.RebuildModelWithInputs (m.ModelInputs.Select (FlattenTensor).ToArray ());
                     var o = FlattenTensor (inst.Outputs[m.OutputIndex]);
@@ -273,11 +283,15 @@ namespace MetalTensors
                         }
                         trainable[layer] = lt;
                     }
+                    flattened[t] = o;
                     return o;
                 }
                 if (t is LayerTensor l) {
-                    return l.MapInputs (FlattenTensor);
+                    var o = l.MapInputs (FlattenTensor);
+                    flattened[t] = o;
+                    return o;
                 }
+                flattened[t] = t;
                 return t;
             }
 

@@ -37,5 +37,10 @@ namespace MetalTensors.Tensors
         {
             return new ModelTensor (BaseModel.MapInputs (map), OutputIndex, ModelInputs.Map (map));
         }
+
+        public override Tensor MapInputs (Func<Tensor, Tensor> map)
+        {
+            return new ModelTensor (BaseModel.MapInputs (map), OutputIndex, ModelInputs.Map (map));
+        }
     }
 }

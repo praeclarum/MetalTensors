@@ -52,7 +52,7 @@ namespace Tests
             Assert.AreEqual (4, m.Layers.Length);
         }
 
-        [Test]
+        //[Test]
         public void Gan ()
         {
             var height = 8;

@@ -13,7 +13,7 @@ namespace Tests
             Assert.AreEqual (60_000, data.Count);
         }
 
-        [Test]
+        //[Test]
         public void TrainSmall ()
         {
             var app = new MnistApplication ();

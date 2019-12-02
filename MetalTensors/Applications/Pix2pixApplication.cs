@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Metal;
 using MetalTensors.Tensors;
@@ -32,8 +33,8 @@ namespace MetalTensors.Applications
             var ganOut = gan.Outputs[0];
             var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
             var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
-            var ganLossL1 = genOut.Loss (genLabels, LossType.MeanSquaredError, ReductionType.Sum);
-            var ganLoss = ganLossD + lambdaL1 * ganLossL1;
+            //var ganLossL1 = genOut.Loss (genLabels, LossType.MeanAbsoluteError, ReductionType.Sum);
+            var ganLoss = ganLossD;// + lambdaL1 * ganLossL1;
             Gan = ganLoss.Model (gan.Label);
         }
 
@@ -131,7 +132,7 @@ namespace MetalTensors.Applications
                     //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
                     var index = batch * batchSize;
                     var subdata = dataSet.Subset (index, batchSize);
-                    var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                    //var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
                     var ganHistory = Gan.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
                 }
             }
@@ -139,19 +140,26 @@ namespace MetalTensors.Applications
 
         public class Pix2pixDataSet : DataSet
         {
-            static readonly string[] cols = { "something" };
+            static readonly string[] cols = { "image", "discLabels" };
+            private readonly string[] filePaths;
 
-            public override int Count => 2;
+            public override int Count => filePaths.Length;
             public override string[] Columns => cols;
+
+            public Pix2pixDataSet (string[] filePaths)
+            {
+                this.filePaths = filePaths;
+            }
 
             public override Tensor[] GetRow (int index)
             {
-                return new[] { Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros (), Tensor.Zeros () };
+                return new[] { Tensor.Zeros (), Tensor.Ones () };
             }
 
-            public static Pix2pixDataSet LoadDirectory (string path, string aName = "A", string bName = "B")
+            public static Pix2pixDataSet LoadDirectory (string path)
             {
-                return new Pix2pixDataSet ();
+                var files = Directory.GetFiles (path, "*.jpg").OrderBy(x => x).ToArray ();
+                return new Pix2pixDataSet (files);
             }
         }
     }

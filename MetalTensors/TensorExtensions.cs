@@ -78,10 +78,13 @@ namespace MetalTensors
                 return Array.Empty<Tensor> ();
 
             var r = new Tensor[n];
+            var changed = false;
             for (var i = 0; i < n; i++) {
-                r[i] = tensors[i].Map (map);
+                var nr = tensors[i].Map (map);
+                changed = changed || !ReferenceEquals (nr, tensors[i]);
+                r[i] = nr;
             }
-            return r;
+            return changed ? r : tensors;
         }
     }
 }

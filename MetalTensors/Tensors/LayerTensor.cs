@@ -38,5 +38,13 @@ namespace MetalTensors.Tensors
         {
             return new LayerTensor (Layer, LayerInputs.Map (map));
         }
+
+        public override Tensor MapInputs (Func<Tensor, Tensor> map)
+        {
+            var newIns = LayerInputs.Map (map);
+            if (ReferenceEquals (newIns, LayerInputs))
+                return this;
+            return new LayerTensor (Layer, newIns);
+        }
     }
 }

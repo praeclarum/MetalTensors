@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using MetalTensors.Applications;
 using NUnit.Framework;
 
@@ -22,15 +23,22 @@ namespace Tests
 
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape.Length);
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape[0]);
+
+            Assert.AreEqual (1, pix2pix.Gan.Output.Shape.Length);
+            Assert.AreEqual (1, pix2pix.Gan.Output.Shape[0]);
         }
 
 
-        //[Test]
+        [Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory ("");
+            var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
+            var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
+            var trainDataDir = Path.Combine (dataDir, "train");
+
+            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
 
             pix2pix.Train (data, epochs: 2);
         }
