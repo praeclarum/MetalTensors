@@ -29,7 +29,7 @@ namespace Tests
         }
 
 
-        [Test]
+        //[Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();

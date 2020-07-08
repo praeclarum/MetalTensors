@@ -39,9 +39,9 @@ namespace Tests.Mac
             }
         }
 
-        void ShowTestResult (Test test, TestResult tr)
+        void ShowTestResult (Test test, TestResult tr, int index, int totalCount)
         {
-            Console.WriteLine (tr);
+            Console.WriteLine ($"[{index+1}/{totalCount}] {tr}");
             if (!tr.Success) {
                 var ex = tr.Exception;
                 while (ex?.InnerException != null)
@@ -103,14 +103,18 @@ namespace Tests.Mac
             var tests = FindTests ();
 
             var allOK = true;
-            foreach (var tf in tests) {
+            var allTestsQ =
+                from tf in tests
+                from t in tf.Tests
+                select (tf, t);
+            var allTests = allTestsQ.ToArray ();
+            for (var i = 0; i < allTests.Length; i++) {
+                var (tf, t) = allTests[i];
                 //Parallel.ForEach (tests, tf => {
                 //Console.WriteLine (System.Threading.Thread.CurrentThread.ManagedThreadId);
-                foreach (var t in tf.Tests) {
-                    var tr = RunTest (tf, t);
-                    allOK = allOK && tr.Success;
-                    BeginInvokeOnMainThread (() => ShowTestResult (t, tr));
-                }
+                var tr = RunTest (tf, t);
+                allOK = allOK && tr.Success;
+                BeginInvokeOnMainThread (() => ShowTestResult (t, tr, i, allTests.Length));
             //});
             }
 
@@ -120,6 +124,7 @@ namespace Tests.Mac
         private TestResult RunTest (TestFixture tf, Test t)
         {
             try {
+                Console.WriteLine (tf.TestObject.GetType().FullName + "." + t.TestMethod.Name);
                 var iresult = t.TestMethod.Invoke (tf.TestObject, Array.Empty<object> ());
                 return new TestResult (tf, t, null);
             }

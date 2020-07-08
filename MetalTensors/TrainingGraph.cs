@@ -125,12 +125,12 @@ namespace MetalTensors
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
                 lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, q);
 
-                //if ((batchIndex + 1) % validateInterval == 0) {
-                //    lcb?.WaitUntilCompleted ();
-                //    lcb = null;
-                //    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, q);
-                //    Console.WriteLine (evalHistory);
-                //}
+                if ((batchIndex + 1) % validateInterval == 0) {
+                    lcb?.WaitUntilCompleted ();
+                    lcb = null;
+                    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, q);
+                    //Console.WriteLine (evalHistory);
+                }
             }
             lcb?.WaitUntilCompleted ();
 
