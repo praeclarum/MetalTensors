@@ -118,6 +118,8 @@ namespace MetalTensors
             var stopwatch = new Stopwatch ();
             stopwatch.Restart ();
             using var q = Device.CreateCommandQueue ();
+            if (q == null)
+                throw new Exception ("Failed to create command queue");
 
             var semaphore = new Semaphore (2, 2);
 

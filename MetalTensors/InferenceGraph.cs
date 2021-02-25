@@ -22,6 +22,8 @@ namespace MetalTensors
         public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches)
         {
             using var q = Device.CreateCommandQueue ();
+            if (q == null)
+                throw new Exception ("Failed to create command queue");
 
             var semaphore = new Semaphore (2, 2);
 

@@ -104,7 +104,7 @@ namespace MetalTensors
         {
             var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (context), x.Shape)).ToArray ();
 
-            var key = context.CacheKey + " + (" + string.Join (",", inputImageNodes.Select (x => x.Item1.MPSHandle.Label)) + ")";
+            var key = context.CacheKey + " + (" + string.Join (",", inputImageNodes.Select (x => x.Item1?.MPSHandle?.Label ?? "Unknown")) + ")";
             if (cachedFilterNodes.TryGetValue (key, out var node))
                 return node;
 

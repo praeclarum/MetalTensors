@@ -55,6 +55,8 @@ namespace MetalTensors.Tensors
             using var loader = new MTKTextureLoader (dev);
             var texture = loader.FromUrl (url, null, out var error);
             error.ValidateNoError ();
+            if (texture == null)
+                throw new Exception ("Failed to create texture");
 
             image = new MPSImage (texture, (nuint)featureChannels);
             shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
@@ -75,6 +77,8 @@ namespace MetalTensors.Tensors
             using var loader = new MTKTextureLoader (dev);
             var texture = loader.FromCGImage (cgimage, null, out var error);
             error.ValidateNoError ();
+            if (texture == null)
+                throw new Exception ("Failed to create texture");
 
             image = new MPSImage (texture, (nuint)featureChannels);
             shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };

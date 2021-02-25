@@ -175,12 +175,12 @@ namespace MetalTensors.Layers
         {
             var u = updater;
 
-            if (u != null) {
+            if (u != null && batchNormalizationState.Mean is IMTLBuffer mean && batchNormalizationState.Variance is IMTLBuffer variance) {
                 //
                 // Update mean and variance
                 //
-                using var meanState = new MPSVector (batchNormalizationState.Mean, vectorDescriptor);
-                using var varianceState = new MPSVector (batchNormalizationState.Variance, vectorDescriptor);
+                using var meanState = new MPSVector (mean, vectorDescriptor);
+                using var varianceState = new MPSVector (variance, vectorDescriptor);
                 meanUpdater.Encode (commandBuffer, inputGradientVector: meanState, inputValuesVector: meanVector, null, meanVector);
                 varianceUpdater.Encode (commandBuffer, inputGradientVector: varianceState, inputValuesVector: varianceVector, null, varianceVector);
 
