@@ -114,7 +114,8 @@ namespace Tests.Mac
                 //Console.WriteLine (System.Threading.Thread.CurrentThread.ManagedThreadId);
                 var tr = RunTest (tf, t);
                 allOK = allOK && tr.Success;
-                BeginInvokeOnMainThread (() => ShowTestResult (t, tr, i, allTests.Length));
+                var index = i;
+                BeginInvokeOnMainThread (() => ShowTestResult (t, tr, index, allTests.Length));
             //});
             }
 
@@ -124,7 +125,7 @@ namespace Tests.Mac
         private TestResult RunTest (TestFixture tf, Test t)
         {
             try {
-                Console.WriteLine (tf.TestObject.GetType().FullName + "." + t.TestMethod.Name);
+                //Console.WriteLine (tf.TestObject.GetType().FullName + "." + t.TestMethod.Name);
                 var iresult = t.TestMethod.Invoke (tf.TestObject, Array.Empty<object> ());
                 return new TestResult (tf, t, null);
             }
