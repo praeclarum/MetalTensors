@@ -42,7 +42,7 @@ namespace MetalTensors.Layers
 
         public static int ConvOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation)
         {
-            // https://github.com/keras-team/keras/blob/f06524c44e5f6926968cb2bb3ddd1e523f5474c5/keras/utils/conv_utils.py#L85
+            // https://github.com/keras-team/keras/blob/afff7b4326f380a54c73400d1e2ae03890162bdf/keras/utils/conv_utils.py#L85
 
             if (inputLength < 0)
                 throw new ArgumentOutOfRangeException (nameof (inputLength), "Conv input dimension must be >= 0");

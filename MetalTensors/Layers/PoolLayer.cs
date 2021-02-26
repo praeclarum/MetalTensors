@@ -17,7 +17,7 @@ namespace MetalTensors.Layers
         public int StrideY { get; }
         public ConvPadding Padding { get; }
 
-        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY)
+        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
             if (sizeX < 1)
                 throw new ArgumentOutOfRangeException (nameof (sizeX), "Pooling width must be > 0");
@@ -32,7 +32,7 @@ namespace MetalTensors.Layers
             SizeY = sizeY;
             StrideX = strideX;
             StrideY = strideY;
-            Padding = ConvPadding.Same;
+            Padding = padding;
         }
 
         public override void ValidateInputShapes (params Tensor[] inputs)
@@ -52,10 +52,8 @@ namespace MetalTensors.Layers
             var h = inputShape[0];
             var w = inputShape[1];
             var fc = inputShape[^1];
-            var kh = ConvWeightsLayer.ConvOutputLength (h, SizeY, StrideY, ConvPadding.Same, 1);
-            var kw = ConvWeightsLayer.ConvOutputLength (w, SizeX, StrideX, ConvPadding.Same, 1);
-            //var sh = kh / StrideY;
-            //var sw = kw / StrideX;
+            var kh = ConvWeightsLayer.ConvOutputLength (h, SizeY, StrideY, Padding, 1);
+            var kw = ConvWeightsLayer.ConvOutputLength (w, SizeX, StrideX, Padding, 1);
             return new[] { kh, kw, fc };
         }
 

@@ -5,13 +5,13 @@ namespace MetalTensors.Layers
 {
     public class AvgPoolLayer : PoolLayer
     {
-        public AvgPoolLayer (int sizeX, int sizeY, int strideX, int strideY)
-            : base (sizeX, sizeY, strideX, strideY)
+        public AvgPoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
+            : base (sizeX, sizeY, strideX, strideY, padding)
         {
         }
 
-        public AvgPoolLayer (int size = 2, int stride = 2)
-            : this (size, size, stride, stride)
+        public AvgPoolLayer (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
+            : this (size, size, stride, stride, padding)
         {
         }
 
