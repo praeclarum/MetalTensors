@@ -21,6 +21,7 @@ namespace MetalTensors
         public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
+        public string ShapeString => "(" + string.Join (", ", Shape) + ")";
 
         public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
 
@@ -149,9 +150,21 @@ namespace MetalTensors
             return new ConstantTensor (1.0f, shape);
         }
 
+        public static Tensor OneHot (int index, int count)
+        {
+            var array = new float[count];
+            array[index] = 1.0f;
+            return new ArrayTensor (array);
+        }
+
         public static Tensor Array (params float[] array)
         {
             return new ArrayTensor (array);
+        }
+
+        public static Tensor Array (int[] shape, params float[] array)
+        {
+            return new ArrayTensor (shape, array);
         }
 
         public static Tensor Array (params double[] array)
