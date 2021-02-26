@@ -370,10 +370,10 @@ namespace MetalTensors
         {
             var imageTensor = shape.Length switch
             {
-                0 => new MPSImageTensor (1, 1, 1),
-                1 => new MPSImageTensor (shape[0], 1, 1),
-                2 => new MPSImageTensor (shape[0], shape[1], 1),
-                3 => new MPSImageTensor (shape[0], shape[1], shape[2]),
+                0 => new MPSImageTensor (height: 1, width: 1, featureChannels: 1),
+                1 => new MPSImageTensor (height: 1, width: 1, featureChannels: shape[0]),
+                2 => new MPSImageTensor (height: 1, width: shape[0], featureChannels: shape[1]),
+                3 => new MPSImageTensor (height: shape[0], width: shape[1], featureChannels: shape[2]),
                 var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
             };
             var image = imageTensor.Image;

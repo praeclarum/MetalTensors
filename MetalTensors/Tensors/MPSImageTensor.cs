@@ -99,12 +99,8 @@ namespace MetalTensors.Tensors
             var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
             var dtype = image.PixelFormat;
             switch (dtype) {
-                case MTLPixelFormat.R32Float: {
-                        fixed (float* dataPtr = destination) {
-                            image.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);
-                        }
-                    }
-                    break;
+                case MTLPixelFormat.R32Float:
+                case MTLPixelFormat.RG32Float:
                 case MTLPixelFormat.RGBA32Float: {
                         fixed (float* dataPtr = destination) {
                             image.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);

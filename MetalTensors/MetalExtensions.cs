@@ -50,19 +50,8 @@ namespace MetalTensors
             var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
 
             switch (dtype) {
-                case MTLPixelFormat.R32Float: {
-                        var len = (int)(image.Height * image.Width * image.FeatureChannels);
-                        Span<float> dataSpan = len < 1024 ?
-                            stackalloc float[len] :
-                            new float[len];
-                        for (var i = 0; i < len; i++) {
-                            dataSpan[i] = constant;
-                        }
-                        fixed (float* dataPtr = dataSpan) {
-                            image.WriteBytes ((IntPtr)dataPtr, dataLayout, 0);
-                        }
-                    }
-                    break;
+                case MTLPixelFormat.R32Float:
+                case MTLPixelFormat.RG32Float:
                 case MTLPixelFormat.RGBA32Float: {
                         var len = (int)(image.Height * image.Width * image.FeatureChannels);
                         Span<float> dataSpan = len < 1024 ?
