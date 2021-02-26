@@ -36,8 +36,15 @@ namespace MetalTensors.Tensors
         public override float this[params int[] indexes] {
             get {
                 var i = 0;
-                if (indexes.Length > 0)
-                    i = indexes[0];
+                var n = Math.Min (shape.Length, indexes.Length);
+                var maxIndex = 1;
+                for (var j = 0; j < n; j++) {
+                    maxIndex *= shape[j];
+                }
+                for (var j = 0; j < n; j++) {
+                    maxIndex /= shape[j];
+                    i += indexes[j] * maxIndex;
+                }
                 return data[i];
             }
         }

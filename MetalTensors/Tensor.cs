@@ -62,9 +62,13 @@ namespace MetalTensors
 
                 var i = 0;
                 var n = Math.Min (shape.Length, indexes.Length);
+                var maxIndex = 1;
                 for (var j = 0; j < n; j++) {
-                    i *= shape[j];
-                    i += indexes[j];
+                    maxIndex *= shape[j];
+                }
+                for (var j = 0; j < n; j++) {
+                    maxIndex /= shape[j];
+                    i += indexes[j] * maxIndex;
                 }
                 return elements[i];
             }
@@ -155,6 +159,28 @@ namespace MetalTensors
             var array = new float[count];
             array[index] = 1.0f;
             return new ArrayTensor (array);
+        }
+
+        public static Tensor OneHot (int index, int height, int width, int count)
+        {
+            var array = new float[height * width * count];
+            var tindex = 0;
+            for (var i = 0; i < height; i++) {
+                for (var j = 0; j < width; j++) {
+                    array[tindex + index] = 1;
+                    tindex += count;
+                }
+            }
+            var t = new ArrayTensor (new[] { height, width, count }, array);
+            for (var i = 0; i < height; i++) {
+                for (var j = 0; j < width; j++) {
+                    var r = t[i, j, index];
+                    if (r < 0.5) {
+                        throw new Exception ("Bad one hot");
+                    }
+                }
+            }
+            return t;
         }
 
         public static Tensor Array (params float[] array)
@@ -259,14 +285,14 @@ namespace MetalTensors
             return new DivideLayer ().GetOutput (this, other);
         }
 
-        public Tensor AvgPool (int size = 2, int stride = 2)
+        public Tensor AvgPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new AvgPoolLayer (size, stride).GetOutput (this);
+            return new AvgPoolLayer (size, stride, padding).GetOutput (this);
         }
 
-        public Tensor AvgPool (int sizeX, int sizeY, int strideX, int strideY)
+        public Tensor AvgPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
+            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
         public Tensor BatchNorm (float epsilon = BatchNormLayer.DefaultEpsilon)
@@ -331,14 +357,14 @@ namespace MetalTensors
             return new TanhLayer ().GetOutput (this);
         }
 
-        public Tensor MaxPool (int size = 2, int stride = 2)
+        public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new MaxPoolLayer (size, stride).GetOutput (this);
+            return new MaxPoolLayer (size, stride, padding).GetOutput (this);
         }
 
-        public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY)
+        public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY).GetOutput (this);
+            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
         public Tensor Upsample (int scaleX, int scaleY)
