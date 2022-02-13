@@ -12,7 +12,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class TrainingGraph : Graph
+    public class TrainingGraph : Graph
     {
         readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
         readonly EvaluationGraph evalGraph;
@@ -84,7 +84,7 @@ namespace MetalTensors
             return trainingGraph;
         }
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate, int batchSize, int numBatches, int validateInterval)
+        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, int validateInterval)
         {
             if (validateInterval <= 0)
                 throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
@@ -93,7 +93,7 @@ namespace MetalTensors
             // Set the learning rate
             //
             foreach (var c in convWeights) {
-                c.Weights.SetOptimizationOptions (c.Trainable, learningRate);
+                c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
             }
 
             //

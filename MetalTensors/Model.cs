@@ -10,7 +10,6 @@ namespace MetalTensors
 {
     public class Model
     {
-        public const float DefaultLearningRate = 0.001f;
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = 100;
         public const int DefaultValidationInterval = 10;
@@ -29,8 +28,8 @@ namespace MetalTensors
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
 
-        readonly ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> graphs =
-            new ConcurrentDictionary<IntPtr, (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training)> ();
+        readonly ConcurrentDictionary<IntPtr, CompiledModel> compiledModels =
+            new ConcurrentDictionary<IntPtr, CompiledModel> ();
 
         public Tensor? Output => Outputs.Length > 0 ? Outputs[0] : null;
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
@@ -165,95 +164,55 @@ namespace MetalTensors
             return new ModelTensor (this, outputIndex, inputs);
         }
 
-        const LossType DefaultLossType = LossType.MeanSquaredError;
+        public const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int epochs = DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null)
         {
-            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            return Train (dataSet, learningRate, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
+            var d = device.Current ();
+            var key = d.Handle;
+            var cm = new CompiledModel (this, optimizer, d);
+            compiledModels[key] = cm;
+            return cm;
         }
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate = DefaultLearningRate, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
+        public CompiledModel? TryGetCompiledModel (IMTLDevice device)
         {
-            var g = Compile (device).Training;
-            return g.Train (dataSet, learningRate, batchSize, numBatches, validationInterval);
+            var key = device.Handle;
+            if (compiledModels.TryGetValue (key, out var gs))
+                return gs;
+            return null;
+        }
+
+        public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, int epochs = DefaultEpochs, IMTLDevice? device = null)
+        {            
+            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
+            return Fit (dataSet, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
+        }
+
+        public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
+        {
+            if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
+                throw new InvalidOperationException ($"Models must be compiled before being Fit");
+            }
+            var g = cm.TrainingGraph;
+            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval);
         }
 
         public Tensor Predict (Tensor input, IMTLDevice? device = null)
         {
             if (Inputs.Length != 1)
                 throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
+            if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
+                cm = Compile (new AdamOptimizer (), device);
+            }
 
-            var g = Compile (device).Inference;
+            var g = cm.InferenceGraph;
             var batchSize = 1;
             var numBatches = 1;
 
             var h = g.Predict (DataSet.Single (Inputs[0].Label, input), batchSize, numBatches);
 
             return h.Batches[0].Results[0];
-        }
-
-        (InferenceGraph Inference, EvaluationGraph Evaluation, TrainingGraph Training) Compile (IMTLDevice? device)
-        {
-            var d = device.Current ();
-            var key = d.Handle;
-            if (graphs.TryGetValue (key, out var gs))
-                return gs;
-            gs = CreateCompiledModel (d);
-            if (graphs.TryAdd (key, gs))
-                return gs;
-            return graphs[key];
-        }
-
-        (InferenceGraph, EvaluationGraph, TrainingGraph) CreateCompiledModel (IMTLDevice d)
-        {
-            var (flatModel, trainable) = Flatten ();
-
-            //
-            // Auto add loss layer
-            //
-            Model trainingModel;
-            if (flatModel.Layers.OfType<LossLayer> ().Any ()) {
-                trainingModel = flatModel;
-            }
-            else {
-                var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + " " + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
-                var losses = flatModel.Outputs.Select ((x, i) => CreateAutoLoss (x, labels[i])).ToArray ();
-                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.KeepDropoutDuringInference, losses);
-            }
-
-            //
-            // Merge outputs in order to auto build gradients
-            //
-            var trainingTensor = trainingModel.Outputs.Length == 1 ?
-                trainingModel.Outputs[0] :
-                Tensor.Add (trainingModel.Outputs);
-
-            //
-            // Build the graphs
-            //
-            var evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, KeepDropoutDuringInference, d);
-            var infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph.MetalGraph);
-            var trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, d);
-
-            return (infGraph, evalGraph, trainingGraph);
-
-            Tensor CreateAutoLoss (Tensor input, Tensor label)
-            {
-                var i = input;
-                var lossType = DefaultLossType;
-                if (input is LayerTensor lt) {
-                    if (lt.Layer is SigmoidLayer) {
-                        i = lt.Inputs[0];
-                        lossType = LossType.SigmoidCrossEntropy;
-                    }
-                    else if (lt.Layer is SoftMaxLayer) {
-                        i = lt.Inputs[0];
-                        lossType = LossType.SoftMaxCrossEntropy;
-                    }
-                }
-                return i.Loss (label, lossType);
-            }
         }
 
         public (Model, Dictionary<Layer, bool>) Flatten ()

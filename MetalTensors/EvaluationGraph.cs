@@ -12,7 +12,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class EvaluationGraph : Graph
+    public class EvaluationGraph : Graph
     {
         public (LayerTensor Tensor, LossLayer Layer)[] Losses { get; }
 

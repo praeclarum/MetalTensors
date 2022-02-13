@@ -29,7 +29,7 @@ namespace MetalTensors.Applications
             for (var epoch = 0; epoch < epochs; epoch++) {
                 Console.WriteLine ("MNIST EPOCH");
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var history = Classifier.Train (trainingData, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                var history = Classifier.Fit (trainingData, batchSize: batchSize, epochs: 1, device: device);
                 Console.WriteLine ("MNIST HISTORY: " + history);
             }
         }
@@ -48,7 +48,7 @@ namespace MetalTensors.Applications
                 .Dropout (0.5f)
                 .Dense (10).Loss (labels, LossType.SoftMaxCrossEntropy, ReductionType.Sum);
             var model = output.Model ("mnist");
-
+            model.Compile (new AdamOptimizer (learningRate: 0.0002f));
             return model;
         }
 

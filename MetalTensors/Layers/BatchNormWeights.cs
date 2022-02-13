@@ -110,7 +110,7 @@ namespace MetalTensors.Layers
             momentumVectors = NSArray<MPSVector>.FromNSObjects (gammaVector.Momentum, betaVector.Momentum);
             velocityVectors = NSArray<MPSVector>.FromNSObjects (gammaVector.Velocity, betaVector.Velocity);
 
-            SetOptimizationOptions (true, learningRate: Model.DefaultLearningRate);
+            SetOptimizationOptions (true, learningRate: Optimizer.DefaultLearningRate);
 
             /*
               A note on how the batch norm update works.

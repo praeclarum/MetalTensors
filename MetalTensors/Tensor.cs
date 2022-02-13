@@ -385,15 +385,19 @@ namespace MetalTensors
                 layer.GetOutput (this, labels);
         }
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
             var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, device);
+            var model = new Model (Label, true, keepDropoutDuringInference, this);
+            var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
+            return model.Fit (dataSet, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, cm.Device);
         }
 
-        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
+        public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
-            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, numBatches, validationInterval, device);
+            var model = new Model (Label, true, keepDropoutDuringInference, this);
+            var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
+            return model.Fit (dataSet, batchSize, numBatches, validationInterval, cm.Device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

@@ -12,7 +12,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    abstract class Graph
+    public abstract class Graph
     {
         public IMTLDevice Device { get; }
 

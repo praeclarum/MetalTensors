@@ -96,7 +96,7 @@ namespace Tests
             Assert.AreEqual (1, gan.Output!.Shape[2]);
             Assert.AreEqual (2, gan.Submodels.Length);
 
-            var h = gan.Train (DataSet.Generated (GetTrainingData, 35, "z", "realOrFake"), batchSize: 5, epochs: 1);
+            var h = gan.Fit (DataSet.Generated (GetTrainingData, 35, "z", "realOrFake"), batchSize: 5, epochs: 1);
 
             Tensor[] GetTrainingData (int _)
             {

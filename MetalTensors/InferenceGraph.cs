@@ -12,7 +12,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class InferenceGraph : Graph
+    public class InferenceGraph : Graph
     {
         public InferenceGraph (string label, MPSNNGraph graph)
             : base (label, graph, graph.Device)

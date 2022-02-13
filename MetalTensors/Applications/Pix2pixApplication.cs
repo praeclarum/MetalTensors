@@ -36,6 +36,7 @@ namespace MetalTensors.Applications
             //var ganLossL1 = genOut.Loss (genLabels, LossType.MeanAbsoluteError, ReductionType.Sum);
             var ganLoss = ganLossD;// + lambdaL1 * ganLossL1;
             Gan = ganLoss.Model (gan.Label);
+            Gan.Compile (new AdamOptimizer (learningRate: 0.0002f));
         }
 
         static Model CreateGenerator (int height, int width)
@@ -133,7 +134,7 @@ namespace MetalTensors.Applications
                     var index = batch * batchSize;
                     var subdata = dataSet.Subset (index, batchSize);
                     //var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
-                    var ganHistory = Gan.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                    var ganHistory = Gan.Fit (subdata, batchSize: batchSize, epochs: 1, device: device);
                 }
             }
         }

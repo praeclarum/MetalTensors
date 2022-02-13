@@ -62,6 +62,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)InferenceGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\SigmoidLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompiledModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Optimizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />
