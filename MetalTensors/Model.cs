@@ -16,7 +16,6 @@ namespace MetalTensors
         public const int DefaultValidationInterval = 10;
         public const int DefaultEpochs = 10;
 
-        public bool IsTrainable { get; }
         public bool KeepDropoutDuringInference { get; }
         public Tensor[] Outputs { get; }
 
@@ -38,13 +37,12 @@ namespace MetalTensors
         public Tensor? Output => Outputs.Length > 0 ? Outputs[0] : null;
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
-        public Model (string? label, bool trainable, bool keepDropoutDuringInference, params Tensor[] outputs)
+        public Model (string? label, bool keepDropoutDuringInference, params Tensor[] outputs)
             : base (label)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
-            IsTrainable = trainable;
             KeepDropoutDuringInference = keepDropoutDuringInference;
             Outputs = outputs;
 
@@ -109,31 +107,21 @@ namespace MetalTensors
 
         public override string ToString () => $"{Label} {{trainable:{IsTrainable}}}";
 
-        public Model Lock ()
-        {
-            if (!IsTrainable)
-                return this;
-            return new Model (Label, false, KeepDropoutDuringInference, Outputs);
-        }
-
-        public Model Unlock ()
-        {
-            if (IsTrainable)
-                return this;
-            return new Model (Label, true, KeepDropoutDuringInference, Outputs);
-        }
-
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, IsTrainable, KeepDropoutDuringInference, noutputs);
+            var nm = new Model (Label, KeepDropoutDuringInference, noutputs) {
+                IsTrainable = IsTrainable,
+            };
             return nm;
         }
 
         public Model MapInputs (Func<Tensor, Tensor> map)
         {
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, IsTrainable, KeepDropoutDuringInference, noutputs);
+            var nm = new Model (Label, KeepDropoutDuringInference, noutputs) {
+                IsTrainable = IsTrainable,
+            };
             return nm;
         }
 
@@ -154,13 +142,17 @@ namespace MetalTensors
         {
             var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + inputModel.Label + ")", IsTrainable, KeepDropoutDuringInference, outputs);
+            return new Model (Label + "(" + inputModel.Label + ")", KeepDropoutDuringInference, outputs) {
+                IsTrainable = IsTrainable,
+            };
         }
 
         public Model Apply (params Tensor[] inputs)
         {
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")", IsTrainable, KeepDropoutDuringInference, outputs);
+            return new Model (Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")", KeepDropoutDuringInference, outputs) {
+                IsTrainable = IsTrainable,
+            };
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -223,12 +215,14 @@ namespace MetalTensors
         {
             var trainable = new Dictionary<Layer, bool> ();
             foreach (var l in Layers) {
-                trainable[l] = IsTrainable;
+                trainable[l] = IsTrainable && l.IsTrainable;
             }
             var flattened = new Dictionary<Tensor, Tensor> ();
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
-            var flatModel = new Model (Label, IsTrainable, KeepDropoutDuringInference, flatOuts);
+            var flatModel = new Model (Label, KeepDropoutDuringInference, flatOuts) {
+                IsTrainable = IsTrainable,
+            };
 
             return (flatModel, trainable);
 
@@ -240,9 +234,9 @@ namespace MetalTensors
                     var inst = m.BaseModel.RebuildModelWithInputs (m.ModelInputs.Select (FlattenTensor).ToArray ());
                     var o = FlattenTensor (inst.Outputs[m.OutputIndex]);
                     foreach (var layer in GetAllLayers (o)) {
-                        var lt = m.BaseModel.IsTrainable;
+                        var lt = m.BaseModel.IsTrainable && layer.IsTrainable;
                         if (trainable.TryGetValue (layer, out var et)) {
-                            lt = lt || trainable[layer];
+                            lt = lt || et;
                         }
                         trainable[layer] = lt;
                     }

@@ -41,7 +41,9 @@ namespace MetalTensors
             else {
                 var labels = flatModel.Outputs.Select ((x, i) => Tensor.Labels (x.Label + " " + Tensor.DefaultLabelsLabel, x.Shape)).ToArray ();
                 var losses = flatModel.Outputs.Select ((x, i) => CreateAutoLoss (x, labels[i])).ToArray ();
-                trainingModel = new Model (flatModel.Label, flatModel.IsTrainable, flatModel.KeepDropoutDuringInference, losses);
+                trainingModel = new Model (flatModel.Label, flatModel.KeepDropoutDuringInference, losses) {
+                    IsTrainable = flatModel.IsTrainable,
+                };
             }
 
             //

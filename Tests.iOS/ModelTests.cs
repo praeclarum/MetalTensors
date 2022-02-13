@@ -81,13 +81,16 @@ namespace Tests
                 .Conv (1)
                 .Loss (Tensor.Labels ("realOrFake", 1, 1, 1), LossType.SigmoidCrossEntropy)
                 .Model ("discriminator");
+            discriminator.Compile (new AdamOptimizer ());
 
             Assert.AreEqual (dinput, discriminator.Input);
             Assert.AreEqual (1, discriminator.Output!.Shape[0]);
             Assert.AreEqual (1, discriminator.Output!.Shape[1]);
             Assert.AreEqual (1, discriminator.Output!.Shape[2]);
 
-            var gan = discriminator.Lock ().Apply (generator);
+            discriminator.IsTrainable = false;
+            var gan = discriminator.Apply (generator);
+            gan.Compile (new AdamOptimizer ());
 
             Assert.AreEqual (1, gan.Inputs.Length);
             Assert.AreEqual (z, gan.Input);

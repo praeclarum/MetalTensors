@@ -21,6 +21,8 @@ namespace MetalTensors
 
         public abstract int MinInputCount { get; }
 
+        public bool IsTrainable { get; set; } = true;
+
         public string Label => label;
 
         protected Layer (string? label = null)

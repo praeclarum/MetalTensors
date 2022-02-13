@@ -101,7 +101,9 @@ namespace MetalTensors
 
         public Model Model (string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
         {
-            return new Model (name, trainable, keepDropoutDuringInference, this);
+            return new Model (name, keepDropoutDuringInference, this) {
+                IsTrainable = trainable,
+            };
         }
 
         public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
@@ -388,14 +390,14 @@ namespace MetalTensors
         public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
             var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            var model = new Model (Label, true, keepDropoutDuringInference, this);
+            var model = new Model (Label, keepDropoutDuringInference, this);
             var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
             return model.Fit (dataSet, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, cm.Device);
         }
 
         public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
         {
-            var model = new Model (Label, true, keepDropoutDuringInference, this);
+            var model = new Model (Label, keepDropoutDuringInference, this);
             var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
             return model.Fit (dataSet, batchSize, numBatches, validationInterval, cm.Device);
         }

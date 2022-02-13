@@ -28,8 +28,10 @@ namespace MetalTensors.Applications
             var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
             var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
             Discriminator = discLoss.Model (discriminator.Label);
+            Discriminator.Compile (new AdamOptimizer (learningRate: 0.0002f));
 
-            var gan = discriminator.Lock ().Apply (generator);
+            discriminator.IsTrainable = false;
+            var gan = discriminator.Apply (generator);
             var ganOut = gan.Outputs[0];
             var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
             var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
