@@ -3,19 +3,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Metal;
+using MetalPerformanceShaders;
 using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public class Model
+    public class Model : Layer
     {
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = 100;
         public const int DefaultValidationInterval = 10;
         public const int DefaultEpochs = 10;
 
-        public string Label { get; }
         public bool IsTrainable { get; }
         public bool KeepDropoutDuringInference { get; }
         public Tensor[] Outputs { get; }
@@ -28,6 +28,10 @@ namespace MetalTensors
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
 
+        public override int MinInputCount => Inputs.Length;
+
+        public override int[] GetOutputShape (params Tensor[] inputs) => Outputs[0].Shape;
+
         readonly ConcurrentDictionary<IntPtr, CompiledModel> compiledModels =
             new ConcurrentDictionary<IntPtr, CompiledModel> ();
 
@@ -35,11 +39,11 @@ namespace MetalTensors
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
         public Model (string? label, bool trainable, bool keepDropoutDuringInference, params Tensor[] outputs)
+            : base (label)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
-            Label = label ?? outputs[0].Label;
             IsTrainable = trainable;
             KeepDropoutDuringInference = keepDropoutDuringInference;
             Outputs = outputs;
@@ -265,6 +269,11 @@ namespace MetalTensors
                 }
                 return r;
             }
+        }
+
+        protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
+        {
+            throw new NotSupportedException ($"Cannot create MPS filter nodes from models directly.");
         }
     }
 }
