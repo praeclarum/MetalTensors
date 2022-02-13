@@ -26,7 +26,7 @@ namespace MetalTensors.Tensors
             this.shape = new int[] { data.Length };
         }
 
-        public override void Copy (Span<float> destination)
+        public override void Copy (Span<float> destination, IMTLDevice device)
         {
             ValidateCopyDestination (destination);
             Span<float> dataSpan = data;

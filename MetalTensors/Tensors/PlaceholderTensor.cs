@@ -17,7 +17,7 @@ namespace MetalTensors.Tensors
             this.shape = shape.NormalizeShape ();
         }        
 
-        public override void Copy (Span<float> destination)
+        public override void Copy (Span<float> destination, IMTLDevice device)
         {
             var n = ValidateCopyDestination (destination);
             for (var i = 0; i < n; i++) {

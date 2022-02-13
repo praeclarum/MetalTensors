@@ -286,7 +286,7 @@ namespace MetalTensors.Layers
         public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, Tensor initialValue)
             : this (device, descriptor)
         {
-            initialValue.Copy (Value.ToSpan ());
+            initialValue.Copy (Value.ToSpan (), device);
         }
 
         public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)

@@ -28,7 +28,7 @@ namespace MetalTensors.Tensors
         {
         }
 
-        public override void Copy (Span<float> destination)
+        public override void Copy (Span<float> destination, IMTLDevice device)
         {
             var n = ValidateCopyDestination (destination);
             var c = ConstantValue;

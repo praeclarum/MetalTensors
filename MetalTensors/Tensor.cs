@@ -39,12 +39,12 @@ namespace MetalTensors
 
         //public virtual Tensor Clone () => this;
 
-        public abstract void Copy (Span<float> destination);
+        public abstract void Copy (Span<float> destination, IMTLDevice device);
 
-        public float[] ToArray ()
+        public float[] ToArray (IMTLDevice device)
         {
             var r = new float[Shape.GetShapeLength ()];
-            Copy (r);
+            Copy (r, device);
             return r;
         }
 
@@ -58,7 +58,7 @@ namespace MetalTensors
                 Span<float> elements = len < 1024 ?
                     stackalloc float[len] :
                     new float[len];
-                Copy (elements);
+                Copy (elements, ((IMTLDevice?)null).Current());
 
                 var i = 0;
                 var n = Math.Min (shape.Length, indexes.Length);
@@ -430,7 +430,7 @@ namespace MetalTensors
             var image = CreateUninitializedImage (shape);
             image.Fill (constantValue);
 #if DEBUG
-            var data = new MPSImageTensor (image).ToArray ();
+            var data = new MPSImageTensor (image).ToArray (((IMTLDevice?)null).Current());
             Debug.Assert (data[0] == constantValue);
 #endif
             return image;

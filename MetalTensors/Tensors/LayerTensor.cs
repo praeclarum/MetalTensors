@@ -22,11 +22,10 @@ namespace MetalTensors.Tensors
             Layer.ValidateInputShapes (inputs);
         }
 
-        public override void Copy (Span<float> destination)
+        public override void Copy (Span<float> destination, IMTLDevice device)
         {
-            var device = MetalExtensions.Current (null);
             var computed = Layer.ExecuteAsync (LayerInputs, device).Result;
-            computed.Copy (destination);
+            computed.Copy (destination, device);
         }
 
         public override MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context)
