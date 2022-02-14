@@ -29,9 +29,11 @@ namespace MetalTensors
 
         protected Tensor (string? label = null)
         {
-            handle = new Lazy<TensorHandle> (() => new TensorHandle (this, label), true);
+            handle = new Lazy<TensorHandle> (() => CreateHandle (label), true);
             metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
+
+        protected virtual TensorHandle CreateHandle (string? label) => new TensorHandle (this, label);
 
         public override string ToString () => Label + " (" + string.Join (", ", Shape) + ") {type=" + GetType ().Name + "}";
 
@@ -331,6 +333,11 @@ namespace MetalTensors
             return new DropoutLayer (keepProbability).GetOutput (this);
         }
 
+        public Tensor LeakyReLU (float a = ReLULayer.DefaultLeakyA)
+        {
+            return new ReLULayer (a).GetOutput (this);
+        }
+
         public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
         {
             return loss.Call (this, truth, weight);
@@ -371,9 +378,9 @@ namespace MetalTensors
             return new MultiplyLayer ().GetOutput (this, other);
         }
 
-        public Tensor ReLU (float a = 0.2f)
+        public Tensor ReLU ()
         {
-            return new ReLULayer (a).GetOutput (this);
+            return new ReLULayer ().GetOutput (this);
         }
 
         public Tensor Sigmoid ()

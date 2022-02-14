@@ -5,9 +5,11 @@ namespace MetalTensors.Layers
 {
     public class ReLULayer : UnopLayer
     {
+        public const float DefaultLeakyA = 0.2f;
+
         public float A { get; }
 
-        public ReLULayer (float a = 0.2f)
+        public ReLULayer (float a = 0.0f)
         {
             A = a;
         }

@@ -61,23 +61,23 @@ namespace MetalTensors.Applications
                     var downconv = input.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
                     return up.Model (label);
                 }
                 else if (innermost) {
-                    var downrelu = input.ReLU (a: 0.2f);
+                    var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
-                    var up = down.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     return input.Concat (up).Model (label);
                 }
                 else {
-                    var downrelu = input.ReLU (a: 0.2f);
+                    var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var downnorm = downconv.BatchNorm ();
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
                     return input.Concat (updrop).Model (label);
                 }
@@ -96,16 +96,16 @@ namespace MetalTensors.Applications
             var kw = 4;
             var ndf = 64;
 
-            var disc = image.Conv (ndf, size: kw, stride: 2).ReLU (a: 0.2f);
+            var disc = image.Conv (ndf, size: kw, stride: 2).LeakyReLU (a: 0.2f);
 
             int nf_mult;
             for (var n = 1; n < nlayers; n++) {
                 nf_mult = Math.Min (1 << n, 8);
-                disc = disc.Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
+                disc = disc.Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias).BatchNorm ().LeakyReLU (a: 0.2f);
             }
 
             nf_mult = Math.Min (1 << nlayers, 8);
-            disc = disc.Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
+            disc = disc.Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias).BatchNorm ().LeakyReLU (a: 0.2f);
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
