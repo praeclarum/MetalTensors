@@ -186,17 +186,14 @@ namespace MetalTensors
         public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true) =>
             Compile (new Loss?[Outputs.Length], optimizer, device, forTraining: forTraining);
 
+        public CompiledModel Compile (Loss outputLoss, IMTLDevice? device = null) =>
+            Compile (new[] { outputLoss }, new AdamOptimizer (), device);
+
         public CompiledModel Compile (Loss outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new[] { outputLoss }, optimizer, device);
 
         public CompiledModel Compile (Loss outputLoss, float learningRate, IMTLDevice? device = null) =>
             Compile (new[] { outputLoss }, new AdamOptimizer(learningRate: learningRate), device);
-
-        public CompiledModel Compile (LossType outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
-            Compile (new BuiltinLoss(outputLoss), optimizer, device);
-
-        public CompiledModel Compile (LossType outputLoss, float learningRate, IMTLDevice? device = null) =>
-            Compile (new BuiltinLoss(outputLoss), new AdamOptimizer(learningRate: learningRate), device);
 
         public CompiledModel Compile (Func<Tensor, Tensor, Tensor> outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new CustomLoss(outputLoss), optimizer, device);

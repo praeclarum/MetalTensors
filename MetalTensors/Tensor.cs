@@ -51,7 +51,7 @@ namespace MetalTensors
                 var shape = Shape;
 
                 // This is pretty slow since the whole tensor is copied
-                // Hopefully derived classes overide this property.
+                // Hopefully derived classes override this property.
                 var len = shape.GetShapeLength ();
                 Span<float> elements = len < 1024 ?
                     stackalloc float[len] :
@@ -219,6 +219,11 @@ namespace MetalTensors
             return a.Add (b);
         }
 
+        public virtual Tensor Abs ()
+        {
+            return new AbsLayer ().GetOutput (this);
+        }
+
         public virtual Tensor Add (Tensor other)
         {
             return new AddLayer ().GetOutput (this, other);
@@ -325,6 +330,16 @@ namespace MetalTensors
         public Tensor Dropout (float keepProbability)
         {
             return new DropoutLayer (keepProbability).GetOutput (this);
+        }
+
+        public Tensor Mean ()
+        {
+            return new MeanLayer ().GetOutput (this);
+        }
+
+        public Tensor ReduceMean ()
+        {
+            return new ReduceMeanLayer ().GetOutput (this);
         }
 
         public Tensor ReLU (float a = 0.2f)

@@ -108,6 +108,9 @@
     <Compile Include="..\Tests.iOS\LossLayerTests.cs">
       <Link>LossLayerTests.cs</Link>
     </Compile>
+    <Compile Include="..\Tests.iOS\ReductionLayerTests.cs">
+      <Link>ReductionLayerTests.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />

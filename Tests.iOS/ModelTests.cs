@@ -80,7 +80,7 @@ namespace Tests
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (1)
                 .Model ("discriminator");
-            discriminator.Compile (LossType.SigmoidCrossEntropy, new AdamOptimizer ());
+            discriminator.Compile (Loss.SigmoidCrossEntropy, new AdamOptimizer ());
 
             Assert.AreEqual (dinput, discriminator.Input);
             Assert.AreEqual (1, discriminator.Output.Shape[0]);

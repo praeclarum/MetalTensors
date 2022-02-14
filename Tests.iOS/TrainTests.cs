@@ -22,7 +22,7 @@ namespace Tests
             var getDataCount = 0;
 
             var model = new Model (output);
-            model.Compile (LossType.MeanSquaredError, learningRate: Optimizer.DefaultLearningRate);
+            model.Compile (Loss.MeanSquaredError, learningRate: Optimizer.DefaultLearningRate);
 
             var history = model.Fit (DataSet.Generated (_ => {
                 getDataCount++;
