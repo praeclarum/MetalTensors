@@ -165,8 +165,6 @@ namespace MetalTensors
             return new ModelTensor (this, outputIndex, inputs);
         }
 
-        public const LossType DefaultLossType = LossType.MeanSquaredError;
-
         public CompiledModel Compile (Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true)
         {
             var d = device.Current ();
