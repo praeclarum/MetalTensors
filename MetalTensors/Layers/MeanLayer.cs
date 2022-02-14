@@ -23,7 +23,7 @@ namespace MetalTensors.Layers
         }
     }
 
-    public class ReduceMeanLayer : ReductionLayer
+    public class SpatialMeanLayer : ReductionLayer
     {
         public override int[] GetOutputShape (params Tensor[] inputs)
         {

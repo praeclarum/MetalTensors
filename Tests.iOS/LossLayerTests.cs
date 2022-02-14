@@ -87,7 +87,7 @@ namespace Tests
             model.Compile (Loss.Custom (CustomLoss));
             Tensor CustomLoss (Tensor prediction, Tensor truth)
             {
-                return (prediction - truth).Abs ().ReduceMean ();
+                return (prediction - truth).Abs ().SpatialMean ();
             }
         }
     }

@@ -11,7 +11,7 @@ namespace Tests
         {
             var v = 42.123f;
             var input = Tensor.Constant (v, 2, 3, 5);
-            var output = input.ReduceMean ();
+            var output = input.SpatialMean ();
 
             Assert.AreEqual (3, output.Shape.Length);
             Assert.AreEqual (1, output.Shape[0]);

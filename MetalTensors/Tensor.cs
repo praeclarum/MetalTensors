@@ -337,9 +337,9 @@ namespace MetalTensors
             return new MeanLayer ().GetOutput (this);
         }
 
-        public Tensor ReduceMean ()
+        public Tensor SpatialMean ()
         {
-            return new ReduceMeanLayer ().GetOutput (this);
+            return new SpatialMeanLayer ().GetOutput (this);
         }
 
         public Tensor ReLU (float a = 0.2f)
