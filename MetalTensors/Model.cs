@@ -34,7 +34,7 @@ namespace MetalTensors
         readonly ConcurrentDictionary<IntPtr, CompiledModel> compiledModels =
             new ConcurrentDictionary<IntPtr, CompiledModel> ();
 
-        public Tensor? Output => Outputs.Length > 0 ? Outputs[0] : null;
+        public Tensor Output => Outputs[0];
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
         public Model (Tensor output)
@@ -167,13 +167,20 @@ namespace MetalTensors
 
         public const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public CompiledModel Compile (Loss?[] outputLosses, Optimizer optimizer, IMTLDevice? device = null)
+        public CompiledModel Compile (Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice? device = null)
         {
             var d = device.Current ();
             var key = d.Handle;
-            var cm = new CompiledModel (this, outputLosses, optimizer, d);
+            var cm = new CompiledModel (this, outputLosses, outputLossWeights, optimizer, d);
             compiledModels[key] = cm;
             return cm;
+        }
+
+        public CompiledModel Compile (Loss?[] outputLosses, Optimizer optimizer, IMTLDevice? device = null)
+        {
+            var weights = new float[outputLosses.Length];
+            Array.Fill (weights, 1.0f);
+            return Compile (outputLosses, weights, optimizer, device);
         }
 
         public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null) =>

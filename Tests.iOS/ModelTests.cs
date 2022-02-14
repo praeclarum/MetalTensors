@@ -79,14 +79,13 @@ namespace Tests
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (1)
-                .Loss (Tensor.Labels ("realOrFake", 1, 1, 1), LossType.SigmoidCrossEntropy)
                 .Model ("discriminator");
-            discriminator.Compile (new AdamOptimizer ());
+            discriminator.Compile (LossType.SigmoidCrossEntropy, new AdamOptimizer ());
 
             Assert.AreEqual (dinput, discriminator.Input);
-            Assert.AreEqual (1, discriminator.Output!.Shape[0]);
-            Assert.AreEqual (1, discriminator.Output!.Shape[1]);
-            Assert.AreEqual (1, discriminator.Output!.Shape[2]);
+            Assert.AreEqual (1, discriminator.Output.Shape[0]);
+            Assert.AreEqual (1, discriminator.Output.Shape[1]);
+            Assert.AreEqual (1, discriminator.Output.Shape[2]);
 
             discriminator.IsTrainable = false;
             var gan = discriminator.Apply (generator);
@@ -94,9 +93,9 @@ namespace Tests
 
             Assert.AreEqual (1, gan.Inputs.Length);
             Assert.AreEqual (z, gan.Input);
-            Assert.AreEqual (1, gan.Output!.Shape[0]);
-            Assert.AreEqual (1, gan.Output!.Shape[1]);
-            Assert.AreEqual (1, gan.Output!.Shape[2]);
+            Assert.AreEqual (1, gan.Output.Shape[0]);
+            Assert.AreEqual (1, gan.Output.Shape[1]);
+            Assert.AreEqual (1, gan.Output.Shape[2]);
             Assert.AreEqual (2, gan.Submodels.Length);
 
             var h = gan.Fit (DataSet.Generated (GetTrainingData, 35, "z", "realOrFake"), batchSize: 5, epochs: 1);
@@ -119,8 +118,8 @@ namespace Tests
             Assert.AreEqual (28, mnist.Input!.Shape[1]);
             Assert.AreEqual (1, mnist.Input.Shape[2]);
             Assert.AreEqual (1, mnist.Outputs.Length);
-            Assert.AreEqual (1, mnist.Output!.Shape.Length);
-            Assert.AreEqual (1, mnist.Output!.Shape[0]);
+            Assert.AreEqual (3, mnist.Output.Shape.Length);
+            Assert.AreEqual (10, mnist.Output.Shape[^1]);
         }
     }
 }

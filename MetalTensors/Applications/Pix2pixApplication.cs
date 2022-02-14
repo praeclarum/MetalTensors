@@ -19,26 +19,14 @@ namespace MetalTensors.Applications
 
         public Pix2pixApplication (int height = 256, int width = 256)
         {
-            var generator = CreateGenerator (height, width);
-            var genOut = generator.Outputs[0];
-            Generator = generator;
+            Generator = CreateGenerator (height, width);
 
-            var discriminator = CreateDiscriminator (height, width);
-            var discOut = discriminator.Outputs[0];
-            var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
-            var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
-            Discriminator = discLoss.Model (discriminator.Label);
-            Discriminator.Compile (new AdamOptimizer (learningRate: 0.0002f));
+            Discriminator = CreateDiscriminator (height, width);
+            Discriminator.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: 0.0002f));
 
-            discriminator.IsTrainable = false;
-            var gan = discriminator.Apply (generator);
-            var ganOut = gan.Outputs[0];
-            var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
-            var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
-            //var ganLossL1 = genOut.Loss (genLabels, LossType.MeanAbsoluteError, ReductionType.Sum);
-            var ganLoss = ganLossD;// + lambdaL1 * ganLossL1;
-            Gan = ganLoss.Model (gan.Label);
-            Gan.Compile (new AdamOptimizer (learningRate: 0.0002f));
+            Discriminator.IsTrainable = false;
+            Gan = Discriminator.Apply (Generator);
+            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: 0.0002f));
         }
 
         static Model CreateGenerator (int height, int width)

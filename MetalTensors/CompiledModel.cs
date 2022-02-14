@@ -23,8 +23,12 @@ namespace MetalTensors
         public TrainingGraph TrainingGraph => trainingGraph;
         public InferenceGraph InferenceGraph => infGraph;
 
-        public CompiledModel (Model model, Loss?[] outputLosses, Optimizer optimizer, IMTLDevice device)
+        public CompiledModel (Model model, Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice device)
         {
+            if (outputLossWeights.Length != outputLosses.Length) {
+                throw new ArgumentException ("Loss weights length mismatch", nameof (outputLossWeights));
+            }
+
             Model = model;
             Optimizer = optimizer;
             Device = device;
@@ -59,23 +63,23 @@ namespace MetalTensors
             evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, Model.KeepDropoutDuringInference, device);
             infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph.MetalGraph);
             trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, device);
-
-            Tensor CreateAutoLoss (Tensor input, Tensor label)
-            {
-                var i = input;
-                var lossType = Model.DefaultLossType;
-                if (input is LayerTensor lt) {
-                    if (lt.Layer is SigmoidLayer) {
-                        i = lt.Inputs[0];
-                        lossType = LossType.SigmoidCrossEntropy;
-                    }
-                    else if (lt.Layer is SoftMaxLayer) {
-                        i = lt.Inputs[0];
-                        lossType = LossType.SoftMaxCrossEntropy;
-                    }
-                }
-                return i.Loss (label, lossType);
-            }
         }
+
+        Tensor CreateAutoLoss (Tensor input, Tensor label)
+        {
+            var i = input;
+            var lossType = Model.DefaultLossType;
+            if (input is LayerTensor lt) {
+                if (lt.Layer is SigmoidLayer) {
+                    i = lt.Inputs[0];
+                    lossType = LossType.SigmoidCrossEntropy;
+                }
+                else if (lt.Layer is SoftMaxLayer) {
+                    i = lt.Inputs[0];
+                    lossType = LossType.SoftMaxCrossEntropy;
+                }
+            }
+            return i.Loss (label, lossType);
+        }        
     }
 }

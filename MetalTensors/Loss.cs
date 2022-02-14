@@ -8,11 +8,14 @@ namespace MetalTensors
     public abstract class Loss
     {
         public static readonly Loss CategoricalCrossEntropy = new BuiltinLoss(LossType.CategoricalCrossEntropy);
+        public static readonly Loss SumCategoricalCrossEntropy = new BuiltinLoss(LossType.CategoricalCrossEntropy, ReductionType.Sum);
         public static readonly Loss Hinge = new BuiltinLoss (LossType.Hinge);
         public static readonly Loss MeanAbsoluteError = new BuiltinLoss (LossType.MeanAbsoluteError);
         public static readonly Loss MeanSquaredError = new BuiltinLoss (LossType.MeanSquaredError);
         public static readonly Loss SigmoidCrossEntropy = new BuiltinLoss (LossType.SigmoidCrossEntropy);
+        public static readonly Loss SumSigmoidCrossEntropy = new BuiltinLoss (LossType.SigmoidCrossEntropy, ReductionType.Sum);
         public static readonly Loss SoftMaxCrossEntropy = new BuiltinLoss (LossType.SoftMaxCrossEntropy);
+        public static readonly Loss SumSoftMaxCrossEntropy = new BuiltinLoss (LossType.SoftMaxCrossEntropy, ReductionType.Sum);
 
         public static Loss Custom (Func<Tensor, Tensor, Tensor> lossFunction) => new CustomLoss (lossFunction);
 
@@ -24,13 +27,15 @@ namespace MetalTensors
     public class BuiltinLoss : Loss
     {
         public LossType LossType { get; }
+        public ReductionType ReductionType { get; }
 
-        public BuiltinLoss (LossType lossType)
+        public BuiltinLoss (LossType lossType, ReductionType reductionType = ReductionType.Mean)
         {
             LossType = lossType;
+            ReductionType = reductionType;
         }
 
-        public override string ToString () => $"Loss.{LossType}";
+        public override string ToString () => $"{LossType} Loss (Reduction={ReductionType})";
     }
 
     public class CustomLoss : Loss
