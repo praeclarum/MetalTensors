@@ -165,6 +165,27 @@ namespace MetalTensors
             return new ConstantTensor (constant, mimic.Shape);
         }
 
+        public static Tensor Image (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (url, featureChannels, device);
+        }
+
+        public static Tensor Image (string path, int featureChannels = 3, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (path, featureChannels, device);
+        }
+
+        public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
+        {
+            var b = bundle ?? NSBundle.MainBundle;
+            var url = string.IsNullOrEmpty (subpath) ?
+                b.GetUrlForResource (name, extension) :
+                b.GetUrlForResource (name, extension, subpath);
+            if (url == null)
+                throw new ArgumentException ("Resource not found", nameof (name));
+            return new MPSImageTensor (url, featureChannels, device);
+        }
+
         public static Tensor Input (string label, params int[] shape)
         {
             return new InputTensor (label, shape);
@@ -207,27 +228,6 @@ namespace MetalTensors
                 }
             }
             return t;
-        }
-
-        public static Tensor Image (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
-        {
-            return new MPSImageTensor (url, featureChannels, device);
-        }
-
-        public static Tensor Image (string path, int featureChannels = 3, IMTLDevice? device = null)
-        {
-            return new MPSImageTensor (path, featureChannels, device);
-        }
-
-        public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
-        {
-            var b = bundle ?? NSBundle.MainBundle;
-            var url = string.IsNullOrEmpty (subpath) ?
-                b.GetUrlForResource (name, extension) :
-                b.GetUrlForResource (name, extension, subpath);
-            if (url == null)
-                throw new ArgumentException ("Resource not found", nameof (name));
-            return new MPSImageTensor (url, featureChannels, device);
         }
 
         public static Tensor Sum (params Tensor[] tensors)
