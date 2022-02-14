@@ -64,6 +64,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\SigmoidLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CompiledModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Optimizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Loss.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

@@ -162,7 +162,7 @@ namespace MetalTensors
 
         public const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null)
+        public CompiledModel Compile (Loss?[] outputLosses, Optimizer optimizer, IMTLDevice? device = null)
         {
             var d = device.Current ();
             var key = d.Handle;
@@ -170,6 +170,18 @@ namespace MetalTensors
             compiledModels[key] = cm;
             return cm;
         }
+
+        public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null) =>
+            Compile (Array.Empty<Loss> (), optimizer, device);
+
+        public CompiledModel Compile (Loss outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
+            Compile (new[] { outputLoss }, optimizer, device);
+
+        public CompiledModel Compile (LossType outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
+            Compile (new BuiltinLoss(outputLoss), optimizer, device);
+
+        public CompiledModel Compile (Func<Tensor, Tensor, Tensor> outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
+            Compile (new CustomLoss(outputLoss), optimizer, device);
 
         public CompiledModel? TryGetCompiledModel (IMTLDevice device)
         {
