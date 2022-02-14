@@ -7,23 +7,78 @@ namespace MetalTensors
     /// </summary>
     public abstract class Loss
     {
+        /// <summary>
+        /// loss = mean(|y - t|)
+        /// </summary>
+        public static readonly Loss MeanAbsoluteError = Builtin (LossType.MeanAbsoluteError);
+
+        /// <summary>
+        /// loss = mean((y - t)^2)
+        /// </summary>
+        public static readonly Loss MeanSquaredError = Builtin (LossType.MeanSquaredError);
+
+        /// <summary>
+        /// loss = mean(-t * LogSoftMax(y))
+        /// </summary>
+        public static readonly Loss SoftMaxCrossEntropy = Builtin (LossType.SoftMaxCrossEntropy);
+        /// <summary>
+        /// loss = sum(-t * LogSoftMax(y))
+        /// </summary>
+        public static readonly Loss SumSoftMaxCrossEntropy = Builtin (LossType.SoftMaxCrossEntropy, ReductionType.Sum);
+
+        /// <summary>
+        /// loss = mean(max(y, 0) - y * t + log(1 + exp(-|y|)))
+        /// </summary>
+        public static readonly Loss SigmoidCrossEntropy = Builtin (LossType.SigmoidCrossEntropy);
+        /// <summary>
+        /// loss = sum(max(y, 0) - y * t + log(1 + exp(-|y|)))
+        /// </summary>
+        public static readonly Loss SumSigmoidCrossEntropy = Builtin (LossType.SigmoidCrossEntropy, ReductionType.Sum);
+
+        /// <summary>
+        /// loss = mean(-t * log(y))
+        /// </summary>
         public static readonly Loss CategoricalCrossEntropy = new BuiltinLoss(LossType.CategoricalCrossEntropy);
+        /// <summary>
+        /// loss = sum(-t * log(y))
+        /// </summary>
         public static readonly Loss SumCategoricalCrossEntropy = new BuiltinLoss(LossType.CategoricalCrossEntropy, ReductionType.Sum);
-        public static readonly Loss Hinge = new BuiltinLoss (LossType.Hinge);
-        public static readonly Loss MeanAbsoluteError = new BuiltinLoss (LossType.MeanAbsoluteError);
-        public static readonly Loss MeanSquaredError = new BuiltinLoss (LossType.MeanSquaredError);
-        public static readonly Loss SigmoidCrossEntropy = new BuiltinLoss (LossType.SigmoidCrossEntropy);
-        public static readonly Loss SumSigmoidCrossEntropy = new BuiltinLoss (LossType.SigmoidCrossEntropy, ReductionType.Sum);
-        public static readonly Loss SoftMaxCrossEntropy = new BuiltinLoss (LossType.SoftMaxCrossEntropy);
-        public static readonly Loss SumSoftMaxCrossEntropy = new BuiltinLoss (LossType.SoftMaxCrossEntropy, ReductionType.Sum);
+
+        /// <summary>
+        /// loss = mean(max(1 - (t * y), 0.0f))
+        /// </summary>
+        public static readonly Loss Hinge = Builtin (LossType.Hinge);
+        /// <summary>
+        /// loss = sum(max(1 - (t * y), 0.0f))
+        /// </summary>
+        public static readonly Loss SumHinge = Builtin (LossType.Hinge, ReductionType.Sum);
+
+        /// <summary>
+        /// loss = mean(-(t * log(y + epsilon)) - ((1 - t) * log(1 - y + epsilon)))
+        /// </summary>
+        public static readonly Loss Log = Builtin (LossType.Log);
+        /// <summary>
+        /// loss = sum(-(t * log(y + epsilon)) - ((1 - t) * log(1 - y + epsilon)))
+        /// </summary>
+        public static readonly Loss SumLog = Builtin (LossType.Log, ReductionType.Sum);
+
+        /// <summary>
+        /// loss = mean(t * (log(t) - y))
+        /// </summary>
+        public static readonly Loss KLDivergence = Builtin (LossType.KLDivergence);
+        /// <summary>
+        /// loss = sum(t * (log(t) - y))
+        /// </summary>
+        public static readonly Loss SumKLDivergence = Builtin (LossType.KLDivergence, ReductionType.Sum);
 
         public static Loss Custom (Func<Tensor, Tensor, Tensor> lossFunction) => new CustomLoss (lossFunction);
+        public static Loss Builtin (LossType lossType, ReductionType reductionType = ReductionType.Mean) => new BuiltinLoss (lossType, reductionType);
 
         protected Loss ()
         {
         }
 
-        public abstract Tensor Call (Tensor prediction, Tensor truth, float weight);
+        public abstract Tensor Call (Tensor y, Tensor t, float weight);
     }
 
     public class BuiltinLoss : Loss
@@ -68,9 +123,9 @@ namespace MetalTensors
             LossFunction = lossFunction;
         }
 
-        public override Tensor Call (Tensor prediction, Tensor truth, float weight)
+        public override Tensor Call (Tensor y, Tensor t, float weight)
         {
-            var loss = LossFunction (prediction, truth);
+            var loss = LossFunction (y, t);
             if (Math.Abs (weight - 1.0) > 1e-9)
                 loss *= weight;
             return loss;

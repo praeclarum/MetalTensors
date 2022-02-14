@@ -220,7 +220,7 @@ namespace MetalTensors
         public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
         {
             var b = bundle ?? NSBundle.MainBundle;
-            NSUrl? url = string.IsNullOrEmpty (subpath) ?
+            var url = string.IsNullOrEmpty (subpath) ?
                 b.GetUrlForResource (name, extension) :
                 b.GetUrlForResource (name, extension, subpath);
             if (url == null)
@@ -228,14 +228,20 @@ namespace MetalTensors
             return new MPSImageTensor (url, featureChannels, device);
         }
 
+        public static Tensor Sum (params Tensor[] tensors)
+        {
+            if (tensors.Length < 1)
+                throw new ArgumentException ("Must supply at least one tensor to add", nameof (tensors));
+            var r = tensors[0];
+            for (var i = 1; i < tensors.Length; i++) {
+                r += tensors[i];
+            }
+            return r;
+        }
+
         public static Tensor Zeros (params int[] shape)
         {
             return new ConstantTensor (0.0f, shape);
-        }
-
-        public virtual Tensor Slice (params int[] indexes)
-        {
-            throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
         }
 
         public virtual Tensor Abs ()
@@ -256,42 +262,6 @@ namespace MetalTensors
         public virtual Tensor Add (int other)
         {
             return new AddLayer ().GetOutput (this, Constant (other, this));
-        }
-
-        public static Tensor Sum (params Tensor[] tensors)
-        {
-            if (tensors.Length < 1)
-                throw new ArgumentException ("Must supply at least one tensor to add", nameof (tensors));
-            var r = tensors[0];
-            for (var i = 1; i < tensors.Length; i++) {
-                r += tensors[i];
-            }
-            return r;
-        }
-
-        public Tensor Subtract (Tensor other)
-        {
-            return new SubtractLayer ().GetOutput (this, other);
-        }
-
-        public Tensor Subtract (float other)
-        {
-            return new SubtractLayer ().GetOutput (this, Constant (other, this));
-        }
-
-        public Tensor Subtract (int other)
-        {
-            return new SubtractLayer ().GetOutput (this, Constant (other, this));
-        }
-
-        public Tensor Multiply (Tensor other)
-        {
-            return new MultiplyLayer ().GetOutput (this, other);
-        }
-
-        public Tensor Divide (Tensor other)
-        {
-            return new DivideLayer ().GetOutput (this, other);
         }
 
         public Tensor AvgPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
@@ -341,9 +311,24 @@ namespace MetalTensors
             return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).GetOutput (this);
         }
 
+        public Tensor Divide (Tensor other)
+        {
+            return new DivideLayer ().GetOutput (this, other);
+        }
+
         public Tensor Dropout (float keepProbability)
         {
             return new DropoutLayer (keepProbability).GetOutput (this);
+        }
+
+        public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
+        {
+            return loss.Call (this, truth, weight);
+        }
+
+        public Tensor Loss (Tensor truth, LossType lossType, ReductionType reductionType, float weight = 1.0f)
+        {
+            return Loss (truth, MetalTensors.Loss.Builtin (lossType, reductionType), weight);
         }
 
         public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
@@ -361,9 +346,9 @@ namespace MetalTensors
             return new MeanLayer ().GetOutput (this);
         }
 
-        public Tensor SpatialMean ()
+        public Tensor Multiply (Tensor other)
         {
-            return new SpatialMeanLayer ().GetOutput (this);
+            return new MultiplyLayer ().GetOutput (this, other);
         }
 
         public Tensor ReLU (float a = 0.2f)
@@ -376,9 +361,34 @@ namespace MetalTensors
             return new SigmoidLayer ().GetOutput (this);
         }
 
+        public virtual Tensor Slice (params int[] indexes)
+        {
+            throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
+        }
+
         public Tensor SoftMax ()
         {
             return new SoftMaxLayer ().GetOutput (this);
+        }
+
+        public Tensor SpatialMean ()
+        {
+            return new SpatialMeanLayer ().GetOutput (this);
+        }
+
+        public Tensor Subtract (Tensor other)
+        {
+            return new SubtractLayer ().GetOutput (this, other);
+        }
+
+        public Tensor Subtract (float other)
+        {
+            return new SubtractLayer ().GetOutput (this, Constant (other, this));
+        }
+
+        public Tensor Subtract (int other)
+        {
+            return new SubtractLayer ().GetOutput (this, Constant (other, this));
         }
 
         public Tensor Tanh ()

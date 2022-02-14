@@ -8,7 +8,7 @@ namespace Tests
     {
         Tensor BLoss (Tensor prediction, Tensor truth, LossType lossType, ReductionType reductionType = ReductionType.Mean, float weight = 1.0f)
         {
-            return new BuiltinLoss (lossType, reductionType).Call (prediction, truth, weight);
+            return prediction.Loss(truth, lossType, reductionType, weight);
         }
 
         [Test]
