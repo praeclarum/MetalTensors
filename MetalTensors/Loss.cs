@@ -23,7 +23,7 @@ namespace MetalTensors
         {
         }
 
-        public abstract Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null);
+        public abstract Tensor Call (Tensor prediction, Tensor truth, float weight);
     }
 
     public class BuiltinLoss : Loss
@@ -39,7 +39,7 @@ namespace MetalTensors
 
         public override string ToString () => $"{LossType} Loss (Reduction={ReductionType})";
 
-        public override Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null)
+        public override Tensor Call (Tensor prediction, Tensor truth, float weight)
         {
             //var i = prediction;
             //var lossType = Model.DefaultLossType;
@@ -54,10 +54,8 @@ namespace MetalTensors
             //    }
             //}
 
-            var layer = new Layers.LossLayer (prediction.Label + " Loss", LossType, ReductionType);
-            return weights != null ?
-                layer.GetOutput (prediction, truth, weights) :
-                layer.GetOutput (prediction, truth);
+            var layer = new Layers.LossLayer (prediction.Label + " Loss", LossType, ReductionType, weight);
+            return layer.GetOutput (prediction, truth);
         }
     }
 
@@ -70,9 +68,12 @@ namespace MetalTensors
             LossFunction = lossFunction;
         }
 
-        public override Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null)
+        public override Tensor Call (Tensor prediction, Tensor truth, float weight)
         {
-            return LossFunction (prediction, truth);
+            var loss = LossFunction (prediction, truth);
+            if (Math.Abs (weight - 1.0) > 1e-9)
+                loss *= weight;
+            return loss;
         }
     }
 }

@@ -6,9 +6,9 @@ namespace Tests
 {
     public class LossLayerTests
     {
-        Tensor BLoss (Tensor prediction, Tensor truth, LossType lossType, ReductionType reductionType = ReductionType.Mean)
+        Tensor BLoss (Tensor prediction, Tensor truth, LossType lossType, ReductionType reductionType = ReductionType.Mean, float weight = 1.0f)
         {
-            return new BuiltinLoss (lossType, reductionType).Call (prediction, truth);
+            return new BuiltinLoss (lossType, reductionType).Call (prediction, truth, weight);
         }
 
         [Test]
@@ -61,6 +61,16 @@ namespace Tests
         }
 
         [Test]
+        public void WeightedMAE ()
+        {
+            var x = Tensor.Constant (800, 1);
+            var y = Tensor.Constant (1000, 1);
+            var loss = BLoss (x, y, LossType.MeanAbsoluteError, weight: 0.5f);
+
+            Assert.AreEqual (Math.Abs (x[0] - y[0]) * 0.5f, loss[0]);
+        }
+
+        [Test]
         public void Hinge ()
         {
             var x = Tensor.Constant (-0.2f, 1);
@@ -79,7 +89,7 @@ namespace Tests
         }
 
         [Test]
-        public void CustomLoss ()
+        public void CompileCustomLoss ()
         {
             var x = Tensor.Input ("x", 3);
             var y = x.Dense (32).ReLU ().Dense (5);

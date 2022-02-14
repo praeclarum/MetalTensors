@@ -57,7 +57,7 @@ namespace MetalTensors
                         if (l == null)
                             return null;
                         var labels = new LabelsTensor (x.Label + " " + DefaultLabelsLabel, x.Shape);
-                        var loss = l.Call (x, labels);
+                        var loss = l.Call (x, labels, OutputLossWeights[i]);
                         return loss;
                     })
                     .Where (x => x != null)
