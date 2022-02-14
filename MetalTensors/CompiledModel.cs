@@ -65,14 +65,13 @@ namespace MetalTensors
                     .ToArray ();
                 if (losses.Length == 0)
                     throw new InvalidOperationException ("Model has no losses");
-                var trainingLoss = losses.Length == 1 ? losses[0] : Tensor.Sum (losses);
 
                 //
                 // Build the graphs
                 //
                 evalGraph = new EvaluationGraph (Label + " Evaluation Graph", losses, Model.KeepDropoutDuringInference, device);
                 infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph);
-                trainingGraph = new TrainingGraph (Label + " Training Graph", trainingLoss, trainable, evalGraph, device);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", losses, trainable, evalGraph, device);
             }
             else {
                 infGraph = new InferenceGraph (Label + " Inference Graph", device, flatModel.Outputs);

@@ -17,14 +17,14 @@ namespace MetalTensors
         readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
         readonly EvaluationGraph evalGraph;
 
-        public TrainingGraph (string label, Tensor output, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
-            : base (label, CreateTrainingGraph (label, output, trainable, device, out var cweights), device)
+        public TrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
+            : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), device)
         {
             convWeights = cweights;
             this.evalGraph = evalGraph;
         }
 
-        static MPSNNGraph CreateTrainingGraph (string label, Tensor trainingOutput, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
+        static MPSNNGraph CreateTrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
         {
             //stopwatch.Start ();
 
@@ -32,6 +32,7 @@ namespace MetalTensors
             // Build the training graph
             //
             var context = new MetalImageNodeContext (label, false, device);
+            var trainingOutput = losses.Length == 1 ? losses[0] : Tensor.Sum (losses);
             var thisImageNode = trainingOutput.GetMetalImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
@@ -68,11 +69,8 @@ namespace MetalTensors
             //
             // Export all losses and loss inputs
             //
-            var (flatModel, _) = trainingOutput.Model ().Flatten ();
-            foreach (var t in flatModel.Tensors) {
-                if (t is LayerTensor lt && lt.Layer is LossLayer ll) {
-                    ExportTensor (t, context);
-                }
+            foreach (var t in losses) {
+                ExportTensor (t, context);
             }
 
             //
