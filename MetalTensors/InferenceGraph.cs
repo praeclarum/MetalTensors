@@ -19,6 +19,16 @@ namespace MetalTensors
         {
         }
 
+        public InferenceGraph (string label, EvaluationGraph graph)
+            : base (label, graph.MetalGraph, graph.Device)
+        {
+        }
+
+        public InferenceGraph (string label, IMTLDevice device, params Tensor[] outputs)
+            : base (label, CreateInferenceGraph (label, outputs, keepDropoutDuringInference: true, device: device), device)
+        {
+        }
+
         public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches)
         {
             using var q = Device.CreateCommandQueue ();

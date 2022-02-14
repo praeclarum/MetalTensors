@@ -167,24 +167,24 @@ namespace MetalTensors
 
         public const LossType DefaultLossType = LossType.MeanSquaredError;
 
-        public CompiledModel Compile (Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice? device = null)
+        public CompiledModel Compile (Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true)
         {
             var d = device.Current ();
             var key = d.Handle;
-            var cm = new CompiledModel (this, outputLosses, outputLossWeights, optimizer, d);
+            var cm = new CompiledModel (this, outputLosses, outputLossWeights, optimizer, d, forTraining: forTraining);
             compiledModels[key] = cm;
             return cm;
         }
 
-        public CompiledModel Compile (Loss?[] outputLosses, Optimizer optimizer, IMTLDevice? device = null)
+        public CompiledModel Compile (Loss?[] outputLosses, Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true)
         {
             var weights = new float[outputLosses.Length];
             Array.Fill (weights, 1.0f);
-            return Compile (outputLosses, weights, optimizer, device);
+            return Compile (outputLosses, weights, optimizer, device, forTraining: forTraining);
         }
 
-        public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null) =>
-            Compile (Array.Empty<Loss> (), optimizer, device);
+        public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true) =>
+            Compile (new Loss?[Outputs.Length], optimizer, device, forTraining: forTraining);
 
         public CompiledModel Compile (Loss outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new[] { outputLoss }, optimizer, device);
@@ -220,7 +220,9 @@ namespace MetalTensors
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
                 throw new InvalidOperationException ($"Models must be compiled before being Fit");
             }
-            var g = cm.TrainingGraph;
+            if (!(cm.TrainingGraph is TrainingGraph g)) {
+                throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
+            }
             return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval);
         }
 
@@ -229,7 +231,7 @@ namespace MetalTensors
             if (Inputs.Length != 1)
                 throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
-                cm = Compile (new AdamOptimizer (), device);
+                cm = Compile (new AdamOptimizer (), device: device, forTraining: false);
             }
 
             var g = cm.InferenceGraph;

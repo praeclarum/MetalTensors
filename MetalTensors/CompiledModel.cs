@@ -13,83 +13,70 @@ namespace MetalTensors
         const string DefaultLabelsLabel = "Labels";
 
         public Model Model { get; }
+        public Loss?[] OutputLosses { get; }
+        public float[] OutputLossWeights { get; }
         public Optimizer Optimizer { get; }
         public IMTLDevice Device { get; }
+        public bool ForTraining { get; }
 
         public string Label => Model.Label;
 
-        TrainingGraph trainingGraph;
         InferenceGraph infGraph;
-        EvaluationGraph evalGraph;
+        TrainingGraph? trainingGraph;
+        EvaluationGraph? evalGraph;
 
-        public TrainingGraph TrainingGraph => trainingGraph;
+        public TrainingGraph? TrainingGraph => trainingGraph;
         public InferenceGraph InferenceGraph => infGraph;
 
-        public CompiledModel (Model model, Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice device)
+        public CompiledModel (Model model, Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice device, bool forTraining)
         {
             if (outputLossWeights.Length != outputLosses.Length) {
                 throw new ArgumentException ("Loss weights length mismatch", nameof (outputLossWeights));
             }
+            if (model.Outputs.Length != outputLosses.Length) {
+                throw new ArgumentException ($"Number of losses ({outputLosses.Length}) must match the number of outputs ({model.Outputs.Length})", nameof (outputLosses));
+            }
 
             Model = model;
+            OutputLosses = outputLosses;
+            OutputLossWeights = outputLossWeights;
             Optimizer = optimizer;
             Device = device;
-
+            ForTraining = forTraining;
             var (flatModel, trainable) = model.Flatten ();
 
-            //
-            // Auto add loss layer
-            //
-            Model trainingModel;
-            if (flatModel.Layers.OfType<LossLayer> ().Any ()) {
-                trainingModel = flatModel;
+            if (forTraining) {
+
+                //
+                // Sum all the loss layers
+                //
+                var losses =
+                    flatModel.Outputs
+                    .Select ((x, i) => {
+                        var l = OutputLosses[i];
+                        if (l == null)
+                            return null;
+                        var labels = new LabelsTensor (x.Label + " " + DefaultLabelsLabel, x.Shape);
+                        var loss = l.Call (x, labels);
+                        return loss;
+                    })
+                    .Where (x => x != null)
+                    .Cast<Tensor> ()
+                    .ToArray ();
+                if (losses.Length == 0)
+                    throw new InvalidOperationException ("Model has no losses");
+                var trainingLoss = losses.Length == 1 ? losses[0] : Tensor.Sum (losses);
+
+                //
+                // Build the graphs
+                //
+                evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingLoss, Model.KeepDropoutDuringInference, device);
+                infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", trainingLoss, trainable, evalGraph, device);
             }
             else {
-                var labels = flatModel.Outputs.Select ((x, i) => new LabelsTensor (x.Label + " " + DefaultLabelsLabel, x.Shape)).ToArray ();
-                var losses = flatModel.Outputs.Select ((x, i) => CreateAutoLoss (x, labels[i])).ToArray ();
-                trainingModel = new Model (flatModel.Label, flatModel.KeepDropoutDuringInference, losses) {
-                    IsTrainable = flatModel.IsTrainable,
-                };
+                infGraph = new InferenceGraph (Label + " Inference Graph", device, model.Outputs);
             }
-
-            //
-            // Merge outputs in order to auto build gradients
-            //
-            var trainingTensor = trainingModel.Outputs.Length == 1 ?
-                trainingModel.Outputs[0] :
-                Tensor.Sum (trainingModel.Outputs);
-
-            //
-            // Build the graphs
-            //
-            evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingTensor, Model.KeepDropoutDuringInference, device);
-            infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph.MetalGraph);
-            trainingGraph = new TrainingGraph (Label + " Training Graph", trainingTensor, trainable, evalGraph, device);
-        }
-
-        Tensor CreateAutoLoss (Tensor input, Tensor label)
-        {
-            var i = input;
-            var lossType = Model.DefaultLossType;
-            if (input is LayerTensor lt) {
-                if (lt.Layer is SigmoidLayer) {
-                    i = lt.Inputs[0];
-                    lossType = LossType.SigmoidCrossEntropy;
-                }
-                else if (lt.Layer is SoftMaxLayer) {
-                    i = lt.Inputs[0];
-                    lossType = LossType.SoftMaxCrossEntropy;
-                }
-            }
-            return Loss (i, label, lossType);
-        }
-
-        static Tensor Loss (Tensor x, Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
-        {
-            var layer = new LossLayer (x.Label + " Loss", lossType, reductionType);
-            return weights != null ?
-                layer.GetOutput (x, labels, weights) :
-                layer.GetOutput (x, labels);
         }
     }
 }

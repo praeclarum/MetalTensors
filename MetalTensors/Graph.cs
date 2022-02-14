@@ -97,6 +97,28 @@ namespace MetalTensors
             return evalGraph;
         }
 
+        protected static MPSNNGraph CreateInferenceGraph (string label, Tensor[] outputs, bool keepDropoutDuringInference, IMTLDevice device)
+        {
+            //
+            // Build the graph
+            //
+            var context = new MetalImageNodeContext (label, false, device);
+
+            if (outputs.Length == 0)
+                throw new InvalidOperationException ("Cannot create a graph without one or more outputs");
+
+
+            //
+            // Create the graph
+            //
+            var outputImageNodes = outputs.Select (x => x.GetMetalImageNode (context)).ToArray ();
+            var resultsAreNeeded = outputs.Select (x => true).ToArray ();
+            var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
+            evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
+
+            return evalGraph;
+        }
+
         public MPSCommandBuffer BeginBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //

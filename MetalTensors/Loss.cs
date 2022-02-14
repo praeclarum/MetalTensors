@@ -22,6 +22,8 @@ namespace MetalTensors
         protected Loss ()
         {
         }
+
+        public abstract Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null);
     }
 
     public class BuiltinLoss : Loss
@@ -36,6 +38,27 @@ namespace MetalTensors
         }
 
         public override string ToString () => $"{LossType} Loss (Reduction={ReductionType})";
+
+        public override Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null)
+        {
+            //var i = prediction;
+            //var lossType = Model.DefaultLossType;
+            //if (prediction is LayerTensor lt) {
+            //    if (lt.Layer is SigmoidLayer) {
+            //        i = lt.Inputs[0];
+            //        lossType = LossType.SigmoidCrossEntropy;
+            //    }
+            //    else if (lt.Layer is SoftMaxLayer) {
+            //        i = lt.Inputs[0];
+            //        lossType = LossType.SoftMaxCrossEntropy;
+            //    }
+            //}
+
+            var layer = new Layers.LossLayer (prediction.Label + " Loss", LossType, ReductionType);
+            return weights != null ?
+                layer.GetOutput (prediction, truth, weights) :
+                layer.GetOutput (prediction, truth);
+        }
     }
 
     public class CustomLoss : Loss
@@ -45,6 +68,11 @@ namespace MetalTensors
         public CustomLoss (Func<Tensor, Tensor, Tensor> lossFunction)
         {
             LossFunction = lossFunction;
+        }
+
+        public override Tensor Call (Tensor prediction, Tensor truth, Tensor? weights = null)
+        {
+            return LossFunction (prediction, truth);
         }
     }
 }
