@@ -367,14 +367,6 @@ namespace MetalTensors
             return Upsample (scale, scale);
         }
 
-        public Tensor Loss (Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
-        {
-            var layer = new LossLayer (Label + " Loss", lossType, reductionType);
-            return weights != null ?
-                layer.GetOutput (this, labels, weights) :
-                layer.GetOutput (this, labels);
-        }
-
         protected int ValidateCopyDestination (Span<float> destination)
         {
             var neededLength = Shape.GetShapeLength ();

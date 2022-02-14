@@ -81,7 +81,15 @@ namespace MetalTensors
                     lossType = LossType.SoftMaxCrossEntropy;
                 }
             }
-            return i.Loss (label, lossType);
-        }        
+            return Loss (i, label, lossType);
+        }
+
+        static Tensor Loss (Tensor x, Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
+        {
+            var layer = new LossLayer (x.Label + " Loss", lossType, reductionType);
+            return weights != null ?
+                layer.GetOutput (x, labels, weights) :
+                layer.GetOutput (x, labels);
+        }
     }
 }

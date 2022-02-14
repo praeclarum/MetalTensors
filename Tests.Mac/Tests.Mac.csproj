@@ -80,7 +80,6 @@
     <None Include="Entitlements.plist" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Tests.iOS\*Tests.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
     <Compile Include="ViewController.cs" />
@@ -88,6 +87,24 @@
       <DependentUpon>ViewController.cs</DependentUpon>
     </Compile>
     <Compile Include="IndexingTests.cs" />
+    <Compile Include="..\Tests.iOS\ModelTests.cs" />
+    <Compile Include="..\Tests.iOS\PredictTests.cs" />
+    <Compile Include="..\Tests.iOS\ReLULayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MPSImageTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\ConstantTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\ConcatLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\TrainTests.cs" />
+    <Compile Include="..\Tests.iOS\ConvTransposeLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MnistApplicationTests.cs" />
+    <Compile Include="..\Tests.iOS\BatchNormLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\PlaceholderTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\TrainBinopTests.cs" />
+    <Compile Include="..\Tests.iOS\DenseLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\BinopLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\Pix2pixApplicationTests.cs" />
+    <Compile Include="..\Tests.iOS\ConvLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MaxPoolLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\UpsampleLayerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />
