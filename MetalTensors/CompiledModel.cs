@@ -75,7 +75,7 @@ namespace MetalTensors
                 trainingGraph = new TrainingGraph (Label + " Training Graph", trainingLoss, trainable, evalGraph, device);
             }
             else {
-                infGraph = new InferenceGraph (Label + " Inference Graph", device, model.Outputs);
+                infGraph = new InferenceGraph (Label + " Inference Graph", device, flatModel.Outputs);
             }
         }
     }
