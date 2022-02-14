@@ -26,6 +26,9 @@ namespace MetalTensors
 
         static MPSNNGraph CreateTrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
         {
+            if (losses.Length < 1) {
+                throw new ArgumentException ("Loss is required in order to train", nameof(losses));
+            }
             //stopwatch.Start ();
 
             //
@@ -36,15 +39,12 @@ namespace MetalTensors
             var thisImageNode = trainingOutput.GetMetalImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
-            var lossNodesIndex = new Dictionary<IntPtr, MPSNNForwardLossNode> ();
             var convWeightsL = new List<(ConvDataSource, bool)> ();
+
             var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
                 //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
                 gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
-                if (inferenceNode is MPSNNForwardLossNode ln) {
-                    lossNodesIndex[ln.Handle] = ln;
-                }
-                else if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
+                if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
                          lh.Layer.GetMetalConvDataSource (device) is ConvDataSource cw) {
                     if (!trainable.ContainsKey (lh.Layer)) {
                         throw new Exception ($"Cannot tell if {lh.Layer} is trainable");
@@ -57,11 +57,6 @@ namespace MetalTensors
             });
 
             cweights = convWeightsL.ToArray ();
-
-            var lossNodes = lossNodesIndex.Values.ToArray ();
-            if (lossNodes.Length < 1) {
-                throw new InvalidOperationException ("Loss is required in order to train");
-            }
 
             var trainingGraphTerminiImageNodes = trainingGraphTermini.Select (x => x.ResultImage).ToArray ();
             var resultsNeeded = trainingGraphTerminiImageNodes.Select (x => true).ToArray ();

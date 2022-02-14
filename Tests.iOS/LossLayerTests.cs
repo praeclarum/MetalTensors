@@ -78,7 +78,7 @@ namespace Tests
             Assert.Throws<ArgumentException> (() => BLoss (output, label, LossType.MeanSquaredError));
         }
 
-        //[Test] Evaluation Graph doesn't work with custom loss
+        [Test]
         public void CustomLoss ()
         {
             var x = Tensor.Input ("x", 3);
