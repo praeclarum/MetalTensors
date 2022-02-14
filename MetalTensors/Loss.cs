@@ -1,4 +1,6 @@
 ﻿using System;
+using MetalTensors.Layers;
+using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
@@ -96,21 +98,17 @@ namespace MetalTensors
 
         public override Tensor Call (Tensor prediction, Tensor truth, float weight)
         {
-            //var i = prediction;
-            //var lossType = Model.DefaultLossType;
-            //if (prediction is LayerTensor lt) {
-            //    if (lt.Layer is SigmoidLayer) {
-            //        i = lt.Inputs[0];
-            //        lossType = LossType.SigmoidCrossEntropy;
-            //    }
-            //    else if (lt.Layer is SoftMaxLayer) {
-            //        i = lt.Inputs[0];
-            //        lossType = LossType.SoftMaxCrossEntropy;
-            //    }
-            //}
-
-            var layer = new Layers.LossLayer (prediction.Label + " Loss", LossType, ReductionType, weight);
-            return layer.GetOutput (prediction, truth);
+            var input = prediction;
+            if (prediction is LayerTensor lt) {
+                if (lt.Layer is SigmoidLayer && LossType == LossType.SigmoidCrossEntropy) {
+                    input = lt.Inputs[0];
+                }
+                else if (lt.Layer is SoftMaxLayer && LossType == LossType.SoftMaxCrossEntropy) {
+                    input = lt.Inputs[0];
+                }
+            }
+            var layer = new LossLayer (prediction.Label + " Loss", LossType, ReductionType, weight);
+            return layer.GetOutput (input, truth);
         }
     }
 
