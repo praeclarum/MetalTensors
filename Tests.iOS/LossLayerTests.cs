@@ -87,18 +87,5 @@ namespace Tests
             var label = Tensor.Zeros (1, 1, 1);
             Assert.Throws<ArgumentException> (() => BLoss (output, label, LossType.MeanSquaredError));
         }
-
-        [Test]
-        public void CompileCustomLoss ()
-        {
-            var x = Tensor.Input ("x", 3);
-            var y = x.Dense (32).ReLU ().Dense (5);
-            var model = new Model (y);
-            model.Compile (Loss.Custom (CustomLoss));
-            Tensor CustomLoss (Tensor prediction, Tensor truth)
-            {
-                return (prediction - truth).Abs ().SpatialMean ();
-            }
-        }
     }
 }

@@ -14,7 +14,7 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
-        public MPSImage Image => image;
+        public MPSImage MetalImage => image;
         public IMTLDevice Device => image.Device;
 
         public MPSImageTensor (MPSImage image)

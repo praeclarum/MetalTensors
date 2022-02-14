@@ -9,7 +9,7 @@ namespace Tests
         [Test]
         public void Defaults ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             var output = image.MaxPool ();
 
             Assert.AreEqual (3, output.Shape.Length);
@@ -23,7 +23,7 @@ namespace Tests
         [Test]
         public void Stride2 ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             var output = image.MaxPool (2, 2);
 
             Assert.AreEqual (3, output.Shape.Length);

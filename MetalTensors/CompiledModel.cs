@@ -21,6 +21,9 @@ namespace MetalTensors
 
         public string Label => Model.Label;
 
+        readonly Tensor[] losses;
+        public Tensor[] Losses => losses;
+
         InferenceGraph infGraph;
         TrainingGraph? trainingGraph;
         EvaluationGraph? evalGraph;
@@ -50,7 +53,7 @@ namespace MetalTensors
                 //
                 // Sum all the loss layers
                 //
-                var losses =
+                var labelLosses =
                     flatModel.Outputs
                     .Select ((x, i) => {
                         var l = OutputLosses[i];
@@ -61,8 +64,11 @@ namespace MetalTensors
                         return loss;
                     })
                     .Where (x => x != null)
-                    .Cast<Tensor> ()
-                    .ToArray ();
+                    .Cast<Tensor> ();
+                var addedLosses =
+                    flatModel.Layers.Append(model)
+                    .SelectMany(x => x.Losses);
+                losses = labelLosses.Concat (addedLosses).ToArray ();
                 if (losses.Length == 0)
                     throw new InvalidOperationException ("Model has no losses");
 
@@ -74,6 +80,7 @@ namespace MetalTensors
                 trainingGraph = new TrainingGraph (Label + " Training Graph", losses, trainable, evalGraph, device);
             }
             else {
+                losses = Array.Empty<Tensor> ();
                 infGraph = new InferenceGraph (Label + " Inference Graph", device, flatModel.Outputs);
             }
         }

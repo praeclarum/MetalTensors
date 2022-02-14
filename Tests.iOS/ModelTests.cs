@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using MetalTensors;
 using MetalTensors.Applications;
+using MetalTensors.Layers;
 using NUnit.Framework;
 
 namespace Tests
@@ -120,6 +121,43 @@ namespace Tests
             Assert.AreEqual (1, mnist.Outputs.Length);
             Assert.AreEqual (3, mnist.Output.Shape.Length);
             Assert.AreEqual (10, mnist.Output.Shape[^1]);
+        }
+
+        [Test]
+        public void CompileCustomLoss ()
+        {
+            var x = Tensor.Input ("x", 3);
+            var y = x.Dense (32).ReLU ().Dense (5);
+            var model = new Model (y);
+            model.Compile (Loss.Custom (CustomLoss));
+            Tensor CustomLoss (Tensor prediction, Tensor truth)
+            {
+                return (prediction - truth).Abs ().SpatialMean ();
+            }
+        }
+
+        [Test]
+        public void CompileModelAddLoss ()
+        {
+            var x = Tensor.Input ("x", 3);
+            var y = x.Dense (32).ReLU ().Dense (5);
+            var model = new Model (y);
+            model.AddLoss ((y - 1).Abs ());
+            Assert.AreEqual (x, model.Input);
+            model.Compile ();
+        }
+
+        [Test]
+        public void CompileInputAddLoss ()
+        {
+            var x = Tensor.Input ("x", 3);
+            var denseLayer = new DenseLayer (3, 32);
+            var y = denseLayer.GetOutput(x).ReLU ().Dense (5);
+            var model = new Model (y);
+            denseLayer.AddLoss ((y - 1).Abs ());
+            Assert.AreEqual (x, model.Input);
+            var cm = model.Compile ();
+            Assert.AreEqual (1, cm.Losses.Length);
         }
     }
 }

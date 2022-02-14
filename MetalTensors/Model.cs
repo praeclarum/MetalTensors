@@ -183,6 +183,9 @@ namespace MetalTensors
             return Compile (outputLosses, weights, optimizer, device, forTraining: forTraining);
         }
 
+        public CompiledModel Compile (IMTLDevice? device = null, bool forTraining = true) =>
+            Compile (new Loss?[Outputs.Length], new AdamOptimizer (), device, forTraining: forTraining);
+
         public CompiledModel Compile (Optimizer optimizer, IMTLDevice? device = null, bool forTraining = true) =>
             Compile (new Loss?[Outputs.Length], optimizer, device, forTraining: forTraining);
 

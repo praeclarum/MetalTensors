@@ -72,16 +72,6 @@ namespace MetalTensors
             }
         }
 
-        public static Tensor Input (string label, params int[] shape)
-        {
-            return new InputTensor (label, shape);
-        }
-
-        public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
-        {
-            return new InputTensor (label, height, width, featureChannels);
-        }
-
         public Tensor Apply (Model model)
         {
             return model.GetOutput (0, this);
@@ -124,6 +114,35 @@ namespace MetalTensors
             return RemoveLayers (l => l is T);
         }
 
+        public static Tensor operator + (Tensor a, Tensor b) => a.Add (b);
+        public static Tensor operator + (Tensor a, float b) => a.Add (b);
+        public static Tensor operator + (Tensor a, int b) => a.Add (b);
+
+        public static Tensor operator - (Tensor a, Tensor b) => a.Subtract (b);
+        public static Tensor operator - (Tensor a, float b) => a.Subtract (b);
+        public static Tensor operator - (Tensor a, int b) => a.Subtract (b);
+
+        public static Tensor operator * (Tensor a, Tensor b) => a.Multiply (b);
+        public static Tensor operator * (float a, Tensor b) => Constant (a, b).Multiply (b);
+        public static Tensor operator * (Tensor a, float b) => a.Multiply (Constant (b, a));
+
+        public static Tensor operator / (Tensor a, Tensor b) => a.Divide (b);
+
+        public static Tensor Array (params float[] array)
+        {
+            return new ArrayTensor (array);
+        }
+
+        public static Tensor Array (int[] shape, params float[] array)
+        {
+            return new ArrayTensor (shape, array);
+        }
+
+        public static Tensor Array (params double[] array)
+        {
+            return new ArrayTensor (array.Select (x => (float)x).ToArray ());
+        }
+
         public static Tensor Constant (float constant, params int[] shape)
         {
             return new ConstantTensor (constant, shape);
@@ -134,9 +153,24 @@ namespace MetalTensors
             return new ConstantTensor (label, constant, shape);
         }
 
-        public static Tensor Zeros (params int[] shape)
+        public static Tensor Constant (float constant, Tensor mimic)
         {
-            return new ConstantTensor (0.0f, shape);
+            return new ConstantTensor (constant, mimic.Shape);
+        }
+
+        public static Tensor Constant (int constant, Tensor mimic)
+        {
+            return new ConstantTensor (constant, mimic.Shape);
+        }
+
+        public static Tensor Input (string label, params int[] shape)
+        {
+            return new InputTensor (label, shape);
+        }
+
+        public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
+        {
+            return new InputTensor (label, height, width, featureChannels);
         }
 
         public static Tensor Ones (params int[] shape)
@@ -173,32 +207,17 @@ namespace MetalTensors
             return t;
         }
 
-        public static Tensor Array (params float[] array)
-        {
-            return new ArrayTensor (array);
-        }
-
-        public static Tensor Array (int[] shape, params float[] array)
-        {
-            return new ArrayTensor (shape, array);
-        }
-
-        public static Tensor Array (params double[] array)
-        {
-            return new ArrayTensor (array.Select (x => (float)x).ToArray ());
-        }
-
-        public static Tensor ReadImage (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
+        public static Tensor Image (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
         {
             return new MPSImageTensor (url, featureChannels, device);
         }
 
-        public static Tensor ReadImage (string path, int featureChannels = 3, IMTLDevice? device = null)
+        public static Tensor Image (string path, int featureChannels = 3, IMTLDevice? device = null)
         {
             return new MPSImageTensor (path, featureChannels, device);
         }
 
-        public static Tensor ReadImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
+        public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
         {
             var b = bundle ?? NSBundle.MainBundle;
             NSUrl? url = string.IsNullOrEmpty (subpath) ?
@@ -209,14 +228,14 @@ namespace MetalTensors
             return new MPSImageTensor (url, featureChannels, device);
         }
 
+        public static Tensor Zeros (params int[] shape)
+        {
+            return new ConstantTensor (0.0f, shape);
+        }
+
         public virtual Tensor Slice (params int[] indexes)
         {
             throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
-        }
-
-        public static Tensor operator + (Tensor a, Tensor b)
-        {
-            return a.Add (b);
         }
 
         public virtual Tensor Abs ()
@@ -227,6 +246,16 @@ namespace MetalTensors
         public virtual Tensor Add (Tensor other)
         {
             return new AddLayer ().GetOutput (this, other);
+        }
+
+        public virtual Tensor Add (float other)
+        {
+            return new AddLayer ().GetOutput (this, Constant (other, this));
+        }
+
+        public virtual Tensor Add (int other)
+        {
+            return new AddLayer ().GetOutput (this, Constant (other, this));
         }
 
         public static Tensor Sum (params Tensor[] tensors)
@@ -240,39 +269,24 @@ namespace MetalTensors
             return r;
         }
 
-        public static Tensor operator - (Tensor a, Tensor b)
-        {
-            return a.Subtract (b);
-        }
-
         public Tensor Subtract (Tensor other)
         {
             return new SubtractLayer ().GetOutput (this, other);
         }
 
-        public static Tensor operator * (Tensor a, Tensor b)
+        public Tensor Subtract (float other)
         {
-            return a.Multiply (b);
+            return new SubtractLayer ().GetOutput (this, Constant (other, this));
         }
 
-        public static Tensor operator * (float a, Tensor b)
+        public Tensor Subtract (int other)
         {
-            return Constant (a, b.Shape).Multiply (b);
-        }
-
-        public static Tensor operator * (Tensor a, float b)
-        {
-            return a.Multiply (Constant (b, a.Shape));
+            return new SubtractLayer ().GetOutput (this, Constant (other, this));
         }
 
         public Tensor Multiply (Tensor other)
         {
             return new MultiplyLayer ().GetOutput (this, other);
-        }
-
-        public static Tensor operator / (Tensor a, Tensor b)
-        {
-            return a.Divide (b);
         }
 
         public Tensor Divide (Tensor other)
@@ -324,12 +338,22 @@ namespace MetalTensors
         public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).GetOutput (this);
         }
 
         public Tensor Dropout (float keepProbability)
         {
             return new DropoutLayer (keepProbability).GetOutput (this);
+        }
+
+        public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
+        {
+            return new MaxPoolLayer (size, stride, padding).GetOutput (this);
+        }
+
+        public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
+        {
+            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
         public Tensor Mean ()
@@ -362,16 +386,6 @@ namespace MetalTensors
             return new TanhLayer ().GetOutput (this);
         }
 
-        public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
-        {
-            return new MaxPoolLayer (size, stride, padding).GetOutput (this);
-        }
-
-        public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
-        {
-            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
-        }
-
         public Tensor Upsample (int scaleX, int scaleY)
         {
             return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
@@ -401,7 +415,7 @@ namespace MetalTensors
                 3 => new MPSImageTensor (height: shape[0], width: shape[1], featureChannels: shape[2]),
                 var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
             };
-            var image = imageTensor.Image;
+            var image = imageTensor.MetalImage;
             return image;
         }
 

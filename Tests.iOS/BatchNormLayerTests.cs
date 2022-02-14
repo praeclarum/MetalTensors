@@ -26,9 +26,9 @@ namespace Tests
         [Test]
         public void SmallEpsilon ()
         {
-            var y = Tensor.Constant (0.9f, 3, 5, 7).BatchNorm (epsilon: 1e-6f);
+            var y = Tensor.Constant (0.9f, 3, 5, 7).BatchNorm (epsilon: 1e-5f);
 
-            Assert.AreEqual (0.9f, y[0], 1e-6f);
+            Assert.AreEqual (0.9f, y[0], 1e-5f);
         }
     }
 }

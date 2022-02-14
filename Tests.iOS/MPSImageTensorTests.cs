@@ -23,7 +23,7 @@ namespace Tests
         [Test]
         public void CorrectDimensions ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
             Assert.AreEqual (2, image.Shape[0]);
             Assert.AreEqual (3, image.Shape[1]);
             Assert.AreEqual (3, image.Shape[2]);
@@ -32,7 +32,7 @@ namespace Tests
         [Test]
         public void Slice2 ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
 
             AssertColor (  1,   0,   0, image.Slice (0, 0));
             AssertColor (  0,   1,   0, image.Slice (0, 1));
@@ -54,7 +54,7 @@ namespace Tests
         [Test]
         public void Slice3 ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
 
             // Primaries
             Assert.AreEqual (1, image.Slice (0, 0, 0)[0]);
@@ -65,7 +65,7 @@ namespace Tests
         [Test]
         public void Slice2Index1 ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
 
             // Yellow
             Assert.AreEqual (1, image.Slice (1, 0)[0]);
@@ -76,7 +76,7 @@ namespace Tests
         [Test]
         public void ReadImageResourceIsMPSImage ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             Assert.IsTrue (image is MPSImageTensor);
         }
 
@@ -84,7 +84,7 @@ namespace Tests
         public void ReadImageIsMPSImage ()
         {
             var path = NSBundle.MainBundle.PathForResource ("elephant", "jpg");
-            var image = Tensor.ReadImage (path);
+            var image = Tensor.Image (path);
             Assert.IsTrue (image is MPSImageTensor);
         }
     }

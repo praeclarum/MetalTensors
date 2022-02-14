@@ -9,7 +9,7 @@ namespace Tests
         [Test]
         public void Defaults ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             var conv = image.Conv (32, 3);
 
             Assert.AreEqual (3, conv.Shape.Length);
@@ -23,7 +23,7 @@ namespace Tests
         [Test]
         public void ResBlock ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             var conv1 = image.Conv (32, 1);
             var conv2 = conv1.Conv (32, 3);
             var output = conv1 + conv2;

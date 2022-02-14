@@ -12,7 +12,7 @@ namespace Tests
         [Test]
         public void Double ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
 
             var result = image.Upsample (2, 2);
 
