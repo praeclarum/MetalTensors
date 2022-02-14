@@ -26,4 +26,35 @@ namespace MetalTensors
             encoder.Encode (new NSString (Label), "label");
         }
     }
+
+    public class ConstantHandle : TensorHandle
+    {
+        public float ConstantValue { get; }
+
+        public ConstantHandle (Tensor tensor, string? label, float constantValue)
+            : base (tensor, label)
+        {
+            ConstantValue = constantValue;
+        }
+
+        public override string ToString () => Label + $"={ConstantValue} (Constant)";
+    }
+
+    public class InputHandle : TensorHandle
+    {
+        public InputHandle (Tensor tensor, string? label)
+            : base (tensor, label)
+        {
+        }
+        public override string ToString () => Label + " (Input)";
+    }
+
+    public class LabelsHandle : TensorHandle
+    {
+        public LabelsHandle (Tensor tensor, string? label)
+            : base (tensor, label)
+        {
+        }
+        public override string ToString () => Label + " (Labels)";
+    }
 }

@@ -8,5 +8,6 @@ namespace MetalTensors.Tensors
             : base (label, shape)
         {
         }
+        protected override TensorHandle CreateHandle (string? label) => new InputHandle (this, label);
     }
 }

@@ -28,6 +28,13 @@ namespace MetalTensors.Tensors
         {
         }
 
+        protected override TensorHandle CreateHandle (string? label) => new ConstantHandle (this, label, ConstantValue);
+
+        public override string ToString ()
+        {
+            return base.ToString () + "=" + ConstantValue;
+        }
+
         public override void Copy (Span<float> destination, IMTLDevice device)
         {
             var n = ValidateCopyDestination (destination);
