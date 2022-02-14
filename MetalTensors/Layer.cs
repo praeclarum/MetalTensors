@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,12 @@ namespace MetalTensors
         public bool IsTrainable { get; set; } = true;
 
         public string Label => label;
+
+        readonly List<Tensor> losses = new List<Tensor> ();
+
+        public Tensor[] Losses => losses.ToArray ();
+
+        public void AddLoss (Tensor loss) => losses.Add (loss);
 
         protected Layer (string? label = null)
         {
