@@ -37,6 +37,11 @@ namespace MetalTensors
         public Tensor? Output => Outputs.Length > 0 ? Outputs[0] : null;
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
+        public Model (Tensor output)
+            : this (output.Label + " Model", keepDropoutDuringInference: false, output)
+        {
+        }
+
         public Model (string? label, bool keepDropoutDuringInference, params Tensor[] outputs)
             : base (label)
         {
@@ -166,7 +171,7 @@ namespace MetalTensors
         {
             var d = device.Current ();
             var key = d.Handle;
-            var cm = new CompiledModel (this, optimizer, d);
+            var cm = new CompiledModel (this, outputLosses, optimizer, d);
             compiledModels[key] = cm;
             return cm;
         }
@@ -177,8 +182,14 @@ namespace MetalTensors
         public CompiledModel Compile (Loss outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new[] { outputLoss }, optimizer, device);
 
+        public CompiledModel Compile (Loss outputLoss, float learningRate, IMTLDevice? device = null) =>
+            Compile (new[] { outputLoss }, new AdamOptimizer(learningRate: learningRate), device);
+
         public CompiledModel Compile (LossType outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new BuiltinLoss(outputLoss), optimizer, device);
+
+        public CompiledModel Compile (LossType outputLoss, float learningRate, IMTLDevice? device = null) =>
+            Compile (new BuiltinLoss(outputLoss), new AdamOptimizer(learningRate: learningRate), device);
 
         public CompiledModel Compile (Func<Tensor, Tensor, Tensor> outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new CustomLoss(outputLoss), optimizer, device);

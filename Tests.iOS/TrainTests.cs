@@ -14,7 +14,6 @@ namespace Tests
             var output = input.Conv (32, stride: 2).Conv (32, stride: 2).Conv (1);
 
             var label = Tensor.Labels ("label image", 64, 64, 1);
-            var loss = output.Loss (label, LossType.MeanSquaredError);
 
             var batchSize = 5;
             var numBatches = 10;
@@ -22,7 +21,10 @@ namespace Tests
 
             var getDataCount = 0;
 
-            var history = loss.Train (DataSet.Generated (_ => {
+            var model = new Model (output);
+            model.Compile (LossType.MeanSquaredError, learningRate: Optimizer.DefaultLearningRate);
+
+            var history = model.Fit (DataSet.Generated (_ => {
                 getDataCount++;
                 return new Tensor[] { input, label };
             }, 100, "input image", "label image"), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
@@ -32,7 +34,6 @@ namespace Tests
             Assert.AreEqual (numBatches, history.Batches.Length);
             Assert.AreEqual (batchSize, history.Batches[0].Loss.Length);
             Assert.AreEqual (1, history.Batches[0].IntermediateValues.Count);
-            Assert.AreEqual (batchSize, history.Batches[0].IntermediateValues[loss.Label].Length);
         }
     }
 }

@@ -19,13 +19,12 @@ namespace Tests
             var x = Tensor.Input ("x", 2);
             var y = x.Dense (8, biasInit: 0.1f).Tanh ().Dense (1, biasInit: 0.1f).Tanh ();
 
-            var ylabels = Tensor.Labels ("ylabels", 1);
-
-            var loss = y.Loss (ylabels, LossType.MeanSquaredError);
-
             var rand = new Random ();
 
-            var history = loss.Train (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), learningRate: 0.01f, batchSize: 16, numBatches: 100, validationInterval: 50);
+            var model = new Model (y);
+            model.Compile (Loss.MeanSquaredError, learningRate: 0.01f);
+
+            var history = model.Fit (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), batchSize: 16, numBatches: 100, validationInterval: 50);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, batch.Loss[0].Shape[0]);

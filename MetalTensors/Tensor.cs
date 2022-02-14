@@ -125,7 +125,7 @@ namespace MetalTensors
         {
             return Map (t => {
                 if (t is LayerTensor lt && predicate (lt.Layer)) {
-                    return Add (lt.Inputs);
+                    return Sum (lt.Inputs);
                 }
                 return t;
             });
@@ -236,7 +236,7 @@ namespace MetalTensors
             return new AddLayer ().GetOutput (this, other);
         }
 
-        public static Tensor Add (params Tensor[] tensors)
+        public static Tensor Sum (params Tensor[] tensors)
         {
             if (tensors.Length < 1)
                 throw new ArgumentException ("Must supply at least one tensor to add", nameof (tensors));
@@ -385,21 +385,6 @@ namespace MetalTensors
             return weights != null ?
                 layer.GetOutput (this, labels, weights) :
                 layer.GetOutput (this, labels);
-        }
-
-        public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
-        {
-            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            var model = new Model (Label, keepDropoutDuringInference, this);
-            var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
-            return model.Fit (dataSet, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, cm.Device);
-        }
-
-        public TrainingHistory Train (DataSet dataSet, float learningRate = Optimizer.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
-        {
-            var model = new Model (Label, keepDropoutDuringInference, this);
-            var cm = model.Compile (new AdamOptimizer (learningRate: learningRate), device: device);
-            return model.Fit (dataSet, batchSize, numBatches, validationInterval, cm.Device);
         }
 
         protected int ValidateCopyDestination (Span<float> destination)

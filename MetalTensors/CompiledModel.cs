@@ -23,7 +23,7 @@ namespace MetalTensors
         public TrainingGraph TrainingGraph => trainingGraph;
         public InferenceGraph InferenceGraph => infGraph;
 
-        public CompiledModel (Model model, Optimizer optimizer, IMTLDevice device)
+        public CompiledModel (Model model, Loss?[] outputLosses, Optimizer optimizer, IMTLDevice device)
         {
             Model = model;
             Optimizer = optimizer;
@@ -51,7 +51,7 @@ namespace MetalTensors
             //
             var trainingTensor = trainingModel.Outputs.Length == 1 ?
                 trainingModel.Outputs[0] :
-                Tensor.Add (trainingModel.Outputs);
+                Tensor.Sum (trainingModel.Outputs);
 
             //
             // Build the graphs

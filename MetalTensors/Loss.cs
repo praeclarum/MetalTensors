@@ -29,6 +29,8 @@ namespace MetalTensors
         {
             LossType = lossType;
         }
+
+        public override string ToString () => $"Loss.{LossType}";
     }
 
     public class CustomLoss : Loss
