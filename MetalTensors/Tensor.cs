@@ -264,6 +264,16 @@ namespace MetalTensors
             return new AddLayer ().GetOutput (this, Constant (other, this));
         }
 
+        public virtual Tensor ArgMax ()
+        {
+            return new ArgMaxLayer ().GetOutput (this);
+        }
+
+        public virtual Tensor ArgMin ()
+        {
+            return new ArgMinLayer ().GetOutput (this);
+        }
+
         public Tensor AvgPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
             return new AvgPoolLayer (size, stride, padding).GetOutput (this);
@@ -331,6 +341,11 @@ namespace MetalTensors
             return Loss (truth, MetalTensors.Loss.Builtin (lossType, reductionType), weight);
         }
 
+        public virtual Tensor Max ()
+        {
+            return new MaxLayer ().GetOutput (this);
+        }
+
         public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
             return new MaxPoolLayer (size, stride, padding).GetOutput (this);
@@ -344,6 +359,11 @@ namespace MetalTensors
         public Tensor Mean ()
         {
             return new MeanLayer ().GetOutput (this);
+        }
+
+        public virtual Tensor Min ()
+        {
+            return new MinLayer ().GetOutput (this);
         }
 
         public Tensor Multiply (Tensor other)
@@ -389,6 +409,11 @@ namespace MetalTensors
         public Tensor Subtract (int other)
         {
             return new SubtractLayer ().GetOutput (this, Constant (other, this));
+        }
+
+        public Tensor Sum ()
+        {
+            return new SumLayer ().GetOutput (this);
         }
 
         public Tensor Tanh ()

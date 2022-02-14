@@ -66,7 +66,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Optimizer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Loss.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AbsLayer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Layers\MeanLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ReductionLayer.cs" />
   </ItemGroup>
   <ItemGroup>
