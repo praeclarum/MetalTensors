@@ -70,7 +70,7 @@ namespace MetalTensors
                 //
                 // Build the graphs
                 //
-                evalGraph = new EvaluationGraph (Label + " Evaluation Graph", trainingLoss, Model.KeepDropoutDuringInference, device);
+                evalGraph = new EvaluationGraph (Label + " Evaluation Graph", losses, Model.KeepDropoutDuringInference, device);
                 infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph);
                 trainingGraph = new TrainingGraph (Label + " Training Graph", trainingLoss, trainable, evalGraph, device);
             }
