@@ -105,6 +105,9 @@
     <Compile Include="..\Tests.iOS\ConvLayerTests.cs" />
     <Compile Include="..\Tests.iOS\MaxPoolLayerTests.cs" />
     <Compile Include="..\Tests.iOS\UpsampleLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\LossLayerTests.cs">
+      <Link>LossLayerTests.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />
