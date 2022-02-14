@@ -14,8 +14,6 @@ namespace MetalTensors
 {
     public abstract class Tensor
     {
-        public const string DefaultLabelsLabel = "Labels";
-
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
         public string Label => Handle.Label;
@@ -82,16 +80,6 @@ namespace MetalTensors
         public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
         {
             return new InputTensor (label, height, width, featureChannels);
-        }
-
-        public static Tensor Labels (string label, params int[] shape)
-        {
-            return new LabelsTensor (label, shape);
-        }
-
-        public static Tensor Labels (params int[] shape)
-        {
-            return new LabelsTensor (DefaultLabelsLabel, shape);
         }
 
         public Tensor Apply (Model model)

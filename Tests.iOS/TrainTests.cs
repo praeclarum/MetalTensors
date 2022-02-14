@@ -13,7 +13,7 @@ namespace Tests
             var input = Tensor.InputImage ("input image", 256, 256);
             var output = input.Conv (32, stride: 2).Conv (32, stride: 2).Conv (1);
 
-            var label = Tensor.Labels ("label image", 64, 64, 1);
+            var label = Tensor.Zeros (64, 64, 1);
 
             var batchSize = 5;
             var numBatches = 10;
