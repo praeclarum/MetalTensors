@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -124,13 +125,17 @@ namespace Tests.Mac
 
         private TestResult RunTest (TestFixture tf, Test t)
         {
+            var sw = new Stopwatch ();
+            sw.Start ();
             try {
                 //Console.WriteLine (tf.TestObject.GetType().FullName + "." + t.TestMethod.Name);
                 var iresult = t.TestMethod.Invoke (tf.TestObject, Array.Empty<object> ());
-                return new TestResult (tf, t, null);
+                sw.Stop ();
+                return new TestResult (tf, t, null, sw.Elapsed);
             }
             catch (Exception ex) {
-                return new TestResult (tf, t, ex);
+                sw.Stop ();
+                return new TestResult (tf, t, ex, sw.Elapsed);
             }
         }
 
@@ -141,17 +146,19 @@ namespace Tests.Mac
             public TestFixture Fixture { get; }
             public Test Test { get; }
             public Exception? Exception { get; }
+            public TimeSpan Duration { get; }
 
-            public TestResult (TestFixture fixture, Test test, Exception? exception)
+            public TestResult (TestFixture fixture, Test test, Exception? exception, TimeSpan duration)
             {
                 Fixture = fixture;
                 Test = test;
                 Exception = exception;
+                Duration = duration;
             }
 
             public override string ToString ()
             {
-                return $"{Fixture}.{Test}() = {Success}";
+                return $"{Fixture}.{Test}() = {Success} ({Duration})";
             }
         }
 
