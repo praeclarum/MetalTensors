@@ -5,6 +5,7 @@ using System.Threading;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
+using System.Diagnostics;
 
 namespace MetalTensors
 {
@@ -174,5 +175,29 @@ namespace MetalTensors
         {
         }
 #endif
+
+        public static MPSImage CreateUninitializedImage (int[] shape)
+        {
+            var imageTensor = shape.Length switch {
+                0 => new Tensors.MPSImageTensor (height: 1, width: 1, featureChannels: 1),
+                1 => new Tensors.MPSImageTensor (height: 1, width: 1, featureChannels: shape[0]),
+                2 => new Tensors.MPSImageTensor (height: 1, width: shape[0], featureChannels: shape[1]),
+                3 => new Tensors.MPSImageTensor (height: shape[0], width: shape[1], featureChannels: shape[2]),
+                var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
+            };
+            var image = imageTensor.MetalImage;
+            return image;
+        }
+
+        public static MPSImage CreateConstantImage (int[] shape, float constantValue)
+        {
+            var image = CreateUninitializedImage (shape);
+            image.Fill (constantValue);
+#if DEBUG
+            var data = new Tensors.MPSImageTensor (image).ToArray (((IMTLDevice?)null).Current ());
+            Debug.Assert (data[0] == constantValue);
+#endif
+            return image;
+        }
     }
 }

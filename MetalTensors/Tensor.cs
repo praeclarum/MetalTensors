@@ -16,6 +16,7 @@ namespace MetalTensors
     {
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
+        public int Id => Handle.Id;
         public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
@@ -25,6 +26,8 @@ namespace MetalTensors
 
         readonly Lazy<MPSNNImageNode> metalImageNode;
         public virtual MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context) => metalImageNode.Value;
+
+        public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
 
         protected Tensor (string? label = null)
@@ -79,9 +82,23 @@ namespace MetalTensors
             return model.GetOutput (0, this);
         }
 
-        public Model Model (string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        public Model Model (Tensor input, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
         {
-            return new Model (name, keepDropoutDuringInference, this) {
+            return new Model (input, this) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        {
+            return new Model (new[] { input1, input2 }, this) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        {
+            return new Model (inputs, this) {
                 IsTrainable = trainable,
             };
         }
@@ -445,31 +462,6 @@ namespace MetalTensors
                 throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
             }
             return neededLength;
-        }
-
-        protected static MPSImage CreateUninitializedImage (int[] shape)
-        {
-            var imageTensor = shape.Length switch
-            {
-                0 => new MPSImageTensor (height: 1, width: 1, featureChannels: 1),
-                1 => new MPSImageTensor (height: 1, width: 1, featureChannels: shape[0]),
-                2 => new MPSImageTensor (height: 1, width: shape[0], featureChannels: shape[1]),
-                3 => new MPSImageTensor (height: shape[0], width: shape[1], featureChannels: shape[2]),
-                var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
-            };
-            var image = imageTensor.MetalImage;
-            return image;
-        }
-
-        protected static MPSImage CreateConstantImage (int[] shape, float constantValue)
-        {
-            var image = CreateUninitializedImage (shape);
-            image.Fill (constantValue);
-#if DEBUG
-            var data = new MPSImageTensor (image).ToArray (((IMTLDevice?)null).Current());
-            Debug.Assert (data[0] == constantValue);
-#endif
-            return image;
         }
     }
 }

@@ -14,18 +14,18 @@ namespace MetalTensors
 {
     public class InferenceGraph : Graph
     {
-        public InferenceGraph (string label, MPSNNGraph graph)
-            : base (label, graph, graph.Device)
+        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, MPSNNGraph graph)
+            : base (label, graph, inputs, outputs, graph.Device)
         {
         }
 
-        public InferenceGraph (string label, EvaluationGraph graph)
-            : base (label, graph.MetalGraph, graph.Device)
+        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, EvaluationGraph graph)
+            : base (label, graph.MetalGraph, inputs, outputs, graph.Device)
         {
         }
 
-        public InferenceGraph (string label, IMTLDevice device, params Tensor[] outputs)
-            : base (label, CreateInferenceGraph (label, outputs, keepDropoutDuringInference: true, device: device), device)
+        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
+            : base (label, CreateInferenceGraph (label, outputs, keepDropoutDuringInference: true, device: device), inputs, outputs, device)
         {
         }
 

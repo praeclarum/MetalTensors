@@ -55,12 +55,12 @@ namespace MetalTensors
                 //
                 var labelLosses =
                     flatModel.Outputs
-                    .Select ((x, i) => {
+                    .Select ((output, i) => {
                         var l = OutputLosses[i];
                         if (l == null)
                             return null;
-                        var labels = new LabelsTensor (x.Label + " " + DefaultLabelsLabel, x.Shape);
-                        var loss = l.Call (x, labels, OutputLossWeights[i]);
+                        var labels = new LabelsTensor (output.Label + " " + DefaultLabelsLabel, output, output.Shape);
+                        var loss = l.Call (output, labels, OutputLossWeights[i]);
                         return loss;
                     })
                     .Where (x => x != null)
@@ -75,13 +75,13 @@ namespace MetalTensors
                 //
                 // Build the graphs
                 //
-                evalGraph = new EvaluationGraph (Label + " Evaluation Graph", losses, Model.KeepDropoutDuringInference, device);
-                infGraph = new InferenceGraph (Label + " Inference Graph", evalGraph);
-                trainingGraph = new TrainingGraph (Label + " Training Graph", losses, trainable, evalGraph, device);
+                evalGraph = new EvaluationGraph (Label + " Evaluation Graph", model.Inputs, flatModel.Outputs, losses, Model.KeepDropoutDuringInference, device);
+                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, evalGraph);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, evalGraph, device);
             }
             else {
                 losses = Array.Empty<Tensor> ();
-                infGraph = new InferenceGraph (Label + " Inference Graph", device, flatModel.Outputs);
+                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, device);
             }
         }
     }

@@ -14,6 +14,8 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
+        public override bool IsStatic => true;
+
         public ArrayTensor (int[] shape, float[] data)
         {
             this.data = data;
@@ -51,7 +53,7 @@ namespace MetalTensors.Tensors
 
         public override unsafe MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = CreateUninitializedImage (Shape);
+            var image = MetalExtensions.CreateUninitializedImage (Shape);
             fixed (float* dataPtr = data) {
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }

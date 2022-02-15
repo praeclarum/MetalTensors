@@ -14,6 +14,8 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
+        public override bool IsStatic => true;
+
         public float ConstantValue { get; }
 
         public ConstantTensor (string? label, float constant, params int[] shape)
@@ -46,7 +48,7 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = CreateConstantImage (Shape, ConstantValue);
+            var image = MetalExtensions.CreateConstantImage (Shape, ConstantValue);
             return image;
         }
     }

@@ -62,14 +62,14 @@ namespace MetalTensors.Applications
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
-                    return up.Model (label);
+                    return up.Model (input, label);
                 }
                 else if (innermost) {
                     var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model (label);
+                    return input.Concat (up).Model (input, label);
                 }
                 else {
                     var downrelu = input.LeakyReLU (a: 0.2f);
@@ -79,7 +79,7 @@ namespace MetalTensors.Applications
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
-                    return input.Concat (updrop).Model (label);
+                    return input.Concat (updrop).Model (input, label);
                 }
             }
         }
@@ -109,7 +109,7 @@ namespace MetalTensors.Applications
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
-            return disc.Model ();
+            return disc.Model (image);
         }
 
         public void Train (Pix2pixDataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
@@ -142,9 +142,9 @@ namespace MetalTensors.Applications
                 this.filePaths = filePaths;
             }
 
-            public override Tensor[] GetRow (int index)
+            public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index)
             {
-                return new[] { Tensor.Zeros (), Tensor.Ones () };
+                return (new[] { Tensor.Zeros () }, new[]{ Tensor.Ones () });
             }
 
             public static Pix2pixDataSet LoadDirectory (string path)

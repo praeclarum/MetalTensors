@@ -16,8 +16,8 @@ namespace MetalTensors
     {
         public Tensor[] Losses { get; }
 
-        public EvaluationGraph (string label, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
-            : base (label, CreateEvaluationGraph (label, losses, keepDropoutDuringInference, device), device)
+        public EvaluationGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
+            : base (label, CreateEvaluationGraph (label, losses, keepDropoutDuringInference, device), inputs, outputs, device)
         {
             Losses = losses;
         }

@@ -21,12 +21,12 @@ namespace Tests
 
             var getDataCount = 0;
 
-            var model = new Model (output);
+            var model = new Model (input, output);
             model.Compile (Loss.MeanSquaredError, learningRate: Optimizer.DefaultLearningRate);
 
             var history = model.Fit (DataSet.Generated (_ => {
                 getDataCount++;
-                return new Tensor[] { input, label };
+                return (new Tensor[] { input }, new[]{ label });
             }, 100, "input image", "label image"), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
 
             Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);

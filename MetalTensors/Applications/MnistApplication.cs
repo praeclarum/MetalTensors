@@ -47,7 +47,7 @@ namespace MetalTensors.Applications
                 .Dropout (0.5f)
                 .Dense (10)
                 .SoftMax ();
-            var model = output.Model ("mnist");
+            var model = output.Model (image, "mnist");
             model.Compile (Loss.SumSoftMaxCrossEntropy, new AdamOptimizer (learningRate: 0.0002f));
             return model;
         }
@@ -83,7 +83,7 @@ namespace MetalTensors.Applications
                 numImages = labelsData.Length - LabelsPrefixSize;
             }
 
-            public override unsafe Tensor[] GetRow (int index)
+            public override unsafe (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index)
             {
                 var device = MetalExtensions.Current (null);
 
@@ -102,7 +102,7 @@ namespace MetalTensors.Applications
                     labelsValues[*labelPointer] = 1;
                     var labelsTensor = Tensor.Array (labelsValues);
 
-                    return new[] { trainTensor, labelsTensor };
+                    return (new[] { trainTensor }, new[] { labelsTensor });
                 }
             }
 

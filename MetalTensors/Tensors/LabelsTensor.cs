@@ -4,10 +4,12 @@ namespace MetalTensors.Tensors
 {
     public class LabelsTensor : PlaceholderTensor
     {
-        public LabelsTensor (string label, params int[] shape)
+        public Tensor OutputTensor { get; }
+        public LabelsTensor (string label, Tensor outputTensor, params int[] shape)
             : base (label, shape)
         {
+            OutputTensor = outputTensor;
         }
-        protected override TensorHandle CreateHandle (string? label) => new LabelsHandle (this, label);
+        protected override TensorHandle CreateHandle (string? label) => new LabelsHandle (this, OutputTensor, label);
     }
 }

@@ -15,7 +15,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x");
             var y = x;
-            var m = y.Model ();
+            var m = y.Model (x);
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
@@ -30,7 +30,7 @@ namespace Tests
             var x0 = Tensor.Input ("x0");
             var x1 = Tensor.Input ("x1");
             var y = x0 + x1;
-            var m = y.Model ();
+            var m = y.Model (x0, x1);
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (2, m.Inputs.Length);
@@ -44,7 +44,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x");
             var y = x.Dense (16).Tanh ().Dense (1).Tanh ();
-            var m = y.Model ();
+            var m = y.Model (x);
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
@@ -65,7 +65,7 @@ namespace Tests
                 .Upsample ().Conv (16).Tanh ()
                 .Upsample ().Conv (16).Tanh ()
                 .Conv (3)
-                .Model ("generator");
+                .Model (z, "generator");
 
             Assert.AreEqual (1, generator.Inputs.Length);
             Assert.AreEqual (z, generator.Input);
@@ -80,7 +80,7 @@ namespace Tests
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (32, stride: 2).Tanh ()
                 .Conv (1)
-                .Model ("discriminator");
+                .Model (dinput, "discriminator");
             discriminator.Compile (Loss.SigmoidCrossEntropy, new AdamOptimizer ());
 
             Assert.AreEqual (dinput, discriminator.Input);
@@ -101,9 +101,9 @@ namespace Tests
 
             var h = gan.Fit (DataSet.Generated (GetTrainingData, 35, "z", "realOrFake"), batchSize: 5, epochs: 1);
 
-            Tensor[] GetTrainingData (int _)
+            (Tensor[], Tensor[]) GetTrainingData (int _)
             {
-                return new[] { Tensor.Ones (height, width, 3), Tensor.Ones (1, 1, 1) };
+                return (new[] { Tensor.Ones (height, width, 3) }, new[]{ Tensor.Ones (1, 1, 1) });
             }
 
             Assert.AreEqual (7, h.Batches.Length);
@@ -128,7 +128,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x", 3);
             var y = x.Dense (32).ReLU ().Dense (5);
-            var model = new Model (y);
+            var model = new Model (x, y);
             model.Compile (Loss.Custom (CustomLoss));
             Tensor CustomLoss (Tensor prediction, Tensor truth)
             {
@@ -141,7 +141,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x", 3);
             var y = x.Dense (32).ReLU ().Dense (5);
-            var model = new Model (y);
+            var model = new Model (x, y);
             model.AddLoss ((y - 1).Abs ());
             Assert.AreEqual (x, model.Input);
             model.Compile ();
@@ -153,7 +153,7 @@ namespace Tests
             var x = Tensor.Input ("x", 3);
             var denseLayer = new DenseLayer (3, 32);
             var y = denseLayer.GetOutput(x).ReLU ().Dense (5);
-            var model = new Model (y);
+            var model = new Model (x, y);
             denseLayer.AddLoss ((y - 1).Abs ());
             Assert.AreEqual (x, model.Input);
             var cm = model.Compile ();

@@ -37,18 +37,24 @@ namespace MetalTensors
         public Tensor Output => Outputs[0];
         public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
 
-        public Model (Tensor output)
-            : this (output.Label + " Model", keepDropoutDuringInference: false, output)
+        public Model (Tensor input, Tensor output, string? label = null)
+            : this (label ?? (output.Label + " Model"), keepDropoutDuringInference: false, new[] { input }, new[] { output })
         {
         }
 
-        public Model (string? label, bool keepDropoutDuringInference, params Tensor[] outputs)
+        public Model (Tensor[] inputs, Tensor output, string? label = null)
+            : this (label ?? (output.Label + " Model"), keepDropoutDuringInference: false, inputs, new[] { output })
+        {
+        }
+
+        public Model (string? label, bool keepDropoutDuringInference, Tensor[] inputs, Tensor[] outputs)
             : base (label)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));
 
             KeepDropoutDuringInference = keepDropoutDuringInference;
+            Inputs = inputs;
             Outputs = outputs;
 
             //
@@ -104,7 +110,6 @@ namespace MetalTensors
             //
             Tensors = handledTensors.ToArray ();
             Sources = sourceTensors.ToArray ();
-            Inputs = inputTensors.ToArray ();
             Labels = labelsTensors.ToArray ();
             Layers = layers.ToArray ();
             Submodels = submodels.ToArray ();
@@ -114,8 +119,9 @@ namespace MetalTensors
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
+            var ninputs = Inputs.Select (x => x.MapInputs (map)).ToArray ();
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, KeepDropoutDuringInference, noutputs) {
+            var nm = new Model (Label, KeepDropoutDuringInference, ninputs, noutputs) {
                 IsTrainable = IsTrainable,
             };
             return nm;
@@ -123,8 +129,9 @@ namespace MetalTensors
 
         public Model MapInputs (Func<Tensor, Tensor> map)
         {
+            var ninputs = Inputs.Select (x => x.MapInputs (map)).ToArray ();
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (Label, KeepDropoutDuringInference, noutputs) {
+            var nm = new Model (Label, KeepDropoutDuringInference, ninputs, noutputs) {
                 IsTrainable = IsTrainable,
             };
             return nm;
@@ -147,7 +154,7 @@ namespace MetalTensors
         {
             var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + inputModel.Label + ")", KeepDropoutDuringInference, outputs) {
+            return new Model (Label + "(" + inputModel.Label + ")", KeepDropoutDuringInference, inputs, outputs) {
                 IsTrainable = IsTrainable,
             };
         }
@@ -155,7 +162,7 @@ namespace MetalTensors
         public Model Apply (params Tensor[] inputs)
         {
             var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")", KeepDropoutDuringInference, outputs) {
+            return new Model (Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")", KeepDropoutDuringInference, inputs, outputs) {
                 IsTrainable = IsTrainable,
             };
         }
@@ -250,7 +257,7 @@ namespace MetalTensors
             var flattened = new Dictionary<Tensor, Tensor> ();
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
-            var flatModel = new Model (Label, KeepDropoutDuringInference, flatOuts) {
+            var flatModel = new Model (Label, KeepDropoutDuringInference, Inputs, flatOuts) {
                 IsTrainable = IsTrainable,
             };
 

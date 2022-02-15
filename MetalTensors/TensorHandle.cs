@@ -9,13 +9,14 @@ namespace MetalTensors
     {
         static int nextId = 1;
 
+        public int Id { get; }
         public string Label { get; }
         public Tensor Tensor { get; }
 
         public TensorHandle (Tensor tensor, string? label)
         {
-            var id = Interlocked.Increment (ref nextId);
-            Label = string.IsNullOrWhiteSpace (label) ? tensor.GetType ().Name + id : label!;
+            Id = Interlocked.Increment (ref nextId);
+            Label = string.IsNullOrWhiteSpace (label) ? tensor.GetType ().Name + Id : label!;
             Tensor = tensor;
         }
 
@@ -51,10 +52,14 @@ namespace MetalTensors
 
     public class LabelsHandle : TensorHandle
     {
-        public LabelsHandle (Tensor tensor, string? label)
+        public Tensor OutputTensor { get; }
+
+        public LabelsHandle (Tensor tensor, Tensor outputTensor, string? label)
             : base (tensor, label)
         {
+            OutputTensor = outputTensor;
         }
-        public override string ToString () => Label + " (Labels)";
+
+        public override string ToString () => Label + $" (Labels for {OutputTensor.Label})";
     }
 }

@@ -20,21 +20,42 @@ namespace MetalTensors
         public MPSNNGraph MetalGraph { get; }
         readonly TensorHandle[] sourceHandles;
         readonly LayerHandle[] intermediateHandles;
+        readonly int[] sourceToInputMap;
+        readonly int[] sourceToOutputMap;
+        MPSImage?[]? madeStaticImages;
 
-        protected Graph (string label, MPSNNGraph graph, IMTLDevice device)
+        protected Graph (string label, MPSNNGraph graph, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
         {
             this.Device = device;
             Label = label;
             this.MetalGraph = graph;
             graph.Label = Label;
-            //stopwatch.Start ();
 
             sourceHandles = graph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
+            var ns = sourceHandles.Length;
             //var resultStateHandles = trainingGraph.ResultStateHandles;
             intermediateHandles = graph.IntermediateImageHandles.Select (x => (LayerHandle)x).ToArray ();
-
             //Console.WriteLine (intermediateHandles);
-            //Console.WriteLine (trainingGraph.DebugDescription);
+
+            sourceToInputMap = new int[ns];
+            for (var si = 0; si < ns; si++) {
+                var h = sourceHandles[si];
+                sourceToInputMap[si] = Array.FindIndex (inputs, x => x.Id == h.Id);
+            }
+
+            sourceToOutputMap = new int[ns];
+            for (var si = 0; si < ns; si++) {
+                var h = sourceHandles[si];
+                if (h is LabelsHandle lh) {
+                    var output = lh.OutputTensor;
+                    sourceToOutputMap[si] = Array.FindIndex (outputs, x => x.Id == output.Id);
+                }
+                else {
+                    sourceToOutputMap[si] = -1;
+                }
+            }
+
+            //Console.WriteLine (graph.DebugDescription);
         }
 
         public override string ToString () => Label;
@@ -166,96 +187,54 @@ namespace MetalTensors
         {
         }
 
-        protected virtual TensorHandle[] GetBatchHandles ()
-        {
-            return sourceHandles;
-
-        }
-
-        (NSArray<MPSImage>[], MPSImage[]) GetBatch (int batchIndex, DataSet dataSet, int batchSize)
+        (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetBatch (int batchIndex, DataSet dataSet, int batchSize)
         {
             var temps = new List<MPSImage> ();
 
-            var batchHandles = GetBatchHandles ();
-            var nsources = batchHandles.Length;
-            var batch = new List<MPSImage[]> (batchSize);
-
-            //
-            // Map to dataset
-            //
-            var cols = dataSet.Columns;
-            var dataCols = new List<(int HandleIndex, int ColumnIndex)> ();
-            var missingHandles = new List<int> (0);
-            for (var i = 0; i < batchHandles.Length; i++) {
-                var bh = batchHandles[i];
-                var col = bh.Label;
-                var ci = Array.IndexOf<string> (cols, col);
-                if (ci >= 0) {
-                    dataCols.Add ((i, ci));
-                }
-                else {
-                    if (bh.Tensor is PlaceholderTensor)
-                        missingHandles.Add (i);
-                }
-            }
-            if (missingHandles.Count == 1 && dataCols.Count == 1 && cols.Length == 2) {
-                // Auto-match missing column
-                var aci = 1 - dataCols[0].ColumnIndex;
-                dataCols.Add ((missingHandles[0], aci));
-                missingHandles.RemoveAt (0);
-            }
-            if (missingHandles.Count > 0) {
-                var mcols = string.Join (", ", missingHandles.Select (x => "\"" + batchHandles[x].Label + "\""));
-                throw new InvalidOperationException ($"Data set is missing required columns {mcols}");
-            }
-
-            var constantImages = batchHandles.Select (x => ImageFromTensor (x.Tensor)).ToList ();
-
-            //
-            // Get Data
-            //
-            for (var i = 0; i < batchSize; i++) {
-                //Console.WriteLine ($"GET BATCH IMAGE {i}");
-                Tensor?[] row = dataSet.GetRow (batchIndex * batchSize + i);
-                // Make sure this is a new array
-                var rowImages = constantImages.ToArray ();
-                foreach (var (hi, ci) in dataCols) {
-                    if (ci >= row.Length) {
-                        throw new InvalidOperationException ($"Data source returned a row with {row.Length} columns, but {cols.Length} were expected");
+            var statics = GetStaticImages ();
+            var ns = sourceHandles.Length;
+            var images = new MPSImage[ns][];
+            for (var si = 0; si < ns; si++) {
+                images[si] = new MPSImage[batchSize];
+                var c = statics[si];
+                if (c != null) {
+                    for (var bi = 0; bi < batchSize; bi++) {
+                        images[si][bi] = c;
                     }
-                    var t = row[ci];
-                    if (t == null)
-                        throw new InvalidOperationException ($"Data source returned a row with a null tensor in column \"{cols[ci]}\"");
-                    rowImages[hi] = ImageFromTensor (t);
-                }
-                batch.Add (rowImages);
-            }
-
-            //
-            // Sort into batches
-            //
-            var sources = new NSArray<MPSImage>[nsources];
-            for (var si = 0; si < nsources; si++) {
-                var b = new MPSImage[batchSize];
-                for (var bi = 0; bi < batchSize; bi++) {
-                    b[bi] = batch[bi][si];
-                }
-                sources[si] = NSArray<MPSImage>.FromNSObjects (b);
-            }
-
-            return (sources, temps.ToArray ());
-
-            MPSImage ImageFromTensor (Tensor t)
-            {
-                if (t is MPSImageTensor it) {
-                    return t.GetMetalImage (Device);
-                }
-                else {
-                    var i = t.GetMetalImage (Device);
-                    temps.Add (i!);
-                    return i!;
                 }
             }
+
+            for (var bi = 0; bi < batchSize; bi++) {
+                var (inputValues, outputValues) = dataSet.GetRow (batchIndex * batchSize + bi);
+                for (var si = 0; si < ns; si++) {
+                    if (images[si][bi] is null) {
+                        var inputIndex = sourceToInputMap[si];
+                        if (inputIndex >= 0) {
+                            var image = inputValues[inputIndex].GetMetalImage (Device);
+                            temps.Add (image);
+                            images[si][bi] = image;
+                        }
+                        else {
+                            var outputIndex = sourceToOutputMap[si];
+                            if (outputIndex >= 0) {
+                                var image = outputValues[outputIndex].GetMetalImage (Device);
+                                temps.Add (image);
+                                images[si][bi] = image;
+                            }
+                            else {
+                                throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            var imageArrays = new NSArray<MPSImage>[ns];
+            for (var si = 0; si < ns; si++) {
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+            }
+
+            return (imageArrays, temps.ToArray ());
         }
 
         protected static void ExportTensor (Tensor tensor, MetalImageNodeContext context)
@@ -264,6 +243,23 @@ namespace MetalTensors
             resultImage.ExportFromGraph = true;
             resultImage.SynchronizeResource = true;
             resultImage.ImageAllocator = MPSImage.DefaultAllocator;
+        }
+
+        MPSImage?[] GetStaticImages ()
+        {
+            if (madeStaticImages != null)
+                return madeStaticImages;
+
+            var images = new MPSImage?[sourceHandles.Length];
+            for (var si = 0; si < sourceHandles.Length; si++) {
+                var t = sourceHandles[si].Tensor;
+                if (t.IsStatic) {
+                    images[si] = t.GetMetalImage (Device);
+                }
+            }
+
+            madeStaticImages = images;
+            return images;
         }
     }
 }

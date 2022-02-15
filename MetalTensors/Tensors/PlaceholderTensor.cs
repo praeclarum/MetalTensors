@@ -11,6 +11,8 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
+        public override bool IsStatic => false;
+
         protected PlaceholderTensor (string label, int[] shape)
             : base (label)
         {
@@ -27,7 +29,7 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = CreateConstantImage (Shape, 0.0f);
+            var image = MetalExtensions.CreateConstantImage (Shape, 0.0f);
             return image;
         }
     }

@@ -14,6 +14,8 @@ namespace MetalTensors.Tensors
 
         public override Tensor[] Inputs => LayerInputs;
 
+        public override bool IsStatic => false;
+
         public LayerTensor (Layer layer, Tensor[] inputs)
             : base (layer.Label)
         {

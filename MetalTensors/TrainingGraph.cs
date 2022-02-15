@@ -17,8 +17,8 @@ namespace MetalTensors
         readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
         readonly EvaluationGraph evalGraph;
 
-        public TrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
-            : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), device)
+        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
+            : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), inputs, outputs, device)
         {
             convWeights = cweights;
             this.evalGraph = evalGraph;

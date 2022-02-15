@@ -17,6 +17,8 @@ namespace MetalTensors.Tensors
         public MPSImage MetalImage => image;
         public IMTLDevice Device => image.Device;
 
+        public override bool IsStatic => true;
+
         public MPSImageTensor (MPSImage image)
         {
             this.image = image;

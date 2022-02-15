@@ -14,7 +14,7 @@ namespace Tests
             var x0 = Tensor.Input ("x0");
             var x1 = Tensor.Constant ("x1", 40);
             var y = x0 + x1;
-            var m = y.Model ();
+            var m = y.Model (x0);
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);

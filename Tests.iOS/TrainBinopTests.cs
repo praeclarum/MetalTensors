@@ -21,7 +21,7 @@ namespace Tests
 
             var rand = new Random ();
 
-            var model = new Model (y);
+            var model = new Model (x, y);
             model.Compile (Loss.MeanSquaredError, learningRate: 0.01f);
 
             var history = model.Fit (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), batchSize: 16, numBatches: 100, validationInterval: 50);
@@ -47,7 +47,7 @@ namespace Tests
             }
             Assert.IsTrue (belowMinLoss, "Did not train well");
 
-            Tensor[] GenTrainingData (int _)
+            (Tensor[], Tensor[]) GenTrainingData (int _)
             {
                 var r = new Tensor[2];
 
@@ -61,7 +61,7 @@ namespace Tests
 
                 r[0] = Tensor.Array (x0, x1);
                 r[1] = Tensor.Array (y0);
-                return r;
+                return (new[] { r[0] }, new[] { r[1] });
             }
         }
     }
