@@ -13,20 +13,29 @@ namespace MetalTensors.Applications
 
         const float lambdaL1 = 100.0f;
 
+        const float learningRate = 0.0002f;
+
         public Model Generator { get; }
         public Model Discriminator { get; }
         public Model Gan { get; }
 
+        bool compiled = false;
+
         public Pix2pixApplication (int height = 256, int width = 256)
         {
             Generator = CreateGenerator (height, width);
-
             Discriminator = CreateDiscriminator (height, width);
-            Discriminator.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: 0.0002f));
-
-            Discriminator.IsTrainable = false;
             Gan = Discriminator.Apply (Generator);
-            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: 0.0002f));
+        }
+
+        void CompileIfNeeded ()
+        {
+            if (compiled)
+                return;
+            compiled = true;
+            Discriminator.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: learningRate));
+            Discriminator.IsTrainable = false;
+            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: learningRate));
         }
 
         static Model CreateGenerator (int height, int width)
@@ -114,6 +123,8 @@ namespace MetalTensors.Applications
 
         public void Train (Pix2pixDataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
         {
+            CompileIfNeeded ();
+
             var trainImageCount = dataSet.Count;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
