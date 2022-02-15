@@ -18,7 +18,6 @@ namespace Tests
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
-            Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (2, m.Sources.Length);
             Assert.AreEqual (1, m.Layers.Length);
 

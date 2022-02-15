@@ -19,7 +19,6 @@ namespace Tests
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
-            Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (0, m.Layers.Length);
         }
@@ -34,7 +33,6 @@ namespace Tests
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (2, m.Inputs.Length);
-            Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (2, m.Sources.Length);
             Assert.AreEqual (1, m.Layers.Length);
         }
@@ -48,7 +46,6 @@ namespace Tests
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
-            Assert.AreEqual (0, m.Labels.Length);
             Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (4, m.Layers.Length);
         }
@@ -70,7 +67,6 @@ namespace Tests
             Assert.AreEqual (1, generator.Inputs.Length);
             Assert.AreEqual (z, generator.Input);
             Assert.AreEqual (1, generator.Outputs.Length);
-            Assert.AreEqual (0, generator.Labels.Length);
             Assert.AreEqual (1, generator.Sources.Length);
             Assert.AreEqual (9, generator.Layers.Length);
 
