@@ -148,7 +148,7 @@ namespace Tests
         {
             var x = Tensor.Input ("x", 3);
             var denseLayer = new DenseLayer (3, 32);
-            var y = denseLayer.GetOutput(x).ReLU ().Dense (5);
+            var y = denseLayer.Call(x).ReLU ().Dense (5);
             var model = new Model (x, y);
             denseLayer.AddLoss ((y - 1).Abs ());
             Assert.AreEqual (x, model.Input);

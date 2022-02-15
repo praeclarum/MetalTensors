@@ -238,22 +238,22 @@ namespace MetalTensors
 
         public virtual Tensor Abs ()
         {
-            return new AbsLayer ().GetOutput (this);
+            return new AbsLayer ().Call (this);
         }
 
         public virtual Tensor Add (Tensor other)
         {
-            return new AddLayer ().GetOutput (this, other);
+            return new AddLayer ().Call (this, other);
         }
 
         public virtual Tensor Add (float other)
         {
-            return new AddLayer ().GetOutput (this, Constant (other, this));
+            return new AddLayer ().Call (this, Constant (other, this));
         }
 
         public virtual Tensor Add (int other)
         {
-            return new AddLayer ().GetOutput (this, Constant (other, this));
+            return new AddLayer ().Call (this, Constant (other, this));
         }
 
         public Tensor Apply (Model model)
@@ -263,84 +263,84 @@ namespace MetalTensors
 
         public virtual Tensor ArgMax ()
         {
-            return new ArgMaxLayer ().GetOutput (this);
+            return new ArgMaxLayer ().Call (this);
         }
 
         public virtual Tensor ArgMin ()
         {
-            return new ArgMinLayer ().GetOutput (this);
+            return new ArgMinLayer ().Call (this);
         }
 
         public Tensor AvgPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new AvgPoolLayer (size, stride, padding).GetOutput (this);
+            return new AvgPoolLayer (size, stride, padding).Call (this);
         }
 
         public Tensor AvgPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
+            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY, padding).Call (this);
         }
 
         public Tensor BatchNorm (float epsilon = BatchNormLayer.DefaultEpsilon)
         {
             var inChannels = Shape[^1];
-            return new BatchNormLayer (inChannels, epsilon).GetOutput (this);
+            return new BatchNormLayer (inChannels, epsilon).Call (this);
         }
 
         public Tensor Concat (params Tensor[] others)
         {
             if (others.Length == 0)
                 return this;
-            return new ConcatLayer ().GetOutput (new[] { this }.Concat (others).ToArray ());
+            return new ConcatLayer ().Call (new[] { this }.Concat (others).ToArray ());
         }
 
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
         public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
         public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
         public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).GetOutput (this);
+            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).Call (this);
         }
 
         public virtual Tensor Divide (Tensor other)
         {
-            return new DivideLayer ().GetOutput (this, other);
+            return new DivideLayer ().Call (this, other);
         }
 
         public virtual Tensor Divide (float other)
         {
-            return new DivideLayer ().GetOutput (this, Constant (other, this));
+            return new DivideLayer ().Call (this, Constant (other, this));
         }
 
         public virtual Tensor Divide (int other)
         {
-            return new DivideLayer ().GetOutput (this, Constant (other, this));
+            return new DivideLayer ().Call (this, Constant (other, this));
         }
 
         public Tensor Dropout (float keepProbability)
         {
-            return new DropoutLayer (keepProbability).GetOutput (this);
+            return new DropoutLayer (keepProbability).Call (this);
         }
 
         public Tensor LeakyReLU (float a = ReLULayer.DefaultLeakyA)
         {
-            return new ReLULayer (a).GetOutput (this);
+            return new ReLULayer (a).Call (this);
         }
 
         public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
@@ -370,27 +370,27 @@ namespace MetalTensors
 
         public virtual Tensor Max ()
         {
-            return new MaxLayer ().GetOutput (this);
+            return new MaxLayer ().Call (this);
         }
 
         public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new MaxPoolLayer (size, stride, padding).GetOutput (this);
+            return new MaxPoolLayer (size, stride, padding).Call (this);
         }
 
         public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
+            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).Call (this);
         }
 
         public virtual Tensor Mean ()
         {
-            return new MeanLayer ().GetOutput (this);
+            return new MeanLayer ().Call (this);
         }
 
         public virtual Tensor Min ()
         {
-            return new MinLayer ().GetOutput (this);
+            return new MinLayer ().Call (this);
         }
 
         public Model Model (Tensor input, string? name = null, bool trainable = true)
@@ -416,17 +416,17 @@ namespace MetalTensors
 
         public virtual Tensor Multiply (Tensor other)
         {
-            return new MultiplyLayer ().GetOutput (this, other);
+            return new MultiplyLayer ().Call (this, other);
         }
 
         public virtual Tensor Multiply (float other)
         {
-            return new MultiplyLayer ().GetOutput (this, Constant (other, this));
+            return new MultiplyLayer ().Call (this, Constant (other, this));
         }
 
         public virtual Tensor Multiply (int other)
         {
-            return new MultiplyLayer ().GetOutput (this, Constant (other, this));
+            return new MultiplyLayer ().Call (this, Constant (other, this));
         }
 
         public Tensor RemoveLayers (Func<Layer, bool> predicate)
@@ -446,12 +446,12 @@ namespace MetalTensors
 
         public Tensor ReLU ()
         {
-            return new ReLULayer ().GetOutput (this);
+            return new ReLULayer ().Call (this);
         }
 
         public Tensor Sigmoid ()
         {
-            return new SigmoidLayer ().GetOutput (this);
+            return new SigmoidLayer ().Call (this);
         }
 
         public virtual Tensor Slice (params int[] indexes)
@@ -461,42 +461,42 @@ namespace MetalTensors
 
         public Tensor SoftMax ()
         {
-            return new SoftMaxLayer ().GetOutput (this);
+            return new SoftMaxLayer ().Call (this);
         }
 
         public Tensor SpatialMean ()
         {
-            return new SpatialMeanLayer ().GetOutput (this);
+            return new SpatialMeanLayer ().Call (this);
         }
 
         public virtual Tensor Subtract (Tensor other)
         {
-            return new SubtractLayer ().GetOutput (this, other);
+            return new SubtractLayer ().Call (this, other);
         }
 
         public virtual Tensor Subtract (float other)
         {
-            return new SubtractLayer ().GetOutput (this, Constant (other, this));
+            return new SubtractLayer ().Call (this, Constant (other, this));
         }
 
         public virtual Tensor Subtract (int other)
         {
-            return new SubtractLayer ().GetOutput (this, Constant (other, this));
+            return new SubtractLayer ().Call (this, Constant (other, this));
         }
 
         public Tensor Sum ()
         {
-            return new SumLayer ().GetOutput (this);
+            return new SumLayer ().Call (this);
         }
 
         public virtual Tensor Tanh (string? name = null)
         {
-            return new TanhLayer (name).GetOutput (this);
+            return new TanhLayer (name).Call (this);
         }
 
         public Tensor Upsample (int scaleX, int scaleY)
         {
-            return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
+            return new UpsampleLayer (scaleX, scaleY).Call (this);
         }
 
         public Tensor Upsample (int scale = 2)

@@ -146,12 +146,8 @@ namespace MetalTensors
             return new Model (newInputs, thisOutputs, $"{Name}({inputModel.Name})");
         }
 
-        public Tensor Call (params Tensor[] inputs)
+        public override Tensor Call (params Tensor[] inputs)
         {
-            //var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            //return new Model (inputs, outputs, Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")") {
-            //    IsTrainable = IsTrainable,
-            //};
             return GetOutput (0, inputs);
         }
 

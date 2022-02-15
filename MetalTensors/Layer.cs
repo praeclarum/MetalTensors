@@ -54,7 +54,7 @@ namespace MetalTensors
             return f.ResultImage;
         }
 
-        public Tensor GetOutput (params Tensor[] inputs)
+        public virtual Tensor Call (params Tensor[] inputs)
         {
             return new LayerTensor (this, inputs);
         }
