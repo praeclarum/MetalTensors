@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
@@ -91,14 +92,14 @@ namespace MetalTensors.Layers
         /// The layout of filter weight is as a 4D tensor (array):
         ///     weight[outputChannels][kernelHeight][kernelWidth][inputChannels / groups]
         /// </summary>
-        public override IntPtr Weights => convWeights.Value.weightVectors.ValuePointer;
+        public override IntPtr Weights => convWeights.Value.WeightVectors.ValuePointer;
 
         /// <summary>
         /// Each entry in the array is a single precision IEEE-754 float and represents one bias.
         /// The number of entries is equal to outputFeatureChannels.
         /// Note: bias terms are always float, even when the weights are not.
         /// </summary>
-        public override IntPtr BiasTerms => convWeights.Value.biasVectors is OptimizableVector v ? v.ValuePointer : IntPtr.Zero;
+        public override IntPtr BiasTerms => convWeights.Value.BiasVectors is OptimizableVector v ? v.ValuePointer : IntPtr.Zero;
 
         public override MPSCnnConvolutionDescriptor Descriptor => descriptor;
 
@@ -220,14 +221,14 @@ namespace MetalTensors.Layers
                 if (opt != null) {
                     Interlocked.Increment (ref updateCount);
 
-                    opt.Encode (commandBuffer, gradientState, sourceState, v.momentumVectors, v.velocityVectors, v.convWtsAndBias);
+                    opt.Encode (commandBuffer, gradientState, sourceState, v.momentumVectors, v.velocityVectors, v.ConvWtsAndBias);
 
                     //Console.WriteLine ($"Update of ConvDataSource {this.Label}");
                 }
                 else {
                     throw new Exception ($"Attempted to Update without an Optimizer");
                 }
-                return v.convWtsAndBias;
+                return v.ConvWtsAndBias;
             }
             else {
                 return null;
@@ -280,12 +281,25 @@ namespace MetalTensors.Layers
     /// </summary>
     sealed class ConvWeightValues : IDisposable
     {
-        public readonly OptimizableVector weightVectors;
-        public readonly OptimizableVector? biasVectors;
-        public readonly MPSCnnConvolutionWeightsAndBiasesState convWtsAndBias;
+        readonly OptimizableVector weightVectors;
+        public OptimizableVector WeightVectors {
+            get {
+                weightInitTask.Wait ();
+                return weightVectors;
+            }
+        }
+        public readonly OptimizableVector? BiasVectors;
+        public MPSCnnConvolutionWeightsAndBiasesState? convWtsAndBias;
+        public MPSCnnConvolutionWeightsAndBiasesState ConvWtsAndBias {
+            get {
+                weightInitTask.Wait ();
+                return convWtsAndBias!;
+            }
+        }
         public readonly NSArray<MPSVector> momentumVectors;
         public readonly NSArray<MPSVector> velocityVectors;
         private bool disposed;
+        private Task weightInitTask;
 
         public ConvWeightValues (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, bool bias, WeightsInit weightsInit, float biasInit, IMTLDevice device)
         {
@@ -296,23 +310,24 @@ namespace MetalTensors.Layers
 
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
-                biasVectors = new OptimizableVector (device, vDescBiases, biasInit);
+                BiasVectors = new OptimizableVector (device, vDescBiases, biasInit);
             }
             else {
-                biasVectors = null;
+                BiasVectors = null;
             }
 
-            var seed = (nuint)DateTime.Now.Ticks;
-            weightsInit.InitWeights (weightVectors.Value, (int)seed, device);
-            SetVectorsModified ();
-
-            convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, biasVectors?.Value.Data);
-            momentumVectors = biasVectors != null ?
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, biasVectors.Momentum) :
+            momentumVectors = BiasVectors != null ?
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, BiasVectors.Momentum) :
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum);
-            velocityVectors = biasVectors != null ?
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, biasVectors.Velocity) :
+            velocityVectors = BiasVectors != null ?
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, BiasVectors.Velocity) :
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
+
+            var seed = (nuint)DateTime.Now.Ticks;
+            weightInitTask = Task.Run (async () => {
+                await weightsInit.InitWeightsAsync (weightVectors.Value, (int)seed, device);
+                convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
+            });
         }
 
         public void Dispose ()
@@ -321,21 +336,9 @@ namespace MetalTensors.Layers
                 disposed = true;
                 velocityVectors.Dispose ();
                 momentumVectors.Dispose ();
-                convWtsAndBias.Dispose ();
-                biasVectors?.Dispose ();
-                weightVectors?.Dispose ();
-            }
-        }
-
-        void SetVectorsModified ()
-        {
-            weightVectors.Value.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
-            weightVectors.Momentum.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
-            weightVectors.Velocity.Data.DidModify (new NSRange (0, weightVectors.VectorByteSize));
-            if (biasVectors != null) {
-                biasVectors.Value.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
-                biasVectors.Momentum.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
-                biasVectors.Velocity.Data.DidModify (new NSRange (0, biasVectors.VectorByteSize));
+                ConvWtsAndBias.Dispose ();
+                BiasVectors?.Dispose ();
+                WeightVectors?.Dispose ();
             }
         }
     }
@@ -408,16 +411,20 @@ namespace MetalTensors.Layers
             Velocity.Synchronize (commandBuffer);
         }
 
-        public void MarkAsModified ()
+
+        /// <summary>
+        /// Informs the GPU that the CPU has modified the vectors.
+        /// </summary>
+        public void MarkAsModifiedByCpu ()
         {
-            Value.DidModify ();
-            Momentum.DidModify ();
-            Velocity.DidModify ();
+            Value.MarkAsModifiedByCpu ();
+            Momentum.MarkAsModifiedByCpu ();
+            Velocity.MarkAsModifiedByCpu ();
         }
 
-        public bool IsValid ()
+        public bool IsFinite ()
         {
-            return Value.IsValid () && Momentum.IsValid () && Velocity.IsValid ();
+            return Value.IsFinite () && Momentum.IsFinite () && Velocity.IsFinite ();
         }
 
         public void Zero ()

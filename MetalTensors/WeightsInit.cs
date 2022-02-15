@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -14,7 +15,7 @@ namespace MetalTensors
 
         public abstract float[] GetWeights (int seed, int length);
 
-        public abstract void InitWeights (MPSVector vector, int seed, IMTLDevice device);
+        public abstract Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device);
 
         class UniformInit : WeightsInit
         {
@@ -43,9 +44,9 @@ namespace MetalTensors
                 return r;
             }
 
-            public override void InitWeights (MPSVector vector, int seed, IMTLDevice device)
+            public override Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device)
             {
-                vector.UniformInitAsync (min, max, seed, device).Wait ();
+                return vector.UniformInitAsync (min, max, seed, device);
             }
         }
 
@@ -76,9 +77,9 @@ namespace MetalTensors
                 return r;
             }
 
-            public override void InitWeights (MPSVector vector, int seed, IMTLDevice device)
+            public override Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device)
             {
-                vector.NormalInitAsync (mean, standardDeviation, seed, device).Wait ();
+                return vector.NormalInitAsync (mean, standardDeviation, seed, device);
             }
         }
     }    

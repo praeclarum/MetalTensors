@@ -102,7 +102,7 @@ namespace MetalTensors.Layers
             meanVector = Vector (device, vectorDescriptor, batchNormWeights.MovingMean);
             varianceVector = Vector (device, vectorDescriptor, batchNormWeights.MovingVariance);
 
-            SetVectorsModified ();
+            MarkAsModifiedByCpu ();
 
             gammaAndBeta = new MPSCnnNormalizationGammaAndBetaState (gammaVector.Value.Data, betaVector.Value.Data);
             meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Data, varianceVector.Data);
@@ -200,20 +200,20 @@ namespace MetalTensors.Layers
         //    return r;
         //}
 
-        public bool WeightsAreValid ()
+        public bool WeightsAreFinite ()
         {
-            return betaVector.IsValid () &&
-                gammaVector.IsValid () &&
-                meanVector.IsValid () &&
-                varianceVector.IsValid ();
+            return betaVector.IsFinite () &&
+                gammaVector.IsFinite () &&
+                meanVector.IsFinite () &&
+                varianceVector.IsFinite ();
         }
 
-        void SetVectorsModified ()
+        void MarkAsModifiedByCpu ()
         {
-            betaVector.MarkAsModified ();
-            gammaVector.MarkAsModified ();
-            meanVector.DidModify ();
-            varianceVector.DidModify ();
+            betaVector.MarkAsModifiedByCpu ();
+            gammaVector.MarkAsModifiedByCpu ();
+            meanVector.MarkAsModifiedByCpu ();
+            varianceVector.MarkAsModifiedByCpu ();
         }
 
 #if PB_SERIALIZATION

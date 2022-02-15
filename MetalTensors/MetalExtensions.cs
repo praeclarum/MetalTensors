@@ -104,7 +104,11 @@ namespace MetalTensors
             return v;
         }
 
-        public static void DidModify (this MPSVector vector)
+
+        /// <summary>
+        /// Informs the GPU that the CPU has modified the vector.
+        /// </summary>
+        public static void MarkAsModifiedByCpu (this MPSVector vector)
         {
             var data = vector.Data;
             data.DidModify (new NSRange (0, (nint)data.Length));
@@ -139,6 +143,7 @@ namespace MetalTensors
                     memset_pattern16 (vector.Data.Contents, (IntPtr)biasInitPtr, vectorByteSize);
                 }
             }
+            vector.MarkAsModifiedByCpu ();
         }
 
         [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
@@ -169,6 +174,7 @@ namespace MetalTensors
             var command = MPSCommandBuffer.Create (queue);
             var random = new MPSMatrixRandomMtgp32 (device, vector.DataType, (nuint)seed, descriptor);
             random.EncodeToCommandBuffer (command, vector);
+            random.Synchronize (command);
             var tcs = new TaskCompletionSource<bool> ();
             command.AddCompletedHandler (cs => {
                 if (cs.Status == MTLCommandBufferStatus.Error) {
@@ -189,16 +195,11 @@ namespace MetalTensors
             return ar;
         }
 
-        public static bool IsValid (this MPSVector vector)
+        public static bool IsFinite (this MPSVector vector)
         {
-            var ar = vector.ToArray ();
+            var ar = vector.ToSpan ();
             for (var i = 0; i < ar.Length; i++) {
-                var v = ar[i];
-                if (float.IsNaN (v))
-                    return false;
-                if (float.IsInfinity (v))
-                    return false;
-                if (float.IsNegativeInfinity (v))
+                if (!float.IsFinite (ar[i]))
                     return false;
             }
             return true;
