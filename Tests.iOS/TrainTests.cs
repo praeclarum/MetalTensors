@@ -27,7 +27,7 @@ namespace Tests
             var history = model.Fit (DataSet.Generated (_ => {
                 getDataCount++;
                 return (new Tensor[] { input }, new[]{ label });
-            }, 100, "input image", "label image"), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
+            }, 100), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
 
             Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);
 

@@ -7,17 +7,16 @@ namespace MetalTensors
     public abstract class DataSet
     {
         public abstract int Count { get; }
-        public abstract string[] Columns { get; }
         public abstract (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index);
 
-        public static DataSet Generated (Func<int, DataSetRow> getRow, int count, params string[] columns)
+        public static DataSet Generated (Func<int, DataSetRow> getRow, int count)
         {
-            return new GeneratedDataSet (getRow, count, columns);
+            return new GeneratedDataSet (getRow, count);
         }
 
-        public static DataSet Single (string column, Tensor input, Tensor? output = null)
+        public static DataSet Single (Tensor input, Tensor? output = null)
         {
-            return new SingleDataSet (column, input, output);
+            return new SingleDataSet (input, output);
         }
 
         public DataSet Subset (int index, int length)
@@ -27,34 +26,28 @@ namespace MetalTensors
 
         class GeneratedDataSet : DataSet
         {
-            readonly string[] columns;
             readonly int count;
             readonly Func<int, DataSetRow> getRow;
 
             public override int Count => count;
-            public override string[] Columns => columns;
             public override DataSetRow GetRow (int index) => getRow (index);
 
-            public GeneratedDataSet (Func<int, DataSetRow> getRow, int count, string[] columns)
+            public GeneratedDataSet (Func<int, DataSetRow> getRow, int count)
             {
                 this.getRow = getRow;
-                this.columns = columns;
                 this.count = count;
             }
         }
 
         class SingleDataSet : DataSet
         {
-            readonly string[] columns;
             readonly DataSetRow row;
 
             public override int Count => 1;
-            public override string[] Columns => columns;
             public override DataSetRow GetRow (int index) => row;
 
-            public SingleDataSet (string column, Tensor input, Tensor? output)
+            public SingleDataSet (Tensor input, Tensor? output)
             {
-                columns = new[] { column };
                 var outputs = output != null ? new[] { output } : Array.Empty<Tensor> ();
                 row = (new[] { input }, outputs);
             }
@@ -67,7 +60,6 @@ namespace MetalTensors
             readonly int length;
 
             public override int Count => length;
-            public override string[] Columns => parent.Columns;
             public override DataSetRow GetRow (int index) => parent.GetRow(this.index + index);
 
             public SubsetDataSet (DataSet parent, int index, int length)

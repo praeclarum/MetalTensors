@@ -231,7 +231,7 @@ namespace MetalTensors
             var batchSize = 1;
             var numBatches = 1;
 
-            var h = g.Predict (DataSet.Single (Inputs[0].Label, input), batchSize, numBatches);
+            var h = g.Predict (DataSet.Single (input), batchSize, numBatches);
 
             return h.Batches[0].Results[0];
         }

@@ -64,11 +64,7 @@ namespace MetalTensors.Applications
             private readonly MPSImageDescriptor trainImageDesc;
             readonly Random random;
 
-            static readonly string[] cols = { "image", "labels" };
-
             public override int Count => numImages;
-
-            public override string[] Columns => cols;
 
             public MnistDataSet ()
             {

@@ -131,11 +131,9 @@ namespace MetalTensors.Applications
 
         public class Pix2pixDataSet : DataSet
         {
-            static readonly string[] cols = { "image", "discLabels" };
             private readonly string[] filePaths;
 
             public override int Count => filePaths.Length;
-            public override string[] Columns => cols;
 
             public Pix2pixDataSet (string[] filePaths)
             {
