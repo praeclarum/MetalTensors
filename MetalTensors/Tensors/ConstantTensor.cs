@@ -51,5 +51,21 @@ namespace MetalTensors.Tensors
             var image = MetalExtensions.CreateConstantImage (Shape, ConstantValue);
             return image;
         }
+
+        public override Tensor Add (Tensor other) => other is ConstantTensor o ? new ConstantTensor (ConstantValue + o.ConstantValue, Shape) : base.Add (other);
+        public override Tensor Add (float other) => new ConstantTensor (ConstantValue + other, Shape);
+        public override Tensor Add (int other) => new ConstantTensor (ConstantValue + other, Shape);
+
+        public override Tensor Divide (Tensor other) => other is ConstantTensor o ? new ConstantTensor (ConstantValue / o.ConstantValue, Shape) : base.Divide (other);
+        public override Tensor Divide (float other) => new ConstantTensor (ConstantValue / other, Shape);
+        public override Tensor Divide (int other) => new ConstantTensor (ConstantValue / other, Shape);
+
+        public override Tensor Multiply (Tensor other) => other is ConstantTensor o ? new ConstantTensor (ConstantValue * o.ConstantValue, Shape) : base.Multiply (other);
+        public override Tensor Multiply (float other) => new ConstantTensor (ConstantValue * other, Shape);
+        public override Tensor Multiply (int other) => new ConstantTensor (ConstantValue * other, Shape);
+
+        public override Tensor Subtract (Tensor other) => other is ConstantTensor o ? new ConstantTensor (ConstantValue - o.ConstantValue, Shape) : base.Subtract (other);
+        public override Tensor Subtract (float other) => new ConstantTensor (ConstantValue - other, Shape);
+        public override Tensor Subtract (int other) => new ConstantTensor (ConstantValue - other, Shape);
     }
 }

@@ -89,16 +89,26 @@ namespace MetalTensors
         public static Tensor operator + (Tensor a, Tensor b) => a.Add (b);
         public static Tensor operator + (Tensor a, float b) => a.Add (b);
         public static Tensor operator + (Tensor a, int b) => a.Add (b);
+        public static Tensor operator + (float a, Tensor b) => Constant (a, b).Add (b);
+        public static Tensor operator + (int a, Tensor b) => Constant (a, b).Add (b);
 
         public static Tensor operator - (Tensor a, Tensor b) => a.Subtract (b);
         public static Tensor operator - (Tensor a, float b) => a.Subtract (b);
         public static Tensor operator - (Tensor a, int b) => a.Subtract (b);
+        public static Tensor operator - (float a, Tensor b) => Constant (a, b).Subtract (b);
+        public static Tensor operator - (int a, Tensor b) => Constant (a, b).Subtract (b);
 
         public static Tensor operator * (Tensor a, Tensor b) => a.Multiply (b);
+        public static Tensor operator * (Tensor a, float b) => a.Multiply (b);
+        public static Tensor operator * (Tensor a, int b) => a.Multiply (b);
         public static Tensor operator * (float a, Tensor b) => Constant (a, b).Multiply (b);
-        public static Tensor operator * (Tensor a, float b) => a.Multiply (Constant (b, a));
+        public static Tensor operator * (int a, Tensor b) => Constant (a, b).Multiply (b);
 
         public static Tensor operator / (Tensor a, Tensor b) => a.Divide (b);
+        public static Tensor operator / (Tensor a, float b) => a.Divide (b);
+        public static Tensor operator / (Tensor a, int b) => a.Divide (b);
+        public static Tensor operator / (float a, Tensor b) => Constant (a, b).Divide (b);
+        public static Tensor operator / (int a, Tensor b) => Constant (a, b).Divide (b);
 
         public static Tensor Array (params float[] array)
         {
@@ -298,9 +308,19 @@ namespace MetalTensors
             return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).GetOutput (this);
         }
 
-        public Tensor Divide (Tensor other)
+        public virtual Tensor Divide (Tensor other)
         {
             return new DivideLayer ().GetOutput (this, other);
+        }
+
+        public virtual Tensor Divide (float other)
+        {
+            return new DivideLayer ().GetOutput (this, Constant (other, this));
+        }
+
+        public virtual Tensor Divide (int other)
+        {
+            return new DivideLayer ().GetOutput (this, Constant (other, this));
         }
 
         public Tensor Dropout (float keepProbability)
@@ -353,7 +373,7 @@ namespace MetalTensors
             return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
         }
 
-        public Tensor Mean ()
+        public virtual Tensor Mean ()
         {
             return new MeanLayer ().GetOutput (this);
         }
@@ -384,9 +404,19 @@ namespace MetalTensors
             };
         }
 
-        public Tensor Multiply (Tensor other)
+        public virtual Tensor Multiply (Tensor other)
         {
             return new MultiplyLayer ().GetOutput (this, other);
+        }
+
+        public virtual Tensor Multiply (float other)
+        {
+            return new MultiplyLayer ().GetOutput (this, Constant (other, this));
+        }
+
+        public virtual Tensor Multiply (int other)
+        {
+            return new MultiplyLayer ().GetOutput (this, Constant (other, this));
         }
 
         public Tensor RemoveLayers (Func<Layer, bool> predicate)
@@ -429,17 +459,17 @@ namespace MetalTensors
             return new SpatialMeanLayer ().GetOutput (this);
         }
 
-        public Tensor Subtract (Tensor other)
+        public virtual Tensor Subtract (Tensor other)
         {
             return new SubtractLayer ().GetOutput (this, other);
         }
 
-        public Tensor Subtract (float other)
+        public virtual Tensor Subtract (float other)
         {
             return new SubtractLayer ().GetOutput (this, Constant (other, this));
         }
 
-        public Tensor Subtract (int other)
+        public virtual Tensor Subtract (int other)
         {
             return new SubtractLayer ().GetOutput (this, Constant (other, this));
         }
@@ -449,7 +479,7 @@ namespace MetalTensors
             return new SumLayer ().GetOutput (this);
         }
 
-        public Tensor Tanh ()
+        public virtual Tensor Tanh ()
         {
             return new TanhLayer ().GetOutput (this);
         }
