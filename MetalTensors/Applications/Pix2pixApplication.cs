@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Metal;
@@ -121,13 +122,18 @@ namespace MetalTensors.Applications
             return disc.Model (image, "Discriminator");
         }
 
-        public void Train (Pix2pixDataSet dataSet, int batchSize = 3, int epochs = 200, IMTLDevice? device = null)
+        public (int TrainedImages, TimeSpan TrainingTime, TimeSpan DataSetTime) Train (Pix2pixDataSet dataSet, int batchSize = 1, float epochs = 200, Action<double>? progress = null, IMTLDevice? device = null)
         {
             CompileIfNeeded ();
+
+            var trainSW = new Stopwatch ();
+            var dataSW = new Stopwatch ();
 
             var trainImageCount = dataSet.Count;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
+            var numBatchesToTrain = (int)(epochs * numBatchesPerEpoch) + 1;
+            var numImagesToTrain = numBatchesToTrain * batchSize;
 
             var ones = Tensor.Ones (Discriminator.Output.Shape);
             var zeros = Tensor.Zeros (Discriminator.Output.Shape);
@@ -141,15 +147,23 @@ namespace MetalTensors.Applications
                 zerosAndOnesBatch[batchSize + i] = new[] { ones };
             }
 
-            for (var epoch = 0; epoch < epochs; epoch++) {
-                for (var batch = 0; batch < numBatchesPerEpoch; batch++) {
-                    var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize);
-                    var fakes = Generator.Predict (segments);
-                    var realsAndFakes = reals.Concat(fakes).ToArray ();
-                    Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
-                    Gan.Fit (segments, zerosBatch);
-                }
+            var numTrainedImages = 0;
+
+            for (var batch = 0; batch < numBatchesToTrain; batch++) {
+                dataSW.Start ();
+                var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize);
+                dataSW.Stop ();
+                trainSW.Start ();
+                var fakes = Generator.Predict (segments);
+                var realsAndFakes = reals.Concat(fakes).ToArray ();
+                Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                Gan.Fit (segments, zerosBatch);
+                trainSW.Stop ();
+                numTrainedImages += segments.Length;
+                progress?.Invoke ((double)numTrainedImages / (double)numImagesToTrain);
             }
+
+            return (numTrainedImages, trainSW.Elapsed, dataSW.Elapsed);
         }
 
         public class Pix2pixDataSet : DataSet
@@ -165,7 +179,7 @@ namespace MetalTensors.Applications
 
             public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index)
             {
-                return (new[] { Tensor.Zeros () }, new[]{ Tensor.Ones () });
+                return (new[] { Tensor.Zeros (256, 256, 3) }, new[]{ Tensor.Ones (256, 256, 3) });
             }
 
             public static Pix2pixDataSet LoadDirectory (string path)

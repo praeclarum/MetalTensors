@@ -25,7 +25,7 @@ namespace Tests
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape[^1]);
         }
 
-        //[Test]
+        [Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();
@@ -36,7 +36,21 @@ namespace Tests
 
             var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
 
-            pix2pix.Train (data, epochs: 2);
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 8, epochs: 1.0f, progress: p => {
+                Console.WriteLine ($"Pix2Pix {Math.Round(p*100, 2)}%");
+            });
+
+            var trainImagesPerSecond = imageCount / (trainTime.TotalSeconds);
+            var dataImagesPerSecond = imageCount / (dataTime.TotalSeconds);
+            var totalImagesPerSecond = imageCount / (trainTime.TotalSeconds + dataTime.TotalSeconds);
+
+            Console.WriteLine ($"{imageCount} images in {trainTime + dataTime}");
+            Console.WriteLine ($"{trainImagesPerSecond} TrainImages/sec");
+            Console.WriteLine ($"{dataImagesPerSecond} DataImages/sec");
+            Console.WriteLine ($"{totalImagesPerSecond} Images/sec");
+            Console.WriteLine ($"{TimeSpan.FromSeconds(data.Count / totalImagesPerSecond)}/epoch");
+
+            Assert.GreaterOrEqual (imageCount, 3);
         }
     }
 }
