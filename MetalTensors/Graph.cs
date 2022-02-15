@@ -76,7 +76,6 @@ namespace MetalTensors
                 (batch, temporaryBatchImages) = GetBatch (batchIndex, dataSet, batchSize);
             }
             catch {
-                semaphore.Release ();
                 throw;
             }
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
