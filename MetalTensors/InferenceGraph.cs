@@ -43,7 +43,7 @@ namespace MetalTensors
             //
             // Create the graph
             //
-            var outputImageNodes = outputs.Select (x => x.GetMetalImageNode (context)).ToArray ();
+            var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
             var resultsAreNeeded = outputs.Select (x => true).ToArray ();
             var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
             evalGraph.Format = MPSImageFeatureChannelFormat.Float32;

@@ -30,9 +30,9 @@ namespace MetalTensors.Tensors
             computed.Copy (destination, device);
         }
 
-        public override MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context)
+        public override MPSNNImageNode GetImageNode (MetalImageNodeContext context)
         {
-            return Layer.GetMetalImageNode (LayerInputs, context);
+            return Layer.GetImageNode (LayerInputs, context);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)

@@ -248,7 +248,7 @@ namespace MetalTensors
 
         protected static void ExportTensor (Tensor tensor, MetalImageNodeContext context)
         {
-            var resultImage = tensor.GetMetalImageNode (context);
+            var resultImage = tensor.GetImageNode (context);
             resultImage.ExportFromGraph = true;
             resultImage.SynchronizeResource = true;
             resultImage.ImageAllocator = MPSImage.DefaultAllocator;

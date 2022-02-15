@@ -47,11 +47,11 @@ namespace MetalTensors
 
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
-        public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, MetalImageNodeContext context)
+        public virtual MPSNNImageNode GetImageNode (Tensor[] inputs, MetalImageNodeContext context)
         {
-            var f = GetFilterNode (inputs, context);
+            var filterNode = GetFilterNode (inputs, context);
             //Console.WriteLine (f.ResultImage.DebugDescription);
-            return f.ResultImage;
+            return filterNode.ResultImage;
         }
 
         public virtual Tensor Call (params Tensor[] inputs)
@@ -72,9 +72,8 @@ namespace MetalTensors
             {
                 try {
                     var context = new MetalImageNodeContext (name + " Execute", false, device);
-                    var node = GetFilterNode (inputs, context);
-
-                    using var graph = new MPSNNGraph (device, node.ResultImage, true) {
+                    var node = GetImageNode (inputs, context);
+                    using var graph = new MPSNNGraph (device, node, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
                     };
                     //Console.WriteLine (graph.DebugDescription);
@@ -109,9 +108,9 @@ namespace MetalTensors
             return null;
         }
 
-        public MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
+        public virtual MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
         {
-            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (context), x.Shape)).ToArray ();
+            var inputImageNodes = inputs.Select (x => (x.GetImageNode (context), x.Shape)).ToArray ();
 
             var key = context.CacheKey + " + (" + string.Join (",", inputImageNodes.Select (x => x.Item1?.MPSHandle?.Label ?? "Unknown")) + ")";
             if (cachedFilterNodes.TryGetValue (key, out var node))

@@ -36,7 +36,7 @@ namespace MetalTensors
             //
             var context = new MetalImageNodeContext (label, false, device);
             var trainingOutput = losses.Length == 1 ? losses[0] : Tensor.Sum (losses);
-            var thisImageNode = trainingOutput.GetMetalImageNode (context);
+            var thisImageNode = trainingOutput.GetImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
             var convWeightsL = new List<(ConvDataSource, bool)> ();
