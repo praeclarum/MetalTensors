@@ -210,8 +210,8 @@ namespace MetalTensors.Layers
 
         void SetVectorsModified ()
         {
-            betaVector.DidModify ();
-            gammaVector.DidModify ();
+            betaVector.MarkAsModified ();
+            gammaVector.MarkAsModified ();
             meanVector.DidModify ();
             varianceVector.DidModify ();
         }

@@ -1,4 +1,7 @@
 ﻿using System;
+using Metal;
+using MetalPerformanceShaders;
+
 namespace MetalTensors
 {
     public abstract class WeightsInit
@@ -10,6 +13,8 @@ namespace MetalTensors
         public static WeightsInit Gaussian (float mean, float standardDeviation) => new GaussianInit (mean, standardDeviation);
 
         public abstract float[] GetWeights (int seed, int length);
+
+        public abstract void InitWeights (MPSVector vector, int seed, IMTLDevice device);
 
         class UniformInit : WeightsInit
         {
@@ -36,6 +41,11 @@ namespace MetalTensors
                 }
 
                 return r;
+            }
+
+            public override void InitWeights (MPSVector vector, int seed, IMTLDevice device)
+            {
+                vector.UniformInitAsync (min, max, seed, device).Wait ();
             }
         }
 
@@ -64,6 +74,11 @@ namespace MetalTensors
                 }
 
                 return r;
+            }
+
+            public override void InitWeights (MPSVector vector, int seed, IMTLDevice device)
+            {
+                vector.NormalInitAsync (mean, standardDeviation, seed, device).Wait ();
             }
         }
     }    

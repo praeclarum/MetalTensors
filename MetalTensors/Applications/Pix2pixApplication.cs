@@ -147,7 +147,7 @@ namespace MetalTensors.Applications
                     var fakes = Generator.Predict (segments);
                     var realsAndFakes = reals.Concat(fakes).ToArray ();
                     Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
-                    //Gan.Fit (segments, zerosBatch);
+                    Gan.Fit (segments, zerosBatch);
                 }
             }
         }
