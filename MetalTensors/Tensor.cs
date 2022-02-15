@@ -77,60 +77,13 @@ namespace MetalTensors
             }
         }
 
-        public Tensor Apply (Model model)
+        protected int ValidateCopyDestination (Span<float> destination)
         {
-            return model.GetOutput (0, this);
-        }
-
-        public Model Model (Tensor input, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
-        {
-            return new Model (input, this) {
-                IsTrainable = trainable,
-            };
-        }
-
-        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
-        {
-            return new Model (new[] { input1, input2 }, this) {
-                IsTrainable = trainable,
-            };
-        }
-
-        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
-        {
-            return new Model (inputs, this) {
-                IsTrainable = trainable,
-            };
-        }
-
-        public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
-        {
-            return this;
-        }
-
-        public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
-        {
-            return this;
-        }
-
-        public Tensor Map (Func<Tensor, Tensor> map)
-        {
-            return map (MapInputs (map));
-        }
-
-        public Tensor RemoveLayers (Func<Layer, bool> predicate)
-        {
-            return Map (t => {
-                if (t is LayerTensor lt && predicate (lt.Layer)) {
-                    return Sum (lt.Inputs);
-                }
-                return t;
-            });
-        }
-
-        public Tensor RemoveLayers<T> () where T : Layer
-        {
-            return RemoveLayers (l => l is T);
+            var neededLength = Shape.GetShapeLength ();
+            if (neededLength > destination.Length) {
+                throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
+            }
+            return neededLength;
         }
 
         public static Tensor operator + (Tensor a, Tensor b) => a.Add (b);
@@ -283,6 +236,11 @@ namespace MetalTensors
             return new AddLayer ().GetOutput (this, Constant (other, this));
         }
 
+        public Tensor Apply (Model model)
+        {
+            return model.GetOutput (0, this);
+        }
+
         public virtual Tensor ArgMax ()
         {
             return new ArgMaxLayer ().GetOutput (this);
@@ -365,6 +323,21 @@ namespace MetalTensors
             return Loss (truth, MetalTensors.Loss.Builtin (lossType, reductionType), weight);
         }
 
+        public Tensor Map (Func<Tensor, Tensor> map)
+        {
+            return map (MapInputs (map));
+        }
+
+        public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
+        public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
         public virtual Tensor Max ()
         {
             return new MaxLayer ().GetOutput (this);
@@ -390,9 +363,45 @@ namespace MetalTensors
             return new MinLayer ().GetOutput (this);
         }
 
+        public Model Model (Tensor input, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        {
+            return new Model (input, this) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        {
+            return new Model (new[] { input1, input2 }, this) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        {
+            return new Model (inputs, this) {
+                IsTrainable = trainable,
+            };
+        }
+
         public Tensor Multiply (Tensor other)
         {
             return new MultiplyLayer ().GetOutput (this, other);
+        }
+
+        public Tensor RemoveLayers (Func<Layer, bool> predicate)
+        {
+            return Map (t => {
+                if (t is LayerTensor lt && predicate (lt.Layer)) {
+                    return Sum (lt.Inputs);
+                }
+                return t;
+            });
+        }
+
+        public Tensor RemoveLayers<T> () where T : Layer
+        {
+            return RemoveLayers (l => l is T);
         }
 
         public Tensor ReLU ()
@@ -453,15 +462,6 @@ namespace MetalTensors
         public Tensor Upsample (int scale = 2)
         {
             return Upsample (scale, scale);
-        }
-
-        protected int ValidateCopyDestination (Span<float> destination)
-        {
-            var neededLength = Shape.GetShapeLength ();
-            if (neededLength > destination.Length) {
-                throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
-            }
-            return neededLength;
         }
     }
 }
