@@ -67,9 +67,6 @@ namespace MetalTensors
             //
             using var pool = new NSAutoreleasePool ();
 
-            semaphore.WaitOne ();
-            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
-
             //
             // Load data
             //
@@ -83,6 +80,13 @@ namespace MetalTensors
                 throw;
             }
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
+
+            //
+            // Wait for the last command to finish
+            //
+            semaphore.WaitOne ();
+
+            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             // No using because it is returned
             var commandBuffer = MPSCommandBuffer.Create (queue);
