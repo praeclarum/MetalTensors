@@ -26,7 +26,6 @@ namespace Tests.Mac
 
             await Task.Run (() => {
                 try {
-
                     RunTests ();
                 }
                 catch (Exception ex) {
@@ -35,7 +34,7 @@ namespace Tests.Mac
             });
 
             if (allTestsPassed) {
-                await Task.Delay (1000);
+                await Task.Delay (3000);
                 NSApplication.SharedApplication.Terminate (this);
             }
         }
@@ -82,7 +81,7 @@ namespace Tests.Mac
         {
             allTestsPassed = allOK;
 
-            var m = allOK ? $"\n\nALL OK!" : "\n\nFAILED :-(";
+            var m = allOK ? $"\n\n{totalTestCount} TESTS OK!" : "\n\nFAILED :-(";
             Console.WriteLine (m);
             resultsTextView.Value += m;
 
@@ -99,6 +98,8 @@ namespace Tests.Mac
             w.BackgroundColor = (allOK ? NSColor.Green : NSColor.Red).BlendedColor (0.5f, NSColor.WindowBackground);
         }
 
+        int totalTestCount = 0;
+
         void RunTests ()
         {
             var tests = FindTests ();
@@ -109,6 +110,7 @@ namespace Tests.Mac
                 from t in tf.Tests
                 select (tf, t);
             var allTests = allTestsQ.ToArray ();
+            totalTestCount = allTests.Length;
             for (var i = 0; i < allTests.Length; i++) {
                 var (tf, t) = allTests[i];
                 //Parallel.ForEach (tests, tf => {

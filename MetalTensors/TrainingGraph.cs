@@ -108,8 +108,6 @@ namespace MetalTensors
             //
             // Train
             //
-            var stopwatch = new Stopwatch ();
-            stopwatch.Restart ();
             using var q = Device.CreateCommandQueue ();
             if (q == null)
                 throw new Exception ("Failed to create command queue");
@@ -118,7 +116,7 @@ namespace MetalTensors
 
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, q);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, q);
 
                 if ((batchIndex + 1) % validateInterval == 0) {
                     lcb?.WaitUntilCompleted ();

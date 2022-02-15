@@ -60,8 +60,17 @@ namespace MetalTensors
 
         public override string ToString () => Label;
 
-        public MPSCommandBuffer BeginBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Stopwatch stopwatch, Semaphore semaphore, IMTLCommandQueue queue)
+        public MPSCommandBuffer EncodeBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
         {
+            var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize);
+            return EncodeBatch (inputs, outputs, recordHistory, semaphore, queue);
+        }
+
+        public MPSCommandBuffer EncodeBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
+        {
+            if (inputs.Length < 1)
+                throw new ArgumentException ($"At least one input is needed in a batch");
+
             //
             // This pool is necessary for Metal to clean up its objects
             //
@@ -73,7 +82,7 @@ namespace MetalTensors
             NSArray<MPSImage>[] batch;
             MPSImage[] temporaryBatchImages;
             try {
-                (batch, temporaryBatchImages) = GetBatch (batchIndex, dataSet, batchSize);
+                (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
             }
             catch {
                 throw;
@@ -118,7 +127,7 @@ namespace MetalTensors
                 semaphore.Release ();
 
                 if (cmdBuf.Error != null) {
-                    Console.WriteLine ($"{Label}: Command Buffer Error on batch {batchIndex}: {cmdBuf.Error.Description}");
+                    Console.WriteLine ($"{Label}: Command Buffer Error: {cmdBuf.Error.Description}");
                 }
 
                 //
@@ -169,9 +178,6 @@ namespace MetalTensors
                     t.Dispose ();
                 }
                 temporaryBatchImages = Array.Empty<MPSImage> ();
-                foreach (var b in batch) {
-                    b.Dispose ();
-                }
                 batch = Array.Empty<NSArray<MPSImage>> ();
                 //var allocAfter = device.GetCurrentAllocatedSize ();
                 //Console.WriteLine ($"{stopwatch.Elapsed} ALLOCD {(long)allocBefore-(long)allocAfter:#,0} = {allocBefore:#,0} - {allocAfter:#,0} BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
@@ -190,8 +196,9 @@ namespace MetalTensors
         {
         }
 
-        (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetBatch (int batchIndex, DataSet dataSet, int batchSize)
+        (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetSourceImages (Tensor[][] inputs, Tensor[][] outputs)
         {
+            var batchSize = inputs.Length;
             var temps = new List<MPSImage> ();
 
             var statics = GetStaticImages ();
@@ -208,19 +215,18 @@ namespace MetalTensors
             }
 
             for (var bi = 0; bi < batchSize; bi++) {
-                var (inputValues, outputValues) = dataSet.GetRow (batchIndex * batchSize + bi);
                 for (var si = 0; si < ns; si++) {
                     if (images[si][bi] is null) {
                         var inputIndex = sourceToInputMap[si];
                         if (inputIndex >= 0) {
-                            var image = inputValues[inputIndex].GetMetalImage (Device);
+                            var image = inputs[bi][inputIndex].GetMetalImage (Device);
                             temps.Add (image);
                             images[si][bi] = image;
                         }
                         else {
                             var outputIndex = sourceToOutputMap[si];
                             if (outputIndex >= 0) {
-                                var image = outputValues[outputIndex].GetMetalImage (Device);
+                                var image = outputs[bi][outputIndex].GetMetalImage (Device);
                                 temps.Add (image);
                                 images[si][bi] = image;
                             }

@@ -82,12 +82,9 @@ namespace MetalTensors
             //
             // Run
             //
-            var stopwatch = new Stopwatch ();
-            stopwatch.Restart ();
-
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, queue);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();

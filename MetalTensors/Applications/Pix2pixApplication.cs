@@ -131,6 +131,8 @@ namespace MetalTensors.Applications
 
             for (var epoch = 0; epoch < epochs; epoch++) {
                 for (var batch = 0; batch < numBatchesPerEpoch; batch++) {
+                    var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize);
+                    var fakes = Generator.Predict (segments);
                     //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
                     var index = batch * batchSize;
                     var subdata = dataSet.Subset (index, batchSize);

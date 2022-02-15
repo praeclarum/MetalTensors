@@ -1,6 +1,8 @@
 ﻿using System;
 
 using DataSetRow = System.ValueTuple<MetalTensors.Tensor[], MetalTensors.Tensor[]>;
+using DataSetBatch = System.ValueTuple<MetalTensors.Tensor[][], MetalTensors.Tensor[][]>;
+using System.Collections.Generic;
 
 namespace MetalTensors
 {
@@ -22,6 +24,20 @@ namespace MetalTensors
         public DataSet Subset (int index, int length)
         {
             return new SubsetDataSet (this, index, length);
+        }
+
+        public virtual DataSetBatch GetBatch (int index, int batchSize)
+        {
+            var inputs = new List<Tensor[]> (batchSize);
+            var outputs = new List<Tensor[]> (batchSize);
+            var n = Count;
+            for (var bi = 0; bi < batchSize; bi++) {
+                var i = (index + bi) % n;
+                var (ins, outs) = GetRow (i);
+                inputs.Add (ins);
+                outputs.Add (outs);
+            }
+            return (inputs.ToArray(), outputs.ToArray());
         }
 
         class GeneratedDataSet : DataSet

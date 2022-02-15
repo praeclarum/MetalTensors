@@ -12,7 +12,7 @@ namespace MetalTensors
     public class Model : Layer
     {
         public const int DefaultBatchSize = 32;
-        public const int DefaultNumBatches = 100;
+        public const int DefaultNumBatches = -1;
         public const int DefaultValidationInterval = 10;
         public const int DefaultEpochs = 10;
 
@@ -216,6 +216,12 @@ namespace MetalTensors
             if (!(cm.TrainingGraph is TrainingGraph g)) {
                 throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
             }
+            if (numBatches < 0) {
+                numBatches = (dataSet.Count + batchSize - 1) / batchSize;
+            }
+            if (numBatches < 1) {
+                return new TrainingHistory ();
+            }
             return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval);
         }
 
@@ -223,17 +229,40 @@ namespace MetalTensors
         {
             if (Inputs.Length != 1)
                 throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
+            if (Outputs.Length != 1)
+                throw new InvalidOperationException ($"Use PredictMany for models with multiple outputs");
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
-                cm = Compile (new AdamOptimizer (), device: device, forTraining: false);
+                cm = Compile (device: device, forTraining: false);
             }
 
             var g = cm.InferenceGraph;
             var batchSize = 1;
             var numBatches = 1;
 
-            var h = g.Predict (DataSet.Single (input), batchSize, numBatches);
+            var batchedResults = g.Predict (DataSet.Single (input), batchSize, numBatches);
 
-            return h.Batches[0].Results[0];
+            return batchedResults[0][0];
+        }
+
+        public Tensor[][] Predict (Tensor[][] inputsBatch, IMTLDevice? device = null)
+        {
+            if (Inputs.Length != 1)
+                throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
+            if (Outputs.Length != 1)
+                throw new InvalidOperationException ($"Use PredictMany for models with multiple outputs");
+            if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
+                cm = Compile (device: device, forTraining: false);
+            }
+
+            throw new NotImplementedException ();
+
+            //var g = cm.InferenceGraph;
+            //var batchSize = inputBatch.Length;
+            //var numBatches = 1;
+
+            //var batchedResults = g.Predict (DataSet.Single (input), batchSize, numBatches);
+
+            //return batchedResults[0][0];
         }
 
         public (Model, Dictionary<Layer, bool>) Flatten ()

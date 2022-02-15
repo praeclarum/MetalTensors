@@ -51,7 +51,7 @@ namespace MetalTensors
             return evalGraph;
         }
 
-        public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches)
+        public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)
         {
             using var q = Device.CreateCommandQueue ();
             if (q == null)
@@ -62,7 +62,7 @@ namespace MetalTensors
             return Predict (dataSet, batchSize, numBatches, semaphore, q);
         }
 
-        public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
+        public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
             // Refresh weights incase they changed since last time
@@ -83,18 +83,20 @@ namespace MetalTensors
             //
             // Evaluate
             //
-            var stopwatch = new Stopwatch ();
-            stopwatch.Restart ();
-
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, queue);
+                lcb = PredictBatch (dataSet, batchSize, semaphore, queue, AddHistory, batchIndex);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
             }
 
-            return new TrainingHistory (h);
+            return h.Select (x => x.Results).ToArray ();
+        }
+
+        public MPSCommandBuffer PredictBatch (DataSet dataSet, int batchSize, Semaphore semaphore, IMTLCommandQueue queue, Action<TrainingHistory.BatchHistory> recordHistory, int batchIndex)
+        {
+            return EncodeBatch (batchIndex, dataSet, batchSize, recordHistory, semaphore, queue);
         }
 
         protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
