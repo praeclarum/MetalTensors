@@ -5,6 +5,11 @@ namespace MetalTensors.Layers
 {
     public abstract class UnopLayer : Layer
     {
+        protected UnopLayer (string? name = null)
+            : base (name)
+        {
+        }
+
         public override int MinInputCount => 1;
 
         public override int[] GetOutputShape (params Tensor[] inputs) => inputs[0].Shape;

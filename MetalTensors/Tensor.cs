@@ -176,6 +176,11 @@ namespace MetalTensors
             return new InputTensor (label, shape);
         }
 
+        public static Tensor Input (Tensor mimic)
+        {
+            return new InputTensor (mimic.Label, mimic.Shape);
+        }
+
         public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
         {
             return new InputTensor (label, height, width, featureChannels);
@@ -388,23 +393,23 @@ namespace MetalTensors
             return new MinLayer ().GetOutput (this);
         }
 
-        public Model Model (Tensor input, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        public Model Model (Tensor input, string? name = null, bool trainable = true)
         {
-            return new Model (input, this) {
+            return new Model (input, this, name) {
                 IsTrainable = trainable,
             };
         }
 
-        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true)
         {
-            return new Model (new[] { input1, input2 }, this) {
+            return new Model (new[] { input1, input2 }, this, name) {
                 IsTrainable = trainable,
             };
         }
 
-        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
+        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true)
         {
-            return new Model (inputs, this) {
+            return new Model (inputs, this, name) {
                 IsTrainable = trainable,
             };
         }
@@ -484,9 +489,9 @@ namespace MetalTensors
             return new SumLayer ().GetOutput (this);
         }
 
-        public virtual Tensor Tanh ()
+        public virtual Tensor Tanh (string? name = null)
         {
-            return new TanhLayer ().GetOutput (this);
+            return new TanhLayer (name).GetOutput (this);
         }
 
         public Tensor Upsample (int scaleX, int scaleY)

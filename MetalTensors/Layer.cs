@@ -15,7 +15,7 @@ namespace MetalTensors
     public abstract class Layer
     {
         static int nextId = 1;
-        readonly string label;
+        readonly string name;
 
         readonly ConcurrentDictionary<string, MPSNNFilterNode> cachedFilterNodes =
             new ConcurrentDictionary<string, MPSNNFilterNode> ();
@@ -24,7 +24,7 @@ namespace MetalTensors
 
         public bool IsTrainable { get; set; } = true;
 
-        public string Label => label;
+        public string Name => name;
 
         readonly List<Tensor> losses = new List<Tensor> ();
 
@@ -32,13 +32,13 @@ namespace MetalTensors
 
         public void AddLoss (Tensor loss) => losses.Add (loss);
 
-        protected Layer (string? label = null)
+        protected Layer (string? name = null)
         {
             var id = Interlocked.Increment (ref nextId);
-            this.label = string.IsNullOrWhiteSpace (label) ? GetType ().Name + id : label!;
+            this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + id : name!;
         }
 
-        public override string ToString () => Label;
+        public override string ToString () => Name;
 
         public virtual void ValidateInputShapes (params Tensor[] inputs)
         {
@@ -71,7 +71,7 @@ namespace MetalTensors
             void StartGraph (object s)
             {
                 try {
-                    var context = new MetalImageNodeContext (label + " Execute", false, device);
+                    var context = new MetalImageNodeContext (name + " Execute", false, device);
                     var node = GetFilterNode (inputs, context);
 
                     using var graph = new MPSNNGraph (device, node.ResultImage, true) {
@@ -129,7 +129,7 @@ namespace MetalTensors
             var node = CreateFilterNode (inputs, context.Device);
 
             node.ResultImage.MPSHandle = new LayerHandle (this);
-            node.Label = Label;
+            node.Label = Name;
 
             return node;
         }

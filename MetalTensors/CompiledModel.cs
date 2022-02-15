@@ -19,7 +19,7 @@ namespace MetalTensors
         public IMTLDevice Device { get; }
         public bool ForTraining { get; }
 
-        public string Label => Model.Label;
+        public string Label => Model.Name;
 
         readonly Tensor[] losses;
         public Tensor[] Losses => losses;

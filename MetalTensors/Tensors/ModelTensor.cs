@@ -18,7 +18,7 @@ namespace MetalTensors.Tensors
         public override bool IsStatic => false;
 
         public ModelTensor (Model model, int outputIndex, params Tensor[] inputs)
-            : base (model.Label)
+            : base (model.Name)
         {
             BaseModel = model;
             OutputIndex = outputIndex;

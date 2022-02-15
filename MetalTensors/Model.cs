@@ -103,13 +103,13 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
-        public override string ToString () => $"{Label} {{trainable:{IsTrainable}}}";
+        public override string ToString () => $"{Name} {{trainable:{IsTrainable}}}";
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {
             var ninputs = Inputs.Select (x => x.MapInputs (map)).ToArray ();
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (ninputs, noutputs, Label + " Mapped") {
+            var nm = new Model (ninputs, noutputs, Name + " Mapped") {
                 IsTrainable = IsTrainable,
             };
             return nm;
@@ -119,7 +119,7 @@ namespace MetalTensors
         {
             var ninputs = Inputs.Select (x => x.MapInputs (map)).ToArray ();
             var noutputs = Outputs.Select (x => x.MapInputs (map)).ToArray ();
-            var nm = new Model (ninputs, noutputs, Label + " Mapped") {
+            var nm = new Model (ninputs, noutputs, Name + " Mapped") {
                 IsTrainable = IsTrainable,
             };
             return nm;
@@ -138,21 +138,21 @@ namespace MetalTensors
             return MapInputs (map);
         }
 
-        public Model Apply (Model inputModel)
+        public Model Call (Model inputModel)
         {
-            var inputs = inputModel.Outputs.Select ((x, i) => inputModel.GetOutput (i, inputModel.Inputs)).ToArray ();
-            var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (inputs, outputs, Label + "(" + inputModel.Label + ")") {
-                IsTrainable = IsTrainable,
-            };
+            var newInputs = inputModel.Inputs.Select (x => Tensor.Input (x)).ToArray ();
+            var modelOutputs = inputModel.Call (newInputs);
+            var thisOutputs = Call (modelOutputs);
+            return new Model (newInputs, thisOutputs, $"{Name}({inputModel.Name})");
         }
 
-        public Model Apply (params Tensor[] inputs)
+        public Tensor Call (params Tensor[] inputs)
         {
-            var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
-            return new Model (inputs, outputs, Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")") {
-                IsTrainable = IsTrainable,
-            };
+            //var outputs = Outputs.Select ((x, i) => GetOutput (i, inputs)).ToArray ();
+            //return new Model (inputs, outputs, Label + "(" + string.Join (", ", inputs.Select (x => x.Label)) + ")") {
+            //    IsTrainable = IsTrainable,
+            //};
+            return GetOutput (0, inputs);
         }
 
         public Tensor GetOutput (int outputIndex, params Tensor[] inputs)
@@ -281,7 +281,7 @@ namespace MetalTensors
             var flattened = new Dictionary<Tensor, Tensor> ();
 
             var flatOuts = Outputs.Select (FlattenTensor).ToArray ();
-            var flatModel = new Model (Inputs, flatOuts, Label + " Flattened") {
+            var flatModel = new Model (Inputs, flatOuts, Name + " Flattened") {
                 IsTrainable = IsTrainable,
             };
 

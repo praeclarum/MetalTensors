@@ -23,9 +23,9 @@ namespace MetalTensors.Applications
 
         public Pix2pixApplication (int height = 256, int width = 256)
         {
-            Generator = CreateGenerator (height, width);
+            Generator = CreateGenerator ();
             Discriminator = CreateDiscriminator (height, width);
-            Gan = Discriminator.Apply (Generator);
+            Gan = Discriminator.Call (Generator);
         }
 
         void CompileIfNeeded ()
@@ -38,7 +38,7 @@ namespace MetalTensors.Applications
             Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: learningRate));
         }
 
-        static Model CreateGenerator (int height, int width)
+        static Model CreateGenerator ()
         {
             var useDropout = true;
             var instanceNorm = false;
@@ -64,21 +64,21 @@ namespace MetalTensors.Applications
 
                 var size = submodule != null ? submodule.Outputs[0].Shape[0] * 2 : 2;
                 var input = Tensor.Input ("image", size, size, inNC);
-                var label = "Unet" + size;
+                var name = "Unet" + size;
 
                 if (outermost) {
                     var downconv = input.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
-                    return up.Model (input, label);
+                    return up.Model (input, "Generator");
                 }
                 else if (innermost) {
                     var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model (input, label);
+                    return input.Concat (up).Model (input, name);
                 }
                 else {
                     var downrelu = input.LeakyReLU (a: 0.2f);
@@ -88,7 +88,7 @@ namespace MetalTensors.Applications
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
-                    return input.Concat (updrop).Model (input, label);
+                    return input.Concat (updrop).Model (input, name);
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace MetalTensors.Applications
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
-            return disc.Model (image);
+            return disc.Model (image, "Discriminator");
         }
 
         public void Train (Pix2pixDataSet dataSet, int batchSize = 3, int epochs = 200, IMTLDevice? device = null)

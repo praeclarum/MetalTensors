@@ -85,7 +85,7 @@ namespace Tests
             Assert.AreEqual (1, discriminator.Output.Shape[2]);
 
             discriminator.IsTrainable = false;
-            var gan = discriminator.Apply (generator);
+            var gan = discriminator.Call (generator);
             gan.Compile (new AdamOptimizer ());
 
             Assert.AreEqual (1, gan.Inputs.Length);

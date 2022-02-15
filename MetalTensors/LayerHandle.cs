@@ -10,7 +10,7 @@ namespace MetalTensors
 
         public LayerHandle (Layer layer)
         {
-            Label = layer.Label;
+            Label = layer.Name;
             Layer = layer;
         }
 
