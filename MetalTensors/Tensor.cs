@@ -125,24 +125,29 @@ namespace MetalTensors
             return new ArrayTensor (array.Select (x => (float)x).ToArray ());
         }
 
+        public static Tensor Constant (float constant, string name)
+        {
+            return new ConstantTensor (constant, new[] { 1 }, name);
+        }
+
         public static Tensor Constant (float constant, params int[] shape)
         {
             return new ConstantTensor (constant, shape);
         }
 
-        public static Tensor Constant (string label, float constant, params int[] shape)
+        public static Tensor Constant (float constant, int[] shape, string name)
         {
-            return new ConstantTensor (label, constant, shape);
+            return new ConstantTensor (constant, shape, name);
         }
 
         public static Tensor Constant (float constant, Tensor mimic)
         {
-            return new ConstantTensor (constant, mimic.Shape);
+            return new ConstantTensor (constant, mimic);
         }
 
         public static Tensor Constant (int constant, Tensor mimic)
         {
-            return new ConstantTensor (constant, mimic.Shape);
+            return new ConstantTensor (constant, mimic);
         }
 
         public static Tensor Image (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)

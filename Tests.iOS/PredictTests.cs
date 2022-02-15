@@ -12,7 +12,7 @@ namespace Tests
         public void AddConstants ()
         {
             var x0 = Tensor.Input ("x0");
-            var x1 = Tensor.Constant ("x1", 40);
+            var x1 = Tensor.Constant (40, "x1");
             var y = x0 + x1;
             var m = y.Model (x0);
 

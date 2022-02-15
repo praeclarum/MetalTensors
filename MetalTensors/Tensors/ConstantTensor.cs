@@ -18,15 +18,20 @@ namespace MetalTensors.Tensors
 
         public float ConstantValue { get; }
 
-        public ConstantTensor (string? label, float constant, params int[] shape)
-            : base (label)
+        public ConstantTensor (float constant, int[] shape, string? name)
+            : base (name)
         {
             ConstantValue = constant;
             this.shape = shape.NormalizeShape ();
         }
 
         public ConstantTensor (float constant, params int[] shape)
-            : this (null, constant, shape)
+            : this (constant, shape, null)
+        {
+        }
+
+        public ConstantTensor (float constant, Tensor mimic)
+            : this (constant, mimic.Shape, null)
         {
         }
 
