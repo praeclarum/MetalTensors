@@ -25,8 +25,7 @@ namespace Tests
             Assert.AreEqual (1, pix2pix.Gan.Output.Shape[^1]);
         }
 
-
-        //[Test]
+        [Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();

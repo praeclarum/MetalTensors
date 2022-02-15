@@ -225,6 +225,17 @@ namespace MetalTensors
             return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval);
         }
 
+        public TrainingHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
+        {
+            if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
+                throw new InvalidOperationException ($"Models must be compiled before being Fit");
+            }
+            if (!(cm.TrainingGraph is TrainingGraph g)) {
+                throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
+            }
+            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer);
+        }
+
         public Tensor Predict (Tensor input, IMTLDevice? device = null)
         {
             if (Inputs.Length != 1)
@@ -254,15 +265,11 @@ namespace MetalTensors
                 cm = Compile (device: device, forTraining: false);
             }
 
-            throw new NotImplementedException ();
+            var g = cm.InferenceGraph;
 
-            //var g = cm.InferenceGraph;
-            //var batchSize = inputBatch.Length;
-            //var numBatches = 1;
+            var batchedResults = g.Predict (inputsBatch);
 
-            //var batchedResults = g.Predict (DataSet.Single (input), batchSize, numBatches);
-
-            //return batchedResults[0][0];
+            return batchedResults;
         }
 
         public (Model, Dictionary<Layer, bool>) Flatten ()

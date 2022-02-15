@@ -79,6 +79,7 @@ namespace MetalTensors
 
         public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, int validateInterval)
         {
+            //Tensor[][] inputsBatch, Tensor[][] outputsBatch
             if (validateInterval <= 0)
                 throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
 
@@ -88,11 +89,6 @@ namespace MetalTensors
             foreach (var c in convWeights) {
                 c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
             }
-
-            //
-            // Refresh weights incase they changed since last time
-            //
-            MetalGraph.ReloadFromDataSources ();
 
             //
             // Init history
@@ -108,24 +104,62 @@ namespace MetalTensors
             //
             // Train
             //
-            using var q = Device.CreateCommandQueue ();
-            if (q == null)
+            using var queue = Device.CreateCommandQueue ();
+            if (queue == null)
                 throw new Exception ("Failed to create command queue");
 
             var semaphore = new Semaphore (2, 2);
 
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, q);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
 
                 if ((batchIndex + 1) % validateInterval == 0) {
                     lcb?.WaitUntilCompleted ();
                     lcb = null;
-                    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, q);
+                    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, queue);
                     //Console.WriteLine (evalHistory);
                 }
             }
             lcb?.WaitUntilCompleted ();
+
+            return new TrainingHistory (h);
+        }
+
+        public TrainingHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
+        {
+            var batchSize = inputsBatch.Length;
+
+            //
+            // Set the learning rate
+            //
+            foreach (var c in convWeights) {
+                c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
+            }
+
+            //
+            // Init history
+            //
+            var h = new List<TrainingHistory.BatchHistory> ();
+            void AddHistory (TrainingHistory.BatchHistory bh)
+            {
+                lock (h) {
+                    h.Add (bh);
+                }
+            }
+
+            //
+            // Train
+            //
+            using var queue = Device.CreateCommandQueue ();
+            if (queue == null)
+                throw new Exception ("Failed to create command queue");
+
+            var semaphore = new Semaphore (2, 2);
+
+            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, outputsBatch, AddHistory, semaphore, queue);
+
+            lcb.WaitUntilCompleted ();
 
             return new TrainingHistory (h);
         }

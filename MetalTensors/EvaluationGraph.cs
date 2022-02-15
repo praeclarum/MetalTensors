@@ -64,11 +64,6 @@ namespace MetalTensors
         public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
-            // Refresh weights incase they changed since last time
-            //
-            MetalGraph.ReloadFromDataSources ();
-
-            //
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();

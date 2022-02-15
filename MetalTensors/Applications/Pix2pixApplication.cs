@@ -121,7 +121,7 @@ namespace MetalTensors.Applications
             return disc.Model (image);
         }
 
-        public void Train (Pix2pixDataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
+        public void Train (Pix2pixDataSet dataSet, int batchSize = 3, int epochs = 200, IMTLDevice? device = null)
         {
             CompileIfNeeded ();
 
@@ -129,15 +129,25 @@ namespace MetalTensors.Applications
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
 
+            var ones = Tensor.Ones (Discriminator.Output.Shape);
+            var zeros = Tensor.Zeros (Discriminator.Output.Shape);
+            var zerosBatch = new Tensor[batchSize][];
+            var zerosAndOnesBatch = new Tensor[batchSize * 2][];
+            for (var i = 0; i < batchSize; i++) {
+                zerosBatch[i] = new[] { zeros };
+                zerosAndOnesBatch[i] = zerosBatch[i];
+            }
+            for (var i = 0; i < batchSize; i++) {
+                zerosAndOnesBatch[batchSize + i] = new[] { ones };
+            }
+
             for (var epoch = 0; epoch < epochs; epoch++) {
                 for (var batch = 0; batch < numBatchesPerEpoch; batch++) {
                     var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize);
                     var fakes = Generator.Predict (segments);
-                    //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                    var index = batch * batchSize;
-                    var subdata = dataSet.Subset (index, batchSize);
-                    //var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
-                    var ganHistory = Gan.Fit (subdata, batchSize: batchSize, epochs: 1, device: device);
+                    var realsAndFakes = reals.Concat(fakes).ToArray ();
+                    Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                    //Gan.Fit (segments, zerosBatch);
                 }
             }
         }

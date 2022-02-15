@@ -78,10 +78,12 @@ namespace MetalTensors
                 evalGraph = new EvaluationGraph (Label + " Evaluation Graph", model.Inputs, flatModel.Outputs, losses, Model.KeepDropoutDuringInference, device);
                 infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, evalGraph);
                 trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, evalGraph, device);
+                trainingGraph.MetalGraph.ReloadFromDataSources ();
             }
             else {
                 losses = Array.Empty<Tensor> ();
                 infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, device);
+                infGraph.MetalGraph.ReloadFromDataSources ();
             }
         }
     }
