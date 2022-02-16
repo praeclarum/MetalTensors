@@ -7,6 +7,7 @@ using Metal;
 using MetalPerformanceShaders;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using CoreGraphics;
 
 namespace MetalTensors
 {
@@ -247,5 +248,57 @@ namespace MetalTensors
 #endif
             return image;
         }
+
+        public static CGImage ToCGImage (this MPSImage image, int numComponents = 3)
+        {
+            if (image == null) {
+                throw new ArgumentNullException (nameof (image));
+            }
+
+            var width = (nint)image.Width;
+            var height = (nint)image.Height;
+            var imagePixelBytes = (nint)image.PixelSize;
+            var bytesPerRow = width * imagePixelBytes;
+
+            var disposeByteTexture = false;
+            var bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
+            var byteTexture = image.Texture;
+            if (imagePixelBytes == 4) {
+                bitmapFlags = numComponents > 3 ? CGBitmapFlags.First : CGBitmapFlags.NoneSkipFirst;
+                bitmapFlags |= CGBitmapFlags.ByteOrder32Little;
+                if (byteTexture.PixelFormat != MTLPixelFormat.BGRA8Unorm_sRGB) {
+                    var v = byteTexture.CreateTextureView (MTLPixelFormat.BGRA8Unorm_sRGB);
+                    if (v == null)
+                        throw new Exception ($"Failed to convert tensor data to bytes");
+                    byteTexture = v;
+                    disposeByteTexture = true;
+                }
+            }
+            else if (imagePixelBytes == 16) {
+                bitmapFlags |= CGBitmapFlags.FloatComponents | CGBitmapFlags.ByteOrder32Little;
+            }
+            else {
+                throw new NotSupportedException ($"Cannot write images with pixel format {image.PixelFormat}");
+            }
+
+            try {
+                using var cs = CGColorSpace.CreateSrgb ();
+                using var c = new CGBitmapContext (null, width, height, (nint)((imagePixelBytes * 8) / 4), bytesPerRow, cs, bitmapFlags);
+                image.Texture.GetBytes (c.Data, (nuint)c.BytesPerRow, MTLRegion.Create2D (0, 0, width, height), 0);
+                var cgimage = c.ToImage ();
+                if (cgimage == null)
+                    throw new Exception ($"Failed to create core graphics image");
+                return cgimage;
+            }
+            finally {
+                if (disposeByteTexture) {
+                    byteTexture.Dispose ();
+                }
+            }
+        }
+
+        //[DllImport("__Internal")]
+        //static extern unsafe void vDSP_vfixru8 (float* __A, int __IA, byte* __C, nint __IC, nint __N);
+
     }
 }

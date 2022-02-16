@@ -34,11 +34,36 @@ namespace Tests
             return NSUrl.FromFilename (JpegPath (name));
         }
 
+        string PngPath ([CallerMemberName] string name = "Image")
+        {
+            return Path.Combine (OutputDirectory, $"{name}.png");
+        }
+
+        NSUrl PngUrl ([CallerMemberName] string name = "Image")
+        {
+            return NSUrl.FromFilename (PngPath (name));
+        }
+
         [Test]
         public void SaveReadJpeg ()
         {
             var image = Tensor.ImageResource ("elephant", "jpg");
             image.SaveImage (JpegUrl ());
+            image.SaveImage (PngUrl ());
+        }
+
+        [Test]
+        public void RedGreenOnTopOfBlueWhite ()
+        {
+            var rgbw = new float[] {
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1,
+                1, 1, 1
+            };
+            var image = Tensor.Array (new[] { 2, 2, 3 }, rgbw);
+            image.SaveImage (JpegUrl ());
+            image.SaveImage (PngUrl ());
         }
     }
 }

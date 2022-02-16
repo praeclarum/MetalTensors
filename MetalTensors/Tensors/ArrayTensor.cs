@@ -57,15 +57,6 @@ namespace MetalTensors.Tensors
             fixed (float* dataPtr = data) {
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }
-
-#if DEBUG_ARRAY_TENSOR
-            var dt = new MPSImageTensor (image);
-            for (var i = 0; i < Math.Min (5, Shape[0]); i++) {
-                var x = dt[i];
-                Debug.Assert (Math.Abs (x - data[i]) < 1.0e-6f);
-            }
-#endif
-
             return image;
         }
     }
