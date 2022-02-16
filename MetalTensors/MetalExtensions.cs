@@ -42,7 +42,7 @@ namespace MetalTensors
         public static void ValidateNoError (this NSError? error)
         {
             if (error != null) {
-                throw new Exception (error.ToString ());
+                throw new NSErrorException (error);
             }
         }
 

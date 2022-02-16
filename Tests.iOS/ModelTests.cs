@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Metal;
 using MetalTensors;
 using MetalTensors.Applications;
 using MetalTensors.Layers;
@@ -97,7 +98,7 @@ namespace Tests
 
             var h = gan.Fit (DataSet.Generated (GetTrainingData, 35), batchSize: 5, epochs: 1);
 
-            (Tensor[], Tensor[]) GetTrainingData (int _)
+            (Tensor[], Tensor[]) GetTrainingData (int _, IMTLDevice device)
             {
                 return (new[] { Tensor.Ones (height, width, 3) }, new[]{ Tensor.Ones (1, 1, 1) });
             }

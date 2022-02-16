@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Metal;
 using MetalTensors;
 using NUnit.Framework;
 
@@ -47,7 +48,7 @@ namespace Tests
             }
             Assert.IsTrue (belowMinLoss, "Did not train well");
 
-            (Tensor[], Tensor[]) GenTrainingData (int _)
+            (Tensor[], Tensor[]) GenTrainingData (int _, IMTLDevice device)
             {
                 var r = new Tensor[2];
 

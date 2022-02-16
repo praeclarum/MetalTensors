@@ -150,14 +150,29 @@ namespace MetalTensors
             return new ConstantTensor (constant, mimic);
         }
 
-        public static Tensor Image (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
+        public static Tensor Image (NSUrl url, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (url, 3, device);
+        }
+
+        public static Tensor Image (NSUrl url, int featureChannels, IMTLDevice? device = null)
         {
             return new MPSImageTensor (url, featureChannels, device);
         }
 
-        public static Tensor Image (string path, int featureChannels = 3, IMTLDevice? device = null)
+        public static Tensor Image (string path, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (path, 3, device);
+        }
+
+        public static Tensor Image (string path, int featureChannels, IMTLDevice? device = null)
         {
             return new MPSImageTensor (path, featureChannels, device);
+        }
+
+        public static (Tensor Left, Tensor Right) ImagePair (string path, IMTLDevice? device = null)
+        {
+            return MPSImageTensor.CreatePair (path, 3, device);
         }
 
         public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)

@@ -16,14 +16,17 @@ namespace MetalTensors.Applications
 
         const float learningRate = 0.0002f;
 
+        readonly IMTLDevice device;
+
         public Model Generator { get; }
         public Model Discriminator { get; }
         public Model Gan { get; }
 
         bool compiled = false;
 
-        public Pix2pixApplication (int height = 256, int width = 256)
+        public Pix2pixApplication (int height = 256, int width = 256, IMTLDevice? device = null)
         {
+            this.device = device.Current ();
             Generator = CreateGenerator ();
             Discriminator = CreateDiscriminator (height, width);
             Gan = Discriminator.Call (Generator);
@@ -122,7 +125,7 @@ namespace MetalTensors.Applications
             return disc.Model (image, "Discriminator");
         }
 
-        public (int TrainedImages, TimeSpan TrainingTime, TimeSpan DataSetTime) Train (Pix2pixDataSet dataSet, int batchSize = 1, float epochs = 200, Action<double>? progress = null, IMTLDevice? device = null)
+        public (int TrainedImages, TimeSpan TrainingTime, TimeSpan DataSetTime) Train (Pix2pixDataSet dataSet, int batchSize = 1, float epochs = 200, Action<double>? progress = null)
         {
             CompileIfNeeded ();
 
@@ -151,7 +154,7 @@ namespace MetalTensors.Applications
 
             for (var batch = 0; batch < numBatchesToTrain; batch++) {
                 dataSW.Start ();
-                var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize);
+                var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize, device);
                 dataSW.Stop ();
                 trainSW.Start ();
                 var fakes = Generator.Predict (segments);
@@ -177,9 +180,12 @@ namespace MetalTensors.Applications
                 this.filePaths = filePaths;
             }
 
-            public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index)
+            public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
             {
-                return (new[] { Tensor.Zeros (256, 256, 3) }, new[]{ Tensor.Ones (256, 256, 3) });
+                var path = filePaths[index];
+                var (left, right) = Tensor.ImagePair (path, device: device);
+                return (new[] { left }, new[] { right });
+                //return (new[] { Tensor.Zeros (256, 256, 3) }, new[] { Tensor.Ones (256, 256, 3) });
             }
 
             public static Pix2pixDataSet LoadDirectory (string path)

@@ -24,7 +24,7 @@ namespace Tests
             var model = new Model (input, output);
             model.Compile (Loss.MeanSquaredError, learningRate: Optimizer.DefaultLearningRate);
 
-            var history = model.Fit (DataSet.Generated (_ => {
+            var history = model.Fit (DataSet.Generated ((_, device) => {
                 getDataCount++;
                 return (new Tensor[] { input }, new[]{ label });
             }, 100), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);

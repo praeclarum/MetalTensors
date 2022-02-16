@@ -79,10 +79,8 @@ namespace MetalTensors.Applications
                 numImages = labelsData.Length - LabelsPrefixSize;
             }
 
-            public override unsafe (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index)
+            public override unsafe (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
             {
-                var device = MetalExtensions.Current (null);
-
                 fixed (byte* imagesPointer = imagesData)
                 fixed (byte* labelsPointer = labelsData) {
 
