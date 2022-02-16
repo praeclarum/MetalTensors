@@ -194,15 +194,21 @@ namespace Tests.Mac
         {
             var asmPaths = new[] { Assembly.GetCallingAssembly ().Location };
 
-            var asms = asmPaths.Select (x => Assembly.LoadFile (x));
+            var asms = asmPaths.Select (x => Assembly.LoadFile (x)).OrderBy(a => a.FullName);
 
             var testTypes = asms.SelectMany (FindAsmTests).ToArray ();
 
-            return testTypes.Where (x => x != null).Select (x => x!).ToArray ();
+            return testTypes.ToArray ();
 
-            IEnumerable<TestFixture?> FindAsmTests (Assembly asm)
+            IEnumerable<TestFixture> FindAsmTests (Assembly asm)
             {
-                return asm.Modules.SelectMany (x => x.GetTypes ()).Select (GetTestType);
+                return
+                    asm.Modules
+                    .SelectMany (x => x.GetTypes ())
+                    .Select (GetTestType)
+                    .Where (x => x != null)
+                    .Select (x => x!)
+                    .OrderBy(t => t.TestObject.GetType().Name);
             }
 
             TestFixture? GetTestType (Type type)
@@ -214,7 +220,7 @@ namespace Tests.Mac
                     return null;
 
                 var testo = Activator.CreateInstance (type);
-                var tests = tmeths.Select (LoadTest).ToArray ();
+                var tests = tmeths.Select (LoadTest).OrderBy(m => m.TestMethod.Name).ToArray ();
 
                 return new TestFixture (testo, tests);
 

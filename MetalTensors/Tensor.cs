@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Accelerate;
+using CoreGraphics;
 using Foundation;
+using ImageIO;
 using Metal;
 using MetalPerformanceShaders;
 using MetalTensors.Layers;
@@ -517,6 +520,48 @@ namespace MetalTensors
         public Tensor Upsample (int scale = 2)
         {
             return Upsample (scale, scale);
+        }
+
+        public virtual void SaveImage (NSUrl url, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        {
+            var image = GetMetalImage (device.Current ());
+            if (image == null) {
+                throw new Exception ($"Failed to get metal image for saving");
+            }
+            var byteTexture = image.Texture;
+            var needsConversion = byteTexture.PixelFormat != MTLPixelFormat.RGBA8Unorm_sRGB;
+            if (needsConversion) {
+                byteTexture = image.Texture.CreateTextureView (MTLPixelFormat.RGBA8Unorm_sRGB);
+                if (byteTexture == null)
+                    throw new Exception ($"Failed to convert tensor data to bytes");
+            }
+
+            try {
+                var width = (nint)byteTexture.Width;
+                var height = (nint)byteTexture.Height;
+                var bytesPerRow = width * 4;
+                using var cs = CGColorSpace.CreateGenericRgb ();
+                using var c = new CGBitmapContext (null, width, height, 8, bytesPerRow, cs, CGBitmapFlags.NoneSkipLast);
+                var data = c.Data;
+                image.Texture.GetBytes (data, (nuint)bytesPerRow, MTLRegion.Create2D (0, 0, width, height), 0);
+                using var cgimage = c.ToImage ();
+                if (cgimage == null)
+                    throw new Exception ($"Failed to create core graphics image");
+                using var dest = CGImageDestination.Create (url, "public.jpeg", 1);
+                if (dest == null) {
+                    throw new Exception ($"Failed to create image exporter");
+                }
+                dest.AddImage (cgimage);
+                var r = dest.Close ();
+                if (!r) {
+                    throw new Exception ($"Failed to save image");
+                }
+            }
+            finally {
+                if (needsConversion) {
+                    byteTexture.Dispose ();
+                }
+            }
         }
     }
 }
