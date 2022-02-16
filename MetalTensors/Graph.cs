@@ -62,7 +62,7 @@ namespace MetalTensors
 
         public MPSCommandBuffer EncodeBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
         {
-            var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize);
+            var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, queue.Device);
             return EncodeBatch (inputs, outputs, recordHistory, semaphore, queue);
         }
 
@@ -79,14 +79,8 @@ namespace MetalTensors
             //
             // Load data
             //
-            NSArray<MPSImage>[] batch;
-            MPSImage[] temporaryBatchImages;
-            try {
-                (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
-            }
-            catch {
-                throw;
-            }
+            var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
+
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
             //
@@ -166,22 +160,13 @@ namespace MetalTensors
                         }
                     }
                 }
-                var h = new TrainingHistory.BatchHistory (results, loss, bh);
+
+                //
+                // Broadcast the results to whomever is listening
+                //
+                var h = new TrainingHistory.BatchHistory (results, loss, bh, temporaryBatchImages);
                 OnBatchCompleted (h);
                 recordHistory (h);
-
-                //
-                // Free the temps
-                //
-                //var allocBefore = device.GetCurrentAllocatedSize ();
-                foreach (var t in temporaryBatchImages) {
-                    t.Dispose ();
-                }
-                temporaryBatchImages = Array.Empty<MPSImage> ();
-                batch = Array.Empty<NSArray<MPSImage>> ();
-                //var allocAfter = device.GetCurrentAllocatedSize ();
-                //Console.WriteLine ($"{stopwatch.Elapsed} ALLOCD {(long)allocBefore-(long)allocAfter:#,0} = {allocBefore:#,0} - {allocAfter:#,0} BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
-
             });
 
             //
@@ -220,6 +205,8 @@ namespace MetalTensors
                         var inputIndex = sourceToInputMap[si];
                         if (inputIndex >= 0) {
                             var image = inputs[bi][inputIndex].GetMetalImage (Device);
+                            if (image == null || image.Handle == IntPtr.Zero)
+                                throw new Exception ($"Failed to get metal image for {inputs[bi][inputIndex]}");
                             temps.Add (image);
                             images[si][bi] = image;
                         }
@@ -227,6 +214,8 @@ namespace MetalTensors
                             var outputIndex = sourceToOutputMap[si];
                             if (outputIndex >= 0) {
                                 var image = outputs[bi][outputIndex].GetMetalImage (Device);
+                                if (image == null || image.Handle == IntPtr.Zero)
+                                    throw new Exception ($"Failed to get metal image for {outputs[bi][outputIndex]}");
                                 temps.Add (image);
                                 images[si][bi] = image;
                             }
