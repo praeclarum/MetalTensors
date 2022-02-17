@@ -46,17 +46,18 @@ namespace Tests
             return NSUrl.FromFilename (PngPath (name));
         }
 
-        public static void SaveModelJpeg (Tensor input, Tensor output, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
+        public static Tensor SaveModelJpeg (Tensor input, Tensor output, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
         {
             var model = output.Model (input, trainable: false);
-            SaveModelJpeg (model, a, b, name);
+            return SaveModelJpeg (model, a, b, name);
         }
 
-        public static void SaveModelJpeg (Model model, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
+        public static Tensor SaveModelJpeg (Model model, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
         {
             var input = Tensor.ImageResource ("elephant", "jpg");
             var output = model.Predict (input);
             output.SaveImage (JpegUrl (name));
+            return output;
         }
     }
 

@@ -323,9 +323,9 @@ namespace MetalTensors.Layers
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, BiasVectors.Velocity) :
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
 
-            var seed = (nuint)DateTime.Now.Ticks;
             weightInitTask = Task.Run (async () => {
-                await weightsInit.InitWeightsAsync (weightVectors.Value, (int)seed, device).ConfigureAwait (false);
+                var seed = (int)DateTime.Now.Ticks;
+                await weightsInit.InitWeightsAsync (weightVectors.Value, seed).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }

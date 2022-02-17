@@ -15,7 +15,7 @@ namespace MetalTensors
 
         public abstract float[] GetWeights (int seed, int length);
 
-        public abstract Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device);
+        public abstract Task InitWeightsAsync (MPSVector vector, int seed);
 
         class UniformInit : WeightsInit
         {
@@ -44,9 +44,9 @@ namespace MetalTensors
                 return r;
             }
 
-            public override Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device)
+            public override Task InitWeightsAsync (MPSVector vector, int seed)
             {
-                return vector.UniformInitAsync (min, max, seed, device);
+                return vector.UniformInitAsync (min, max, seed, downloadToCpu: true);
             }
         }
 
@@ -77,9 +77,9 @@ namespace MetalTensors
                 return r;
             }
 
-            public override Task InitWeightsAsync (MPSVector vector, int seed, IMTLDevice device)
+            public override Task InitWeightsAsync (MPSVector vector, int seed)
             {
-                return vector.NormalInitAsync (mean, standardDeviation, seed, device);
+                return vector.NormalInitAsync (mean, standardDeviation, seed, downloadToCpu: true);
             }
         }
     }    

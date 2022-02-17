@@ -8,6 +8,7 @@ using MetalPerformanceShaders;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CoreGraphics;
+using ObjCRuntime;
 
 namespace MetalTensors
 {
@@ -90,32 +91,44 @@ namespace MetalTensors
         [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
         static extern void memset_pattern16 (IntPtr b, IntPtr pattern16, nint len);
 
-        public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, IMTLDevice device)
+        public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, bool downloadToCpu = true)
         {
             var descriptor = MPSMatrixRandomDistributionDescriptor.CreateUniform (minimum, maximum);
-            return RandomInitAsync (vector, descriptor, seed, device);
+            return RandomInitAsync (vector, descriptor, seed, downloadToCpu);
         }
 
-        public static Task NormalInitAsync (this MPSVector vector, float mean, float standardDeviation, int seed, IMTLDevice device)
+        public static Task NormalInitAsync (this MPSVector vector, float mean, float standardDeviation, int seed, bool downloadToCpu = true)
         {
             var descriptor = new MPSMatrixRandomDistributionDescriptor {
                 DistributionType = MPSMatrixRandomDistribution.Normal,
                 Mean = mean,
-                StandardDeviation = standardDeviation
+                StandardDeviation = standardDeviation,
+                Maximum = float.PositiveInfinity,
+                Minimum = float.NegativeInfinity,
             };
-            return RandomInitAsync (vector, descriptor, seed, device);
+            //var d2 = Runtime.GetNSObject<MPSMatrixRandomDistributionDescriptor> (IntPtr_objc_msgSend_float_float (classMPSMatrixRandomDistributionDescriptor, selCreateNormal, mean, standardDeviation));
+            //if (d2 == null)
+            //    throw new Exception ($"Failed to create normal distribution descriptor");
+            return RandomInitAsync (vector, descriptor, seed, downloadToCpu);
         }
 
-        public static Task RandomInitAsync (this MPSVector vector, MPSMatrixRandomDistributionDescriptor descriptor, int seed, IMTLDevice device)
+        // MISSING XAMARIN BINDING
+        //[DllImport ("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+        //public static extern IntPtr IntPtr_objc_msgSend_float_float (IntPtr receiver, IntPtr selector, float arg1, float arg2);
+        //static readonly IntPtr selCreateNormal = Selector.GetHandle ("normalDistributionDescriptorWithMean:standardDeviation:");
+        //static readonly IntPtr classMPSMatrixRandomDistributionDescriptor = Class.GetHandle ("MPSMatrixRandomDistributionDescriptor");
+
+        public static Task RandomInitAsync (this MPSVector vector, MPSMatrixRandomDistributionDescriptor descriptor, int seed, bool downloadToCpu = true)
         {
             using var pool = new NSAutoreleasePool ();
+            var device = vector.Device;
             var queue = device.CreateCommandQueue ();
             if (queue == null)
                 throw new Exception ($"Failed to create command queue to generate random data");
             var command = MPSCommandBuffer.Create (queue);
             var random = new MPSMatrixRandomMtgp32 (device, vector.DataType, (nuint)seed, descriptor);
             random.EncodeToCommandBuffer (command, vector);
-            random.Synchronize (command);
+            if (downloadToCpu) vector.Synchronize (command);
             var tcs = new TaskCompletionSource<bool> ();
             command.AddCompletedHandler (cs => {
                 switch (cs.Status) {
@@ -133,9 +146,7 @@ namespace MetalTensors
 
         public static float[] ToArray (this MPSVector vector)
         {
-            var ar = new float[vector.Length];
-            Marshal.Copy (vector.Data.Contents, ar, 0, ar.Length);
-            return ar;
+            return vector.ToSpan ().ToArray ();
         }
 
         public static bool IsFinite (this MPSVector vector)
@@ -153,7 +164,6 @@ namespace MetalTensors
 
         public static int GetByteSize (this MPSVectorDescriptor descriptor) =>
             (int)descriptor.Length * descriptor.DataType.GetByteSize ();
-
     }
 
     public static partial class MetalHelpers
@@ -198,6 +208,7 @@ namespace MetalTensors
             if (v.Data == null)
                 throw new Exception ($"Failed to create vector with length {descriptor.Length}");
             initialValue.Copy (v.ToSpan (), dev);
+            v.MarkAsModifiedByCpu ();
             return v;
         }
     }
