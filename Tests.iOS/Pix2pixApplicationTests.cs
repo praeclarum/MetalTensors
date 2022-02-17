@@ -99,6 +99,14 @@ namespace Tests
             Console.WriteLine ($"{dataImagesPerSecond} DataImages/sec");
             Console.WriteLine ($"{totalImagesPerSecond} Images/sec");
             Console.WriteLine ($"{TimeSpan.FromSeconds (data.Count / totalImagesPerSecond)}/epoch");
+
+            var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
+            var output = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
+            output.SaveImage (JpegUrl ("Pix2pixTrainedGen"), 0.5f, 0.5f);
+
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[0], output.Shape[0]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[1], output.Shape[1]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[2], output.Shape[2]);
         }
 
         static Pix2pixApplication.Pix2pixDataSet GetDataSet ()
