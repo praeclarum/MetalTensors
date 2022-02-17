@@ -327,6 +327,12 @@ namespace MetalTensors
             return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
+        /// <summary>
+        /// When the stride in any dimension is greater than 1, the convolution transpose puts (stride - 1) zeroes in-between the source 
+        /// image pixels to create an expanded image.Then a convolution is done over the expanded image to generate the output of the
+        /// convolution transpose.
+        /// Intermediate image size = (srcSize - 1) * Stride + 1
+        /// </summary>
         public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];

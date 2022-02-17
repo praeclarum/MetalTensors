@@ -53,9 +53,13 @@ namespace Tests
             var data = GetDataSet ();
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
 
-            var generated = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
+            var output = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
 
-            generated.SaveImage (JpegUrl ());
+            output.SaveImage (JpegUrl (), 0.5f, 0.5f);
+
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[0], output.Shape[0]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[1], output.Shape[1]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[2], output.Shape[2]);
         }
 
         [Test]
@@ -66,9 +70,13 @@ namespace Tests
             var data = GetDataSet ();
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
 
-            var disc = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
+            var output = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
 
-            disc.SaveImage (JpegUrl ());
+            output.SaveImage (JpegUrl ());
+
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], output.Shape[0]);
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], output.Shape[1]);
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], output.Shape[2]);
         }
 
         [Test]

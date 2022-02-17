@@ -53,10 +53,76 @@ namespace Tests
         public void ConvStride2 ()
         {
             var image = Tensor.InputImage ("image", 512, 512, 3);
-            var conv = image.Conv (32, 3, stride: 2).Add(0.5f);
-            var output = SaveModelJpeg (image, conv);
+            var conv = image.Conv (32, 3, stride: 2);
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
             Assert.AreEqual (256, output.Shape[0]);
             Assert.AreEqual (256, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvStride2LeakyReLU ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (32, 3, stride: 2).LeakyReLU (a: 0.2f);
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvStride2LeakyReLUConvStride2 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (32, 3, stride: 2).LeakyReLU (a: 0.2f).Conv (32, 3, stride: 2);
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            Assert.AreEqual (128, output.Shape[0]);
+            Assert.AreEqual (128, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvStride2LeakyReLUConvStride2BatchNorm ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (32, 3, stride: 2).LeakyReLU (a: 0.2f).Conv (32, 3, stride: 2).BatchNorm ();
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            Assert.AreEqual (128, output.Shape[0]);
+            Assert.AreEqual (128, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvStride2LeakyReLUConvStride2BatchNormLeakyReLU ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (32, 3, stride: 2).LeakyReLU (a: 0.2f).Conv (32, 3, stride: 2).BatchNorm ().LeakyReLU (a: 0.2f);
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            Assert.AreEqual (128, output.Shape[0]);
+            Assert.AreEqual (128, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvTransposeStride1 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.ConvTranspose (32, 3, stride: 1).Add (0.5f);
+            var output = SaveModelJpeg (image, conv);
+            Assert.AreEqual (512, output.Shape[0]);
+            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (32, output.Shape[2]);
+        }
+
+        [Test]
+        public void ConvTransposeStride2 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.ConvTranspose (32, 3, stride: 2).Add (0.5f);
+            var output = SaveModelJpeg (image, conv);
+            Assert.AreEqual (1024, output.Shape[0]);
+            Assert.AreEqual (1024, output.Shape[1]);
             Assert.AreEqual (32, output.Shape[2]);
         }
     }

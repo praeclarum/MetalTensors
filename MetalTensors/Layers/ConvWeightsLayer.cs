@@ -57,6 +57,11 @@ namespace MetalTensors.Layers
             return r;
         }
 
+        //static int DestSizeReverse (int sourceSize, int stride, int filterWindowSize, Style style)
+        //{
+        //    // style = {-1,0,1} for valid-only, same, full
+        //    return (sourceSize - 1) * stride + 1 + style * (filterWindowSize - 1);
+        //}
         public static int ConvTransposeOutputLength (int inputLength, int size, int stride, ConvPadding padding, int dilation, int? outputPadding)
         {
             // https://github.com/keras-team/keras/blob/b75b2f7dcf5d3c83e33b8b2bc86f1d2543263a59/keras/utils/conv_utils.py#L138
