@@ -218,7 +218,7 @@ namespace MetalTensors
             if (numBatches < 1) {
                 return new TrainingHistory ();
             }
-            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval);
+            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval, cm.EvaluationGraph);
         }
 
         public TrainingHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)

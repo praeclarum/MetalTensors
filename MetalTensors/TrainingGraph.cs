@@ -15,13 +15,11 @@ namespace MetalTensors
     public class TrainingGraph : Graph
     {
         readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
-        readonly EvaluationGraph evalGraph;
 
-        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, EvaluationGraph evalGraph, IMTLDevice device)
+        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device)
             : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), inputs, outputs, device)
         {
             convWeights = cweights;
-            this.evalGraph = evalGraph;
         }
 
         static MPSNNGraph CreateTrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
@@ -77,7 +75,7 @@ namespace MetalTensors
             return trainingGraph;
         }
 
-        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, int validateInterval)
+        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, int validateInterval, EvaluationGraph? evalGraph)
         {
             //Tensor[][] inputsBatch, Tensor[][] outputsBatch
             if (validateInterval <= 0)
@@ -114,7 +112,7 @@ namespace MetalTensors
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
                 lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
 
-                if ((batchIndex + 1) % validateInterval == 0) {
+                if (evalGraph != null && ((batchIndex + 1) % validateInterval == 0)) {
                     lcb?.WaitUntilCompleted ();
                     lcb = null;
                     var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, queue);

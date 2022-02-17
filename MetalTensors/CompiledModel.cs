@@ -28,8 +28,9 @@ namespace MetalTensors
         TrainingGraph? trainingGraph;
         EvaluationGraph? evalGraph;
 
-        public TrainingGraph? TrainingGraph => trainingGraph;
         public InferenceGraph InferenceGraph => infGraph;
+        public TrainingGraph? TrainingGraph => trainingGraph;
+        public EvaluationGraph? EvaluationGraph => evalGraph;
 
         public CompiledModel (Model model, Loss?[] outputLosses, float[] outputLossWeights, Optimizer optimizer, IMTLDevice device, bool forTraining)
         {
@@ -76,8 +77,8 @@ namespace MetalTensors
                 // Build the graphs
                 //
                 evalGraph = new EvaluationGraph (Label + " Evaluation Graph", model.Inputs, flatModel.Outputs, losses, Model.KeepDropoutDuringInference, device);
-                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, evalGraph);
-                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, evalGraph, device);
+                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, device);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, device);
                 trainingGraph.MetalGraph.ReloadFromDataSources ();
             }
             else {
