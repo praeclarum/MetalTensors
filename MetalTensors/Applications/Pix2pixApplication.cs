@@ -18,6 +18,7 @@ namespace MetalTensors.Applications
 
         readonly IMTLDevice device;
 
+        public IMTLDevice Device => device;
         public Model Generator { get; }
         public Model Discriminator { get; }
         public Model Gan { get; }
@@ -178,6 +179,11 @@ namespace MetalTensors.Applications
             public Pix2pixDataSet (string[] filePaths)
             {
                 this.filePaths = filePaths;
+            }
+
+            public Tensor GetPairedRow (int index)
+            {
+                return Tensor.Image (filePaths[index]);
             }
 
             public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)

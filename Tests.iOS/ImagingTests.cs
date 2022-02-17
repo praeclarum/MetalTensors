@@ -7,43 +7,48 @@ using MetalTensors;
 using MetalTensors.Tensors;
 using System.Runtime.CompilerServices;
 
+using static Tests.Imaging;
+
 namespace Tests
 {
-    public class ImagingTests
+    public static class Imaging
     {
-        string OutputDirectory;
+        readonly static string OutputDirectory;
 
-        public ImagingTests ()
+        static Imaging ()
         {
             var solutionDir = Environment.CurrentDirectory;
             var ibin = solutionDir.LastIndexOf ("/bin/");
             if (ibin > 0) {
-                solutionDir = Path.GetDirectoryName(solutionDir.Substring (0, ibin));
+                solutionDir = Path.GetDirectoryName (solutionDir.Substring (0, ibin));
             }
             OutputDirectory = Path.Combine (solutionDir, "TestOutputImages");
             Directory.CreateDirectory (OutputDirectory);
         }
 
-        string JpegPath ([CallerMemberName] string name = "Image")
+        public static string JpegPath ([CallerMemberName] string name = "Image")
         {
             return Path.Combine (OutputDirectory, $"{name}.jpg");
         }
 
-        NSUrl JpegUrl ([CallerMemberName] string name = "Image")
+        public static NSUrl JpegUrl ([CallerMemberName] string name = "Image")
         {
             return NSUrl.FromFilename (JpegPath (name));
         }
 
-        string PngPath ([CallerMemberName] string name = "Image")
+        public static string PngPath ([CallerMemberName] string name = "Image")
         {
             return Path.Combine (OutputDirectory, $"{name}.png");
         }
 
-        NSUrl PngUrl ([CallerMemberName] string name = "Image")
+        public static NSUrl PngUrl ([CallerMemberName] string name = "Image")
         {
             return NSUrl.FromFilename (PngPath (name));
         }
+    }
 
+    public class ImagingTests
+    {
         [Test]
         public void SaveReadJpeg ()
         {

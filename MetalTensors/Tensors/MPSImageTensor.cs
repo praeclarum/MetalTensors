@@ -190,26 +190,27 @@ namespace MetalTensors.Tensors
             if (queue is null)
                 throw new Exception ($"Failed to create queue for image pairs");
             var regions = new[] {
-                MTLRegion.Create2D (0, 0, width, height),
-                MTLRegion.Create2D (width, 0, width, height),
+                new MPSRegion { Origin = new MPSOrigin{ X = 0, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
+                new MPSRegion { Origin = new MPSOrigin{ X = 0.5, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
             };
             MPSNNCropAndResizeBilinear lcrop, rcrop;
             unsafe {
-                fixed (MTLRegion* regionsP = regions) {
+                fixed (MPSRegion* regionsP = regions) {
                     lcrop = new MPSNNCropAndResizeBilinear (dev, (nuint)width, (nuint)height, 1, (IntPtr)regionsP);
                     rcrop = new MPSNNCropAndResizeBilinear (dev, (nuint)width, (nuint)height, 1, (IntPtr)(regionsP + 1));
                 }
             }
             using var commands = MPSCommandBuffer.Create (queue);
-            var halfDesc = MPSImageDescriptor.GetImageDescriptor (image.FeatureChannelFormat, (nuint)width, (nuint)height, image.FeatureChannels);
+            var halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
             var left = new MPSImage (dev, halfDesc);
             var right = new MPSImage (dev, halfDesc);
             lcrop.EncodeToCommandBuffer (commands, image, left);
             rcrop.EncodeToCommandBuffer (commands, image, right);
+            left.Synchronize (commands);
+            right.Synchronize (commands);
             commands.Commit ();
             commands.WaitUntilCompleted ();
             commands.Error.ValidateNoError ();
-
             var leftT = new MPSImageTensor (left);
             var rightT = new MPSImageTensor (right);
             return (leftT, rightT);

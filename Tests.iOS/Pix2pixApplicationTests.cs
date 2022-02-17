@@ -1,13 +1,16 @@
 ﻿using System;
 using System.IO;
+using MetalTensors;
 using MetalTensors.Applications;
 using NUnit.Framework;
+
+using static Tests.Imaging;
 
 namespace Tests
 {
     public class Pix2pixApplicationTests
     {
-        [Test]
+        //[Test]
         public void DefaultShapes ()
         {
             var pix2pix = new Pix2pixApplication ();
@@ -26,18 +29,44 @@ namespace Tests
         }
 
         [Test]
+        public void DataSetHasImages ()
+        {
+            var data = GetDataSet ();
+            var image = data.GetPairedRow (0);
+            image.SaveImage (JpegUrl ());
+        }
+
+        [Test]
+        public void DataSetHasLeftAndRight ()
+        {
+            var data = GetDataSet ();
+            var (inputs, outputs) = data.GetRow (0, MetalExtensions.Current(null));
+            inputs[0].SaveImage (JpegUrl ("Pix2pixLeft"));
+            outputs[0].SaveImage (JpegUrl ("Pix2pixRight"));
+        }
+
+        [Test]
+        public void GeneratorOutputsImages ()
+        {
+            var pix2pix = new Pix2pixApplication ();
+
+            var data = GetDataSet ();
+            var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
+
+            var generated = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
+
+            generated.SaveImage (JpegUrl ());
+        }
+
+        //[Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
-            var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
-            var trainDataDir = Path.Combine (dataDir, "train");
-
-            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
+            var data = GetDataSet ();
 
             var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
-                Console.WriteLine ($"Pix2Pix {Math.Round(p*100, 2)}%");
+                Console.WriteLine ($"Pix2Pix {Math.Round (p * 100, 2)}%");
             });
 
             var trainImagesPerSecond = imageCount / (trainTime.TotalSeconds);
@@ -48,9 +77,18 @@ namespace Tests
             Console.WriteLine ($"{trainImagesPerSecond} TrainImages/sec");
             Console.WriteLine ($"{dataImagesPerSecond} DataImages/sec");
             Console.WriteLine ($"{totalImagesPerSecond} Images/sec");
-            Console.WriteLine ($"{TimeSpan.FromSeconds(data.Count / totalImagesPerSecond)}/epoch");
+            Console.WriteLine ($"{TimeSpan.FromSeconds (data.Count / totalImagesPerSecond)}/epoch");
 
             Assert.GreaterOrEqual (imageCount, 3);
+        }
+
+        static Pix2pixApplication.Pix2pixDataSet GetDataSet ()
+        {
+            var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
+            var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
+            var trainDataDir = Path.Combine (dataDir, "train");
+            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
+            return data;
         }
     }
 }
