@@ -18,7 +18,7 @@ namespace Tests
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
-            Assert.AreEqual (2, m.Sources.Length);
+            Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (1, m.Layers.Length);
 
             var r = m.Predict (Tensor.Constant (3));

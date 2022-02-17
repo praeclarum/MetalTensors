@@ -93,8 +93,8 @@ namespace MetalTensors
         public static Tensor operator + (Tensor a, Tensor b) => a.Add (b);
         public static Tensor operator + (Tensor a, float b) => a.Add (b);
         public static Tensor operator + (Tensor a, int b) => a.Add (b);
-        public static Tensor operator + (float a, Tensor b) => Constant (a, b).Add (b);
-        public static Tensor operator + (int a, Tensor b) => Constant (a, b).Add (b);
+        public static Tensor operator + (float a, Tensor b) => b.Add (a);
+        public static Tensor operator + (int a, Tensor b) => b.Add (a);
 
         public static Tensor operator - (Tensor a, Tensor b) => a.Subtract (b);
         public static Tensor operator - (Tensor a, float b) => a.Subtract (b);
@@ -105,8 +105,8 @@ namespace MetalTensors
         public static Tensor operator * (Tensor a, Tensor b) => a.Multiply (b);
         public static Tensor operator * (Tensor a, float b) => a.Multiply (b);
         public static Tensor operator * (Tensor a, int b) => a.Multiply (b);
-        public static Tensor operator * (float a, Tensor b) => Constant (a, b).Multiply (b);
-        public static Tensor operator * (int a, Tensor b) => Constant (a, b).Multiply (b);
+        public static Tensor operator * (float a, Tensor b) => b.Multiply (a);
+        public static Tensor operator * (int a, Tensor b) => b.Multiply (a);
 
         public static Tensor operator / (Tensor a, Tensor b) => a.Divide (b);
         public static Tensor operator / (Tensor a, float b) => a.Divide (b);
@@ -262,17 +262,19 @@ namespace MetalTensors
 
         public virtual Tensor Add (Tensor other)
         {
+            if (other is ConstantTensor c)
+                return Add (c.ConstantValue);
             return new AddLayer ().Call (this, other);
         }
 
         public virtual Tensor Add (float other)
         {
-            return new AddLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f, other);
         }
 
         public virtual Tensor Add (int other)
         {
-            return new AddLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f, other);
         }
 
         public Tensor Apply (Model model)
@@ -339,17 +341,19 @@ namespace MetalTensors
 
         public virtual Tensor Divide (Tensor other)
         {
+            if (other is ConstantTensor c)
+                return Divide (c.ConstantValue);
             return new DivideLayer ().Call (this, other);
         }
 
         public virtual Tensor Divide (float other)
         {
-            return new DivideLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f / other);
         }
 
         public virtual Tensor Divide (int other)
         {
-            return new DivideLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f / other);
         }
 
         public Tensor Dropout (float keepProbability)
@@ -364,7 +368,7 @@ namespace MetalTensors
 
         public Tensor Linear (float scale, float offset = 0.0f)
         {
-            return new LinearLayer (scale).Call (this);
+            return new LinearLayer (scale, offset).Call (this);
         }
 
         public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
@@ -440,17 +444,19 @@ namespace MetalTensors
 
         public virtual Tensor Multiply (Tensor other)
         {
+            if (other is ConstantTensor c)
+                return Multiply (c.ConstantValue);
             return new MultiplyLayer ().Call (this, other);
         }
 
         public virtual Tensor Multiply (float other)
         {
-            return new MultiplyLayer ().Call (this, Constant (other, this));
+            return Linear (other);
         }
 
         public virtual Tensor Multiply (int other)
         {
-            return new MultiplyLayer ().Call (this, Constant (other, this));
+            return Linear (other);
         }
 
         public Tensor RemoveLayers (Func<Layer, bool> predicate)
@@ -495,17 +501,19 @@ namespace MetalTensors
 
         public virtual Tensor Subtract (Tensor other)
         {
+            if (other is ConstantTensor c)
+                return Subtract (c.ConstantValue);
             return new SubtractLayer ().Call (this, other);
         }
 
         public virtual Tensor Subtract (float other)
         {
-            return new SubtractLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f, -other);
         }
 
         public virtual Tensor Subtract (int other)
         {
-            return new SubtractLayer ().Call (this, Constant (other, this));
+            return Linear (1.0f, -other);
         }
 
         public Tensor Sum ()

@@ -36,7 +36,7 @@ namespace Tests
 
             var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
 
-            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 1.0f, progress: p => {
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
                 Console.WriteLine ($"Pix2Pix {Math.Round(p*100, 2)}%");
             });
 
