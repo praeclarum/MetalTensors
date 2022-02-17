@@ -68,6 +68,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AbsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ReductionLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\LinearLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MPSVectorExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

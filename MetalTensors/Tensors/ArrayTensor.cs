@@ -53,7 +53,7 @@ namespace MetalTensors.Tensors
 
         public override unsafe MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = MetalExtensions.CreateUninitializedImage (Shape);
+            var image = MetalHelpers.CreateUninitializedImage (Shape);
             fixed (float* dataPtr = data) {
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }

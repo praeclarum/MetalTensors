@@ -9,7 +9,7 @@ using Foundation;
 using Metal;
 using MetalPerformanceShaders;
 
-using static MetalTensors.MetalExtensions;
+using static MetalTensors.MetalHelpers;
 
 namespace MetalTensors.Layers
 {
@@ -325,7 +325,7 @@ namespace MetalTensors.Layers
 
             var seed = (nuint)DateTime.Now.Ticks;
             weightInitTask = Task.Run (async () => {
-                await weightsInit.InitWeightsAsync (weightVectors.Value, (int)seed, device);
+                await weightsInit.InitWeightsAsync (weightVectors.Value, (int)seed, device).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }
@@ -362,9 +362,9 @@ namespace MetalTensors.Layers
             VectorLength = (int)descriptor.Length;
             VectorByteSize = descriptor.GetByteSize ();
             VectorDescriptor = descriptor;
-            Value = Vector (device, descriptor);
-            Momentum = Vector (device, descriptor, 0.0f);
-            Velocity = Vector (device, descriptor, 0.0f);
+            Value = Vector (descriptor, device);
+            Momentum = Vector (0.0f, descriptor, device);
+            Velocity = Vector (0.0f, descriptor, device);
             ValuePointer = Value.Data.Contents;
         }
 

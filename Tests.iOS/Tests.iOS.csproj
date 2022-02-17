@@ -128,6 +128,7 @@
     <Compile Include="LossLayerTests.cs" />
     <Compile Include="ReductionLayerTests.cs" />
     <Compile Include="ImagingTests.cs" />
+    <Compile Include="MPSVectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

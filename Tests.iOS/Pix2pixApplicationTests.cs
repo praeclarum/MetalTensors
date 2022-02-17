@@ -58,7 +58,20 @@ namespace Tests
             generated.SaveImage (JpegUrl ());
         }
 
-        //[Test]
+        [Test]
+        public void DiscriminatorOutputsPatches ()
+        {
+            var pix2pix = new Pix2pixApplication ();
+
+            var data = GetDataSet ();
+            var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
+
+            var disc = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
+
+            disc.SaveImage (JpegUrl ());
+        }
+
+        [Test]
         public void Train ()
         {
             var pix2pix = new Pix2pixApplication ();
@@ -66,7 +79,7 @@ namespace Tests
             var data = GetDataSet ();
 
             var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
-                Console.WriteLine ($"Pix2Pix {Math.Round (p * 100, 2)}%");
+                Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
             });
 
             var trainImagesPerSecond = imageCount / (trainTime.TotalSeconds);

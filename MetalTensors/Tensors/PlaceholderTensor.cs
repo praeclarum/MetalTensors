@@ -29,7 +29,7 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = MetalExtensions.CreateConstantImage (Shape, 0.0f);
+            var image = MetalHelpers.CreateConstantImage (Shape, 0.0f);
             return image;
         }
     }

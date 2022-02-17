@@ -7,7 +7,7 @@ using Foundation;
 using Metal;
 using MetalPerformanceShaders;
 
-using static MetalTensors.MetalExtensions;
+using static MetalTensors.MetalHelpers;
 
 namespace MetalTensors.Layers
 {
@@ -99,8 +99,8 @@ namespace MetalTensors.Layers
 
             betaVector = new OptimizableVector (device, vectorDescriptor, batchNormWeights.Beta);
             gammaVector = new OptimizableVector (device, vectorDescriptor, batchNormWeights.Gamma);
-            meanVector = Vector (device, vectorDescriptor, batchNormWeights.MovingMean);
-            varianceVector = Vector (device, vectorDescriptor, batchNormWeights.MovingVariance);
+            meanVector = Vector (batchNormWeights.MovingMean, vectorDescriptor, device);
+            varianceVector = Vector (batchNormWeights.MovingVariance, vectorDescriptor, device);
 
             MarkAsModifiedByCpu ();
 

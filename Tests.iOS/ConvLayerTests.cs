@@ -2,6 +2,8 @@
 using MetalTensors;
 using NUnit.Framework;
 
+using static Tests.Imaging;
+
 namespace Tests
 {
     public class ConvLayerTests
@@ -34,6 +36,14 @@ namespace Tests
             Assert.AreEqual (32, output.Shape[2]);
 
             Assert.IsTrue (output[0, 0, 0] > -10.0f);
+        }
+
+        [Test]
+        public void ConvStride1 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (32, 3, stride: 1);
+            SaveModelJpeg (image, conv);
         }
     }
 }
