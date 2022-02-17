@@ -203,7 +203,7 @@ namespace MetalTensors
                 for (var si = 0; si < ns; si++) {
                     if (images[si][bi] is null) {
                         var inputIndex = sourceToInputMap[si];
-                        if (inputIndex >= 0) {
+                        if (0 <= inputIndex && inputIndex < inputs[bi].Length) {
                             var image = inputs[bi][inputIndex].GetMetalImage (Device);
                             if (image == null || image.Handle == IntPtr.Zero)
                                 throw new Exception ($"Failed to get metal image for {inputs[bi][inputIndex]}");
@@ -212,7 +212,7 @@ namespace MetalTensors
                         }
                         else {
                             var outputIndex = sourceToOutputMap[si];
-                            if (outputIndex >= 0) {
+                            if (0 <= outputIndex && outputIndex < outputs[bi].Length) {
                                 var image = outputs[bi][outputIndex].GetMetalImage (Device);
                                 if (image == null || image.Handle == IntPtr.Zero)
                                     throw new Exception ($"Failed to get metal image for {outputs[bi][outputIndex]}");

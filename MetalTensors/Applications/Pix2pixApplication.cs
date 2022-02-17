@@ -123,6 +123,8 @@ namespace MetalTensors.Applications
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
+            disc = disc.Sigmoid ();
+
             return disc.Model (image, "Discriminator");
         }
 

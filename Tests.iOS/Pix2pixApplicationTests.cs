@@ -101,12 +101,16 @@ namespace Tests
             Console.WriteLine ($"{TimeSpan.FromSeconds (data.Count / totalImagesPerSecond)}/epoch");
 
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
-            var output = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
-            output.SaveImage (JpegUrl ("Pix2pixTrainedGen"), 0.5f, 0.5f);
-
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[0], output.Shape[0]);
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[1], output.Shape[1]);
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[2], output.Shape[2]);
+            var goutput = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
+            goutput.SaveImage (JpegUrl ("Pix2pixTrainedGen"), 0.5f, 0.5f);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[0], goutput.Shape[0]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[1], goutput.Shape[1]);
+            Assert.AreEqual (pix2pix.Generator.Output.Shape[2], goutput.Shape[2]);
+            var doutput = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
+            doutput.SaveImage (JpegUrl ("Pix2pixTrainedDiscr"));
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], doutput.Shape[0]);
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], doutput.Shape[1]);
+            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], doutput.Shape[2]);
         }
 
         static Pix2pixApplication.Pix2pixDataSet GetDataSet ()
