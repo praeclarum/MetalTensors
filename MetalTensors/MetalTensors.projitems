@@ -67,6 +67,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Loss.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AbsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ReductionLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\LinearLayer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

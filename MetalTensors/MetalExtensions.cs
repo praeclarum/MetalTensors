@@ -73,6 +73,29 @@ namespace MetalTensors
             }
         }
 
+        public static MPSImage Filter (this MPSImage image, MPSCnnNeuron neuron, IMTLDevice ? device = null)
+        {
+            var dev = device.Current ();
+            using var queue = dev.CreateCommandQueue ();
+            if (queue is null)
+                throw new Exception ($"Failed to create queue to filter image");
+            using var commands = MPSCommandBuffer.Create (queue);
+            var desc = neuron.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+            var result = new MPSImage (dev, desc);
+            neuron.EncodeToCommandBuffer (commands, image, result);
+            result.Synchronize (commands);
+            commands.Commit ();
+            commands.WaitUntilCompleted ();
+            return result;
+        }
+
+        public static MPSImage Linear (this MPSImage image, float a, float b, IMTLDevice ? device = null)
+        {
+            var dev = device.Current ();
+            using var neuron = new MPSCnnNeuronLinear (dev, a, b);
+            return Filter (image, neuron, dev);
+        }
+
         public static MPSVectorDescriptor VectorDescriptor (int length, MPSDataType dataType = MPSDataType.Float32) =>
             MPSVectorDescriptor.Create ((nuint)length, dataType);
 
@@ -264,14 +287,23 @@ namespace MetalTensors
             var bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
             var byteTexture = image.Texture;
             if (imagePixelBytes == 4) {
-                bitmapFlags = numComponents > 3 ? CGBitmapFlags.First : CGBitmapFlags.NoneSkipFirst;
-                bitmapFlags |= CGBitmapFlags.ByteOrder32Little;
-                if (byteTexture.PixelFormat != MTLPixelFormat.BGRA8Unorm_sRGB) {
-                    var v = byteTexture.CreateTextureView (MTLPixelFormat.BGRA8Unorm_sRGB);
-                    if (v == null)
-                        throw new Exception ($"Failed to convert tensor data to bytes");
-                    byteTexture = v;
-                    disposeByteTexture = true;
+                switch (byteTexture.PixelFormat) {
+                    case MTLPixelFormat.BGRA8Unorm_sRGB:
+                        bitmapFlags = numComponents > 3 ? CGBitmapFlags.First : CGBitmapFlags.NoneSkipFirst;
+                        bitmapFlags |= CGBitmapFlags.ByteOrder32Little;
+                        break;
+                    case MTLPixelFormat.RGBA8Unorm:
+                        bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
+                        bitmapFlags |= CGBitmapFlags.ByteOrder32Big;
+                        break;
+                    default:
+                        //var v = byteTexture.CreateTextureView (MTLPixelFormat.BGRA8Unorm_sRGB);
+                        //if (v == null)
+                        //    throw new Exception ($"Failed to convert tensor data to bytes");
+                        //byteTexture = v;
+                        //disposeByteTexture = true;
+                        throw new NotSupportedException ($"Can't convert pixel format {byteTexture.PixelFormat} to a Core Graphics image");
+
                 }
             }
             else if (imagePixelBytes == 16) {

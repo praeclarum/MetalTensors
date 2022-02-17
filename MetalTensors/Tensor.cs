@@ -362,6 +362,11 @@ namespace MetalTensors
             return new ReLULayer (a).Call (this);
         }
 
+        public Tensor Linear (float scale, float offset = 0.0f)
+        {
+            return new LinearLayer (scale).Call (this);
+        }
+
         public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
         {
             return loss.Call (this, truth, weight);
@@ -531,9 +536,16 @@ namespace MetalTensors
             var dev = device.Current ();
             var image = GetMetalImage (dev);
             if (image == null) {
-                throw new Exception ($"Failed to get metal image for saving");
+                throw new Exception ($"Failed to get metal image from {Label}");
             }
-            return image.ToCGImage ();
+            var needsTransform = MathF.Abs(channelScale-1.0f) > 1e-7f || MathF.Abs(channelOffset) > 1e-7f;
+            if (needsTransform) {
+                using var transformedImage = image.Linear (channelScale, channelOffset, dev);
+                return transformedImage.ToCGImage ();
+            }
+            else {
+                return image.ToCGImage ();
+            }
         }
 
         public virtual void SaveImage (NSUrl url, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)

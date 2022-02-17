@@ -52,18 +52,65 @@ namespace Tests
             image.SaveImage (PngUrl ());
         }
 
+        static readonly float[] rgbw = new float[] {
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1,
+            1, 1, 1
+        };
+
         [Test]
         public void RedGreenOnTopOfBlueWhite ()
         {
-            var rgbw = new float[] {
-                1, 0, 0,
-                0, 1, 0,
-                0, 0, 1,
-                1, 1, 1
-            };
             var image = Tensor.Array (new[] { 2, 2, 3 }, rgbw);
             image.SaveImage (JpegUrl ());
             image.SaveImage (PngUrl ());
+        }
+
+        [Test]
+        public void ElephantDark ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            image.SaveImage (JpegUrl (), 0.5f);
+        }
+
+        [Test]
+        public void ElephantBright ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            image.SaveImage (JpegUrl (), 2.0f);
+        }
+
+        [Test]
+        public void ElephantLowContrast ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            image.SaveImage (JpegUrl (), 0.5f, 0.25f);
+        }
+
+        [Test]
+        public void ElephantHighContrast ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            image.SaveImage (JpegUrl (), 2.0f, 0.5f);
+        }
+
+        [Test]
+        public void ElephantDarkLinear ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            var output = image.Linear (0.5f);
+            output.SaveImage (JpegUrl ());
+        }
+
+        [Test]
+        public void ElephantDarkLinearModel ()
+        {
+            var image = Tensor.ImageResource ("elephant", "jpg");
+            var output = image.Linear (0.5f);
+            var model = output.Model (image);
+            var oimage = model.Predict (image);
+            oimage.SaveImage (JpegUrl ());
         }
     }
 }

@@ -47,5 +47,10 @@ namespace MetalTensors.Tensors
                 return this;
             return new LayerTensor (Layer, newIns);
         }
+
+        public override MPSImage GetMetalImage (IMTLDevice device)
+        {
+            return ((MPSImageTensor)Layer.ExecuteAsync (LayerInputs, device).Result).MetalImage;
+        }
     }
 }
