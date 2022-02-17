@@ -24,7 +24,7 @@ namespace MetalTensors.Tensors
             if (image == null || image.Handle == IntPtr.Zero)
                 throw new ArgumentNullException (nameof(image));
             this.image = image;
-            shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
+            this.shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
         }
 
         public MPSImageTensor (IMTLTexture texture, int featureChannels = 3)
@@ -202,6 +202,7 @@ namespace MetalTensors.Tensors
             }
             using var commands = MPSCommandBuffer.Create (queue);
             var halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+            halfDesc.FeatureChannels = (nuint)featureChannels;
             var left = new MPSImage (dev, halfDesc);
             var right = new MPSImage (dev, halfDesc);
             lcrop.EncodeToCommandBuffer (commands, image, left);

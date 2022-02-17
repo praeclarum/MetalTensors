@@ -10,7 +10,7 @@ namespace Tests
 {
     public class Pix2pixApplicationTests
     {
-        //[Test]
+        [Test]
         public void DefaultShapes ()
         {
             var pix2pix = new Pix2pixApplication ();
@@ -78,8 +78,6 @@ namespace Tests
             Console.WriteLine ($"{dataImagesPerSecond} DataImages/sec");
             Console.WriteLine ($"{totalImagesPerSecond} Images/sec");
             Console.WriteLine ($"{TimeSpan.FromSeconds (data.Count / totalImagesPerSecond)}/epoch");
-
-            Assert.GreaterOrEqual (imageCount, 3);
         }
 
         static Pix2pixApplication.Pix2pixDataSet GetDataSet ()
