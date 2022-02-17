@@ -39,6 +39,28 @@ namespace Tests
         }
 
         [Test]
+        public void Conv1 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (1, 3, stride: 1);
+            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            Assert.AreEqual (512, output.Shape[0]);
+            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (1, output.Shape[2]);
+        }
+
+        [Test]
+        public void Conv1Sigmoid ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (1, 3, stride: 1).Sigmoid();
+            var output = SaveModelJpeg (image, conv);
+            Assert.AreEqual (512, output.Shape[0]);
+            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (1, output.Shape[2]);
+        }
+
+        [Test]
         public void ConvStride1 ()
         {
             var image = Tensor.InputImage ("image", 512, 512, 3);

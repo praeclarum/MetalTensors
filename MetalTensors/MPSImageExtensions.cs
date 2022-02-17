@@ -75,6 +75,7 @@ namespace MetalTensors
             var disposeByteTexture = false;
             var byteTexture = image.Texture;
             nint bitsPerComponent = 8;
+            var outputNumComponents = 4;
             CGBitmapFlags bitmapFlags;
             switch (byteTexture.PixelFormat) {
                 case MTLPixelFormat.BGRA8Unorm_sRGB:
@@ -92,32 +93,32 @@ namespace MetalTensors
                     break;
                 case MTLPixelFormat.R32Float:
                     bitsPerComponent = 32;
-                    bitmapFlags = CGBitmapFlags.NoneSkipLast | CGBitmapFlags.FloatComponents | CGBitmapFlags.ByteOrder32Little;
-                    var v = byteTexture.Create (
-                        MTLPixelFormat.R32Float,
-                        MTLTextureType.k2D,
-                        new NSRange (0, 1),
-                        new NSRange (0, 1),
-                        new MTLTextureSwizzleChannels {
-                            Red = MTLTextureSwizzle.Red,
-                            Green = MTLTextureSwizzle.Red,
-                            Blue = MTLTextureSwizzle.Red,
-                            Alpha = MTLTextureSwizzle.One,
-                        });
-                    if (v == null)
-                        throw new Exception ($"Failed to convert tensor data to bytes");
-                    byteTexture = v;
-                    disposeByteTexture = true;
+                    bitmapFlags = CGBitmapFlags.None | CGBitmapFlags.FloatComponents;
+                    outputNumComponents = 1;
                     break;
                 default:
+                    //var v = byteTexture.Create (
+                    //    MTLPixelFormat.R32Float,
+                    //    MTLTextureType.k2D,
+                    //    new NSRange (0, 1),
+                    //    new NSRange (0, 1),
+                    //    new MTLTextureSwizzleChannels {
+                    //        Red = MTLTextureSwizzle.Red,
+                    //        Green = MTLTextureSwizzle.Red,
+                    //        Blue = MTLTextureSwizzle.Red,
+                    //        Alpha = MTLTextureSwizzle.One,
+                    //    });
+                    //if (v == null)
+                    //    throw new Exception ($"Failed to convert tensor data to bytes");
+                    //byteTexture = v;
+                    //disposeByteTexture = true;
                     throw new NotSupportedException ($"Cannot process images with pixel format {image.PixelFormat} ({imagePixelBytes} bytes per pixel, feature channel format {image.FeatureChannelFormat})");
-
             }
 
-            try {
-                var cgimageBytesPerRow = (width * bitsPerComponent * 4) / 8;
-                using var cs = CGColorSpace.CreateSrgb ();
-                using var c = new CGBitmapContext (null, width, height, bitsPerComponent, cgimageBytesPerRow, cs, bitmapFlags);
+            try {                
+                var outputBytesPerRow = (width * bitsPerComponent * outputNumComponents) / 8;
+                using var cs = outputNumComponents == 1 ? CGColorSpace.CreateGenericGray() : CGColorSpace.CreateSrgb ();
+                using var c = new CGBitmapContext (null, width, height, bitsPerComponent, outputBytesPerRow, cs, bitmapFlags);
                 image.Texture.GetBytes (c.Data, (nuint)c.BytesPerRow, MTLRegion.Create2D (0, 0, width, height), 0);
                 var cgimage = c.ToImage ();
                 if (cgimage == null)
