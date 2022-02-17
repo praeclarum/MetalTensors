@@ -281,41 +281,58 @@ namespace MetalTensors
             var width = (nint)image.Width;
             var height = (nint)image.Height;
             var imagePixelBytes = (nint)image.PixelSize;
-            var bytesPerRow = width * imagePixelBytes;
 
             var disposeByteTexture = false;
             var bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
             var byteTexture = image.Texture;
-            if (imagePixelBytes == 4) {
-                switch (byteTexture.PixelFormat) {
-                    case MTLPixelFormat.BGRA8Unorm_sRGB:
-                        bitmapFlags = numComponents > 3 ? CGBitmapFlags.First : CGBitmapFlags.NoneSkipFirst;
-                        bitmapFlags |= CGBitmapFlags.ByteOrder32Little;
-                        break;
-                    case MTLPixelFormat.RGBA8Unorm:
-                        bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
-                        bitmapFlags |= CGBitmapFlags.ByteOrder32Big;
-                        break;
-                    default:
-                        //var v = byteTexture.CreateTextureView (MTLPixelFormat.BGRA8Unorm_sRGB);
-                        //if (v == null)
-                        //    throw new Exception ($"Failed to convert tensor data to bytes");
-                        //byteTexture = v;
-                        //disposeByteTexture = true;
-                        throw new NotSupportedException ($"Can't convert pixel format {byteTexture.PixelFormat} to a Core Graphics image");
+            nint bitsPerComponent = 8;
+            switch (byteTexture.PixelFormat) {
+                case MTLPixelFormat.BGRA8Unorm_sRGB:
+                    bitmapFlags = numComponents > 3 ? CGBitmapFlags.First : CGBitmapFlags.NoneSkipFirst;
+                    bitmapFlags |= CGBitmapFlags.ByteOrder32Little;
+                    break;
+                case MTLPixelFormat.RGBA8Unorm:
+                    bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
+                    bitmapFlags |= CGBitmapFlags.ByteOrder32Big;
+                    break;
+                case MTLPixelFormat.RGBA32Float:
+                    bitsPerComponent = 32;
+                    bitmapFlags = numComponents > 3 ? CGBitmapFlags.Last : CGBitmapFlags.NoneSkipLast;
+                    bitmapFlags |= CGBitmapFlags.FloatComponents | CGBitmapFlags.ByteOrder32Little;
+                    break;
+                case MTLPixelFormat.R32Float:
+                    bitsPerComponent = 32;
+                    bitmapFlags = CGBitmapFlags.NoneSkipLast | CGBitmapFlags.FloatComponents | CGBitmapFlags.ByteOrder32Little;
+                    var v = byteTexture.Create (
+                        MTLPixelFormat.R32Float,
+                        MTLTextureType.k2D,
+                        new NSRange (0, 1),
+                        new NSRange (0, 1),
+                        new MTLTextureSwizzleChannels {
+                            Red = MTLTextureSwizzle.Red,
+                            Green = MTLTextureSwizzle.Red,
+                            Blue = MTLTextureSwizzle.Red,
+                            Alpha = MTLTextureSwizzle.One,
+                        });
+                    if (v == null)
+                        throw new Exception ($"Failed to convert tensor data to bytes");
+                    byteTexture = v;
+                    disposeByteTexture = true;
+                    break;
+                default:
+                    //var v = byteTexture.CreateTextureView (MTLPixelFormat.BGRA8Unorm_sRGB);
+                    //if (v == null)
+                    //    throw new Exception ($"Failed to convert tensor data to bytes");
+                    //byteTexture = v;
+                    //disposeByteTexture = true;
+                    throw new NotSupportedException ($"Cannot process images with pixel format {image.PixelFormat} ({imagePixelBytes} bytes per pixel, feature channel format {image.FeatureChannelFormat})");
 
-                }
-            }
-            else if (imagePixelBytes == 16) {
-                bitmapFlags |= CGBitmapFlags.FloatComponents | CGBitmapFlags.ByteOrder32Little;
-            }
-            else {
-                throw new NotSupportedException ($"Cannot write images with pixel format {image.PixelFormat}");
             }
 
             try {
                 using var cs = CGColorSpace.CreateSrgb ();
-                using var c = new CGBitmapContext (null, width, height, (nint)((imagePixelBytes * 8) / 4), bytesPerRow, cs, bitmapFlags);
+                var bytesPerRow = (width * bitsPerComponent * 4) / 8;
+                using var c = new CGBitmapContext (null, width, height, bitsPerComponent, bytesPerRow, cs, bitmapFlags);
                 image.Texture.GetBytes (c.Data, (nuint)c.BytesPerRow, MTLRegion.Create2D (0, 0, width, height), 0);
                 var cgimage = c.ToImage ();
                 if (cgimage == null)
