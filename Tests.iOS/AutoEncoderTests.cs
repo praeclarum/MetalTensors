@@ -11,26 +11,18 @@ namespace Tests
 {
     public class AutoEncodeTests
     {
-        WeightsInit Glorot (int nIn, int nOut)
-        {
-            var scale = 1.0 / Math.Max (1.0, (nIn + nOut) / 2.0);
-            var limit = 0.25*Math.Sqrt (3.0 * scale);
-            //Console.WriteLine ($"LIMIT {limit}");
-            return WeightsInit.Uniform ((float)-limit, (float)limit);
-        }
-
         Model MakeEncoder ()
         {
             var input = Tensor.InputImage ("image", 256, 256);
             var encoded =
                 input
-                .Conv (32, size: 4, stride: 2, weightsInit: Glorot(3,32))
+                .Conv (32, size: 4, stride: 2)
                 .LeakyReLU ()
-                .Conv (64, size: 4, stride: 2, weightsInit: Glorot(32,64))
+                .Conv (64, size: 4, stride: 2)
                 .LeakyReLU ()
-                .Conv (128, size: 4, stride: 2, weightsInit: Glorot(64,128))
+                .Conv (128, size: 4, stride: 2)
                 .LeakyReLU ()
-                .Conv (256, size: 4, stride: 2, weightsInit: Glorot(128,256))
+                .Conv (256, size: 4, stride: 2)
                 .LeakyReLU ();
             return encoded.Model (input);
         }
@@ -41,26 +33,26 @@ namespace Tests
             var decoded =
                 input
                 //.ConvTranspose (128, size: 4, stride: 2)
-                .Conv (128, size: 4, weightsInit: Glorot(256,128))
+                .Conv (128, size: 4)
                 .ReLU ()
-                .Upsample ().Conv (128, size: 4, weightsInit: Glorot(128,128))
+                .Upsample ().Conv (128, size: 4)
                 //.BatchNorm ()
                 .ReLU ()
                 //.ConvTranspose (64, size: 4, stride: 2)
-                .Upsample ().Conv (64, size: 4, weightsInit: Glorot(128,64))
+                .Upsample ().Conv (64, size: 4)
                 //.BatchNorm ()
                 .ReLU ()
                 //.ConvTranspose (32, size: 4, stride: 2)
-                .Upsample ().Conv (32, size: 4, weightsInit: Glorot(64,32))
+                .Upsample ().Conv (32, size: 4)
                 //.BatchNorm ()
                 .ReLU ()
                 //.ConvTranspose (32, size: 4, stride: 2)
-                .Upsample ().Conv (32, size: 4, weightsInit: Glorot(32,32))
+                .Upsample ().Conv (32, size: 4)
                 //.BatchNorm ()
                 .ReLU ()
-                .Conv (32, size: 4, weightsInit: Glorot(32,32))
+                .Conv (32, size: 4)
                 .ReLU ()
-                .Conv (3, size: 4, weightsInit: Glorot(32,3))
+                .Conv (3, size: 4)
                 .Tanh ();
             return decoded.Model (input);
         }
@@ -92,7 +84,7 @@ namespace Tests
             var data = GetIdentityDataSet (b2a: false);
             var batchSize = 16;
             var batchesPerEpoch = data.Count / batchSize;
-            var numEpochs = 100;
+            var numEpochs = 2;
             var row = 0;
             for (var si = 0; si < numEpochs; si++) {
                 for (var bi = 0; bi < batchesPerEpoch; bi++) {

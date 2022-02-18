@@ -351,7 +351,9 @@ namespace MetalTensors.Layers
 
             weightInitTask = Task.Run (async () => {
                 var seed = (int)DateTime.Now.Ticks;
-                await weightsInit.InitWeightsAsync (weightVectors.Value, seed).ConfigureAwait (false);
+                var fanIn = inChannels * kernelSizeX * kernelSizeY;
+                var fanOut = outChannels * kernelSizeX * kernelSizeY;
+                await weightsInit.InitWeightsAsync (weightVectors.Value, seed, fanIn, fanOut).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }
