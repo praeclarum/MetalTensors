@@ -41,7 +41,7 @@ namespace MetalTensors.Applications
             compiled = true;
             Discriminator.Compile (Loss.SumSigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
             Discriminator.IsTrainable = false;
-            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: gLearningRate));
+            Gan.Compile (Loss.SumSigmoidCrossEntropy, new AdamOptimizer (learningRate: gLearningRate));
         }
 
         static Model CreateGenerator ()
