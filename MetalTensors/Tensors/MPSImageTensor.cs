@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing.Imaging;
 using CoreGraphics;
 using Foundation;
 using Metal;
@@ -168,7 +169,7 @@ namespace MetalTensors.Tensors
             return image;
         }
 
-        public static (Tensor Left, Tensor Right) CreatePair (NSUrl url, int featureChannels, IMTLDevice? device)
+        public static (Tensor Left, Tensor Right) CreatePair (NSUrl url, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
         {
             if (url is null) {
                 throw new ArgumentNullException (nameof (url));
@@ -201,12 +202,24 @@ namespace MetalTensors.Tensors
                 }
             }
             using var commands = MPSCommandBuffer.Create (queue);
-            var halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
-            halfDesc.FeatureChannels = (nuint)featureChannels;
+            var hasChannelScale = MathF.Abs (channelScale - 1.0f) > 1.0e-7f || MathF.Abs (channelOffset) > 1.0e-7f;
+            MPSImageDescriptor halfDesc;
+            if (hasChannelScale) {
+                halfDesc = MPSImageDescriptor.GetImageDescriptor (MPSImageFeatureChannelFormat.Float32, (nuint)width, (nuint)height, (nuint)featureChannels);
+            }
+            else {
+                halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+                halfDesc.FeatureChannels = (nuint)featureChannels;
+            }
             var left = new MPSImage (dev, halfDesc);
             var right = new MPSImage (dev, halfDesc);
+            var scale = new MPSCnnNeuronLinear (dev, channelScale, channelOffset);
             lcrop.EncodeToCommandBuffer (commands, image, left);
             rcrop.EncodeToCommandBuffer (commands, image, right);
+            if (hasChannelScale) {
+                scale.EncodeToCommandBuffer (commands, left, left);
+                scale.EncodeToCommandBuffer (commands, right, right);
+            }
             left.Synchronize (commands);
             right.Synchronize (commands);
             commands.Commit ();
@@ -217,9 +230,9 @@ namespace MetalTensors.Tensors
             return (leftT, rightT);
         }
 
-        public static (Tensor Left, Tensor Right) CreatePair (string path, int featureChannels, IMTLDevice? device = null)
+        public static (Tensor Left, Tensor Right) CreatePair (string path, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
         {
-            return CreatePair (NSUrl.FromFilename (path), featureChannels, device);
+            return CreatePair (NSUrl.FromFilename (path), featureChannels, channelScale, channelOffset, device);
         }
     }
 }

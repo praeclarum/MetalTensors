@@ -174,9 +174,9 @@ namespace MetalTensors
             return new MPSImageTensor (path, featureChannels, device);
         }
 
-        public static (Tensor Left, Tensor Right) ImagePair (string path, IMTLDevice? device = null)
+        public static (Tensor Left, Tensor Right) ImagePair (string path, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
         {
-            return MPSImageTensor.CreatePair (path, 3, device);
+            return MPSImageTensor.CreatePair (path, 3, channelScale, channelOffset, device);
         }
 
         public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)

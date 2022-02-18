@@ -76,6 +76,7 @@ namespace MetalTensors.Applications
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
+                    //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: true).Tanh ();
                     return up.Model (input, "Generator");
                 }
                 else if (innermost) {
@@ -83,6 +84,7 @@ namespace MetalTensors.Applications
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    //var up = down.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     return input.Concat (up).Model (input, name);
                 }
                 else {
@@ -92,6 +94,7 @@ namespace MetalTensors.Applications
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
                     var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
                     return input.Concat (updrop).Model (input, name);
                 }
@@ -191,7 +194,7 @@ namespace MetalTensors.Applications
             public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
             {
                 var path = filePaths[index];
-                var (left, right) = Tensor.ImagePair (path, device: device);
+                var (left, right) = Tensor.ImagePair (path, channelScale: 2.0f, channelOffset: -1.0f, device: device);
                 return (new[] { left }, new[] { right });
                 //return (new[] { Tensor.Zeros (256, 256, 3) }, new[] { Tensor.Ones (256, 256, 3) });
             }
