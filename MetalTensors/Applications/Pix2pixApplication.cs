@@ -178,12 +178,14 @@ namespace MetalTensors.Applications
         public class Pix2pixDataSet : DataSet
         {
             private readonly string[] filePaths;
+            private readonly bool b2a;
 
             public override int Count => filePaths.Length;
 
-            public Pix2pixDataSet (string[] filePaths)
+            public Pix2pixDataSet (string[] filePaths, bool b2a)
             {
                 this.filePaths = filePaths;
+                this.b2a = b2a;
             }
 
             public Tensor GetPairedRow (int index)
@@ -195,14 +197,16 @@ namespace MetalTensors.Applications
             {
                 var path = filePaths[index];
                 var (left, right) = Tensor.ImagePair (path, channelScale: 2.0f, channelOffset: -1.0f, device: device);
+                if (b2a)
+                    return (new[] { right }, new[] { left });
                 return (new[] { left }, new[] { right });
                 //return (new[] { Tensor.Zeros (256, 256, 3) }, new[] { Tensor.Ones (256, 256, 3) });
             }
 
-            public static Pix2pixDataSet LoadDirectory (string path)
+            public static Pix2pixDataSet LoadDirectory (string path, bool b2a = false)
             {
                 var files = Directory.GetFiles (path, "*.jpg").OrderBy(x => x).ToArray ();
-                return new Pix2pixDataSet (files);
+                return new Pix2pixDataSet (files, b2a);
             }
         }
     }

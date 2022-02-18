@@ -89,7 +89,7 @@ namespace Tests
             var autoEncoder = MakeAutoEncoder ();
             autoEncoder.Compile (Loss.MeanAbsoluteError, 1e-3f);
             SaveModelJpeg (autoEncoder, 0.5f, 0.5f, "Untrained");
-            var data = GetIdentityDataSet ();
+            var data = GetIdentityDataSet (b2a: false);
             var batchSize = 16;
             var batchesPerEpoch = data.Count / batchSize;
             var numEpochs = 100;
@@ -98,7 +98,7 @@ namespace Tests
                 for (var bi = 0; bi < batchesPerEpoch; bi++) {
                     var (ins, outs) = data.GetBatch (row, batchSize, autoEncoder.Device.Current ());
                     row = (row + batchSize) % data.Count;
-                    var h = autoEncoder.Fit (ins, ins);
+                    var h = autoEncoder.Fit (ins, outs);
                     var aloss = h.AverageLoss;
                     Console.WriteLine ($"AUTOENCODER BATCH E{si + 1} B{bi + 1}/{batchesPerEpoch} LOSS {aloss}");
                     h.DisposeSourceImages ();

@@ -74,18 +74,18 @@ namespace Tests
             throw new Exception ($"No sample image for shape {input.ShapeString}");
         }
 
-        public static MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet GetPix2pixDataSet ()
+        public static MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet GetPix2pixDataSet (bool b2a = false)
         {
             var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
             var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
             var trainDataDir = Path.Combine (dataDir, "train");
-            var data = MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
+            var data = MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir, b2a);
             return data;
         }
 
-        public static DataSet GetIdentityDataSet ()
+        public static DataSet GetIdentityDataSet (bool b2a = false)
         {
-            var p2p = GetPix2pixDataSet ();
+            var p2p = GetPix2pixDataSet (b2a);
             return DataSet.Generated ((i, d) => {
                 var (l, r) = p2p.GetRow (i, d);
                 return (l, l);
