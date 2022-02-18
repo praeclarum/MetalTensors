@@ -13,29 +13,29 @@ namespace Tests
         [Test]
         public void ASimpleGenerator ()
         {
-            var input = Tensor.InputImage ("image", 512, 512);
+            var input = Tensor.InputImage ("image", 256, 256);
             var gen = input.Conv (3, size: 4).Tanh();
             var output = SaveModelJpeg (input, gen, 0.5f, 0.5f);
-            Assert.AreEqual (512, output.Shape[0]);
-            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
             Assert.AreEqual (3, output.Shape[2]);
         }
 
         [Test]
         public void ADownsamplingGenerator ()
         {
-            var input = Tensor.InputImage ("image", 512, 512);
+            var input = Tensor.InputImage ("image", 256, 256);
             var gen = input.Conv (32, size: 4, stride: 2).ReLU().ConvTranspose(3, size: 4, stride:2).Tanh();
             var output = SaveModelJpeg (input, gen, 0.5f, 0.5f);
-            Assert.AreEqual (512, output.Shape[0]);
-            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
             Assert.AreEqual (3, output.Shape[2]);
         }
 
         [Test]
         public void ADownsamplingGeneratorWithSkip ()
         {
-            var input = Tensor.InputImage ("image", 512, 512);
+            var input = Tensor.InputImage ("image", 256, 256);
             var gen = input
                 .Conv (32, size: 4, stride: 2)
                 .ReLU()
@@ -46,15 +46,15 @@ namespace Tests
                 .Conv (3, size:4)
                 .Tanh();
             var output = SaveModelJpeg (input, gen, 0.5f, 0.5f);
-            Assert.AreEqual (512, output.Shape[0]);
-            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
             Assert.AreEqual (3, output.Shape[2]);
         }
 
         [Test]
         public void ADownsamplingGeneratorModel ()
         {
-            var input = Tensor.InputImage ("image", 512, 512);
+            var input = Tensor.InputImage ("image", 256, 256);
 
             var minput = Tensor.InputImage ("image", 256, 256, 32);
             var moutput =
@@ -69,19 +69,19 @@ namespace Tests
                 .Conv (3, size:4)
                 .Tanh();
             var output = SaveModelJpeg (input, gen, 0.5f, 0.5f);
-            Assert.AreEqual (512, output.Shape[0]);
-            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
             Assert.AreEqual (3, output.Shape[2]);
         }
 
         [Test]
         public void ADownsamplingNestedModelGenerator ()
         {
-            var input = Tensor.InputImage ("image", 512, 512);
+            var input = Tensor.InputImage ("image", 256, 256);
 
             Model MakeInnerModel()
             {
-                var minput = Tensor.InputImage ("image", 256, 256, 32);
+                var minput = Tensor.InputImage ("image", 128, 128, 32);
                 var moutput =
                     minput
                     .Conv (32, size: 4, stride: 2)
@@ -110,8 +110,8 @@ namespace Tests
                 .Conv (3, size:4)
                 .Tanh();
             var output = SaveModelJpeg (input, gen, 0.5f, 0.5f);
-            Assert.AreEqual (512, output.Shape[0]);
-            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (256, output.Shape[0]);
+            Assert.AreEqual (256, output.Shape[1]);
             Assert.AreEqual (3, output.Shape[2]);
         }
 
@@ -136,7 +136,7 @@ namespace Tests
         [Test]
         public void DataSetHasImages ()
         {
-            var data = GetDataSet ();
+            var data = GetPix2pixDataSet ();
             var image = data.GetPairedRow (0);
             image.SaveImage (JpegUrl ());
         }
@@ -144,7 +144,7 @@ namespace Tests
         [Test]
         public void DataSetHasLeftAndRight ()
         {
-            var data = GetDataSet ();
+            var data = GetPix2pixDataSet ();
             var (inputs, outputs) = data.GetRow (0, MetalExtensions.Current(null));
             inputs[0].SaveImage (JpegUrl ("Pix2pixLeft"), 0.5f, 0.5f);
             outputs[0].SaveImage (JpegUrl ("Pix2pixRight"), 0.5f, 0.5f);
@@ -155,7 +155,7 @@ namespace Tests
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = GetDataSet ();
+            var data = GetPix2pixDataSet ();
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
             var output = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
             output.SaveImage (JpegUrl (), 0.5f, 0.5f);
@@ -170,7 +170,7 @@ namespace Tests
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = GetDataSet ();
+            var data = GetPix2pixDataSet ();
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
 
             var output = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
@@ -187,9 +187,9 @@ namespace Tests
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = GetDataSet ();
+            var data = GetPix2pixDataSet ();
 
-            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 1.1f, progress: p => {
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
                 Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
             });
 
@@ -216,15 +216,6 @@ namespace Tests
             Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], droutput.Shape[2]);
             var dfoutput = pix2pix.Discriminator.Predict (goutput, pix2pix.Device);
             dfoutput.SaveImage (JpegUrl ("Pix2pixTrainedDiscrFake"));
-        }
-
-        static Pix2pixApplication.Pix2pixDataSet GetDataSet ()
-        {
-            var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
-            var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
-            var trainDataDir = Path.Combine (dataDir, "train");
-            var data = Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
-            return data;
         }
     }
 }

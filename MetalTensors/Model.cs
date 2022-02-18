@@ -34,7 +34,7 @@ namespace MetalTensors
             new ConcurrentDictionary<IntPtr, CompiledModel> ();
 
         public Tensor Output => Outputs[0];
-        public Tensor? Input => Inputs.Length > 0 ? Inputs[0] : null;
+        public Tensor Input => Inputs[0];
 
         public Model (Tensor input, Tensor output, string? name = null)
             : this (new[] { input }, new[] { output }, name)

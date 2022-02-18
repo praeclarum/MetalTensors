@@ -54,10 +54,31 @@ namespace Tests
 
         public static Tensor SaveModelJpeg (Model model, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
         {
-            var input = Tensor.ImageResource ("elephant", "jpg");
+            var input = GetImageInput (model.Input);
             var output = model.Predict (input);
             output.SaveImage (JpegUrl (name));
             return output;
+        }
+
+        public static Tensor GetImageInput (Tensor input)
+        {
+            if (input.Shape[0] == 512)
+                return Tensor.ImageResource ("elephant", "jpg");
+            if (input.Shape[0] == 256) {
+                var d = GetPix2pixDataSet ();
+                var (ins, outs) = d.GetRow(0, MetalExtensions.Current(null));
+                return ins[0];
+            }
+            throw new Exception ($"No sample image for shape {input.ShapeString}");
+        }
+
+        public static MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet GetPix2pixDataSet ()
+        {
+            var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
+            var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
+            var trainDataDir = Path.Combine (dataDir, "train");
+            var data = MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
+            return data;
         }
     }
 
