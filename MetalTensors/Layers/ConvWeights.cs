@@ -273,6 +273,8 @@ namespace MetalTensors.Layers
                 return v.ConvWtsAndBias;
             }
             else {
+                gradientState.ReadCount--;
+                sourceState.ReadCount--;
                 return null;
             }
         }
