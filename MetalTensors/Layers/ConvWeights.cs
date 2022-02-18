@@ -26,6 +26,9 @@ namespace MetalTensors.Layers
         public WeightsInit WeightsInit { get; }
         public float BiasInit { get; }
 
+        static readonly ConcurrentDictionary<IntPtr, IMTLCommandQueue> deviceQueues =
+            new ConcurrentDictionary<IntPtr, IMTLCommandQueue> ();
+
         readonly ConcurrentDictionary<IntPtr, ConvDataSource> deviceWeights =
             new ConcurrentDictionary<IntPtr, ConvDataSource> ();
 
@@ -54,7 +57,18 @@ namespace MetalTensors.Layers
             if (deviceWeights.TryGetValue (key, out var w))
                 return w;
 
-            w = new ConvDataSource (this, device);
+            if (!deviceQueues.TryGetValue (key, out var queue)) {
+                queue = device.CreateCommandQueue ();
+                if (queue == null)
+                    throw new Exception ($"Failed to create queue to load values");
+                if (!deviceQueues.TryAdd (key, queue)) {
+                    if (!deviceQueues.TryGetValue (key, out queue)) {
+                        throw new Exception ($"Failed to synchronize weight queue creation");
+                    }
+                }
+            }
+
+            w = new ConvDataSource (this, queue);
 
             if (deviceWeights.TryAdd (key, w))
                 return w;
@@ -69,7 +83,7 @@ namespace MetalTensors.Layers
         readonly string label;
         readonly bool bias;
         private readonly float biasInit;
-
+        private readonly IMTLCommandQueue weightsQueue;
         int updateCount;
         int loadedUpdateCount;
         MPSNNOptimizerAdam? optimizer;
@@ -107,22 +121,23 @@ namespace MetalTensors.Layers
         //readonly IMTLCommandQueue weightsQueue;
 
 
-        public ConvDataSource (ConvWeights convWeights, IMTLDevice device)
+        public ConvDataSource (ConvWeights convWeights, IMTLCommandQueue weightsQueue)
             : this (convWeights.InChannels, convWeights.OutChannels,
                     convWeights.SizeX, convWeights.SizeY, convWeights.StrideX, convWeights.StrideY,
                     convWeights.Bias, convWeights.WeightsInit, convWeights.BiasInit,
-                    convWeights.Label, device)
+                    convWeights.Label, weightsQueue)
         {
         }
 
-        public ConvDataSource (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit, string label, IMTLDevice device)
+        public ConvDataSource (int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit, string label, IMTLCommandQueue weightsQueue)
         {
             if (inChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution input channels must be > 0");
             if (outChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution output channels must be > 0");
 
-            this.device = device;
+            this.weightsQueue = weightsQueue;
+            this.device = weightsQueue.Device;
 
             //var queue = device.CreateCommandQueue ();
             //if (queue == null)
@@ -193,11 +208,8 @@ namespace MetalTensors.Layers
                         loadedUpdateCount = updateCount;
                         using var pool = new NSAutoreleasePool ();
                         var wv = cw.Value;
-                        var wtsB = wv.ConvWtsAndBias;
-                        using var queue = device.CreateCommandQueue ();
-                        if (queue == null)
-                            throw new Exception ($"Failed to create queue to load values");
-                        var commands = MPSCommandBuffer.Create (queue);
+                        var wtsB = wv.ConvWtsAndBias;                        
+                        var commands = MPSCommandBuffer.Create (weightsQueue);
                         wtsB.Synchronize (commands);
                         commands.Commit ();
                         commands.WaitUntilCompleted ();
