@@ -85,9 +85,9 @@ namespace Tests
                     var (ins, outs) = data.GetBatch (row, batchSize, autoEncoder.Device.Current ());
                     row = (row + batchSize) % data.Count;
                     var h = autoEncoder.Fit (ins, ins);
-                    var loss = h.Loss;
+                    var aloss = h.AverageLoss;
+                    Console.WriteLine ($"AUTOENCODER BATCH {si}/{bi} LOSS {aloss}");
                     h.DisposeSourceImages ();
-                    Console.WriteLine ($"AUTOENCODER BATCH {si}/{bi} LOSS {loss[0].Format()}");
                 }
                 var output = SaveModelJpeg (autoEncoder, 0.5f, 0.5f, $"Trained{si}");
                 Assert.AreEqual (256, output.Shape[0]);

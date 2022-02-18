@@ -45,7 +45,7 @@ namespace MetalTensors
                 get {
                     var n = 0;
                     var sum = 0.0;
-                    foreach (var r in Results) {
+                    foreach (var r in Loss) {
                         var len = r.Length;
                         var ar = new float[len];
                         r.Copy (ar, Device);
