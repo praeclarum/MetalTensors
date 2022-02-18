@@ -54,6 +54,22 @@ namespace MetalTensors
                 var x => throw new NotSupportedException ($"Cannot get size of {x}")
             };
 
+        public static void Dispose (this Tensor[][] tensors)
+        {
+            foreach (var ts in tensors) {
+                Dispose (ts);
+            }
+        }
+
+        private static void Dispose (this Tensor[] tensors)
+        {
+            foreach (var t in tensors) {
+                if (t is Tensors.MPSImageTensor it) {
+                    it.MetalImage.Dispose ();
+                }
+            }
+        }
+
 #if __IOS__
         public static void DidModify (this IMTLBuffer buffer, NSRange range)
         {

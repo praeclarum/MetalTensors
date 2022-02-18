@@ -158,7 +158,7 @@ namespace MetalTensors.Layers
                     var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
                     optimizer = new MPSNNOptimizerAdam (
                         device,
-                        beta1: 0.9f, beta2: 0.999f, epsilon: 1e-8f,
+                        beta1: 0.9f, beta2: 0.999f, epsilon: 1e-7f,
                         timeStep: 0,
                         optimizerDescriptor: odesc);
                 }

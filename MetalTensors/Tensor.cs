@@ -48,11 +48,10 @@ namespace MetalTensors
         public string Format ()
         {
             var len = Length;
-            var clen = Math.Min (len, 10);
-            var vals = new float[clen];
+            var vals = new float[len];
             try {
                 Copy (vals, MetalExtensions.Current (null));
-                return "[" + string.Join (", ", vals) + "]";
+                return "[" + string.Join (", ", vals.Take(100)) + "]";
             }
             catch (Exception ex) {
                 return $"[error: {ex.Message}]";

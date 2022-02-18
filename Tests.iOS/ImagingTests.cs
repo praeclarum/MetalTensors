@@ -58,7 +58,7 @@ namespace Tests
         {
             var input = GetImageInput (model.Input);
             var output = model.Predict (input);
-            output.SaveImage (JpegUrl (name, codeFile));
+            output.SaveImage (JpegUrl (name, codeFile), a, b);
             return output;
         }
 
