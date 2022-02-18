@@ -82,6 +82,15 @@ namespace Tests
             var data = MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir);
             return data;
         }
+
+        public static DataSet GetIdentityDataSet ()
+        {
+            var p2p = GetPix2pixDataSet ();
+            return DataSet.Generated ((i, d) => {
+                var (l, r) = p2p.GetRow (i, d);
+                return (l, l);
+            }, p2p.Count);
+        }
     }
 
     public class ImagingTests

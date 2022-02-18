@@ -14,8 +14,8 @@ namespace Tests
         WeightsInit Glorot (int nIn, int nOut)
         {
             var scale = 1.0 / Math.Max (1.0, (nIn + nOut) / 2.0);
-            var limit = 0.1*Math.Sqrt (3.0 * scale);
-            Console.WriteLine ($"LIMIT {limit}");
+            var limit = 0.25*Math.Sqrt (3.0 * scale);
+            //Console.WriteLine ($"LIMIT {limit}");
             return WeightsInit.Uniform ((float)-limit, (float)limit);
         }
 
@@ -89,10 +89,10 @@ namespace Tests
             var autoEncoder = MakeAutoEncoder ();
             autoEncoder.Compile (Loss.MeanAbsoluteError, 1e-3f);
             SaveModelJpeg (autoEncoder, 0.5f, 0.5f, "Untrained");
-            var data = GetPix2pixDataSet ();
+            var data = GetIdentityDataSet ();
             var batchSize = 16;
             var batchesPerEpoch = data.Count / batchSize;
-            var numEpochs = 5;
+            var numEpochs = 100;
             var row = 0;
             for (var si = 0; si < numEpochs; si++) {
                 for (var bi = 0; bi < batchesPerEpoch; bi++) {
@@ -100,11 +100,13 @@ namespace Tests
                     row = (row + batchSize) % data.Count;
                     var h = autoEncoder.Fit (ins, ins);
                     var aloss = h.AverageLoss;
-                    Console.WriteLine ($"AUTOENCODER BATCH E{si+1} B{bi+1}/{batchesPerEpoch} LOSS {aloss}");
+                    Console.WriteLine ($"AUTOENCODER BATCH E{si + 1} B{bi + 1}/{batchesPerEpoch} LOSS {aloss}");
                     h.DisposeSourceImages ();
                     ins.Dispose ();
                     outs.Dispose ();
                 }
+                //var h = autoEncoder.Fit (data, batchSize: batchSize, epochs: 1);
+                //Console.WriteLine ($"AUTOENCODER E{si + 1} LOSS {h.Batches[^1].AverageLoss}");
                 var output = SaveModelJpeg (autoEncoder, 0.5f, 0.5f, $"Trained{si+1}");
                 Assert.AreEqual (256, output.Shape[0]);
                 Assert.AreEqual (256, output.Shape[1]);
