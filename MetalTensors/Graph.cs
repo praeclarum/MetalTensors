@@ -164,7 +164,7 @@ namespace MetalTensors
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (results, loss, bh, temporaryBatchImages);
+                var h = new TrainingHistory.BatchHistory (results, loss, bh, temporaryBatchImages, cmdBuf.Device);
                 OnBatchCompleted (h);
                 recordHistory (h);
             });

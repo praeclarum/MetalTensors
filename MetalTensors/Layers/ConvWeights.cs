@@ -103,6 +103,8 @@ namespace MetalTensors.Layers
 
         public override MPSCnnConvolutionDescriptor Descriptor => descriptor;
 
+        //readonly IMTLCommandQueue weightsQueue;
+
 
         public ConvDataSource (ConvWeights convWeights, IMTLDevice device)
             : this (convWeights.InChannels, convWeights.OutChannels,
@@ -120,6 +122,12 @@ namespace MetalTensors.Layers
                 throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution output channels must be > 0");
 
             this.device = device;
+
+            //var queue = device.CreateCommandQueue ();
+            //if (queue == null)
+            //    throw new Exception ($"Failed to create queue to load values");
+            //weightsQueue = queue;
+
             descriptor = MPSCnnConvolutionDescriptor.CreateCnnConvolutionDescriptor (
                 (System.nuint)kernelSizeX, (System.nuint)kernelSizeY,
                 (System.nuint)inChannels,
@@ -128,7 +136,7 @@ namespace MetalTensors.Layers
             descriptor.StrideInPixelsY = (nuint)strideY;
 
             createWeightValues = () => {
-                Console.WriteLine ($"CREATING WEIGHT VALUES {label}");
+                //Console.WriteLine ($"CREATING WEIGHT VALUES {label}");
                 return new ConvWeightValues (inChannels, outChannels, kernelSizeX, kernelSizeY, bias, weightsInit, biasInit, device);
             };
             convWeights = new Lazy<ConvWeightValues> (createWeightValues);
@@ -178,6 +186,19 @@ namespace MetalTensors.Layers
                 // convWeights is always ready to load data. Even after a Purge().
                 // Don't force its value here because sometimes Load is called
                 // just to get the descriptor :-(
+                var cw = convWeights;                
+                if (cw.IsValueCreated) {
+                    var wv = cw.Value;
+                    var wtsB = wv.ConvWtsAndBias;
+                    using var pool = new NSAutoreleasePool ();
+                    using var queue = device.CreateCommandQueue ();
+                    if (queue == null)
+                        throw new Exception ($"Failed to create queue to load values");
+                    var commands = MPSCommandBuffer.Create (queue);
+                    wtsB.Synchronize (commands);
+                    commands.Commit ();
+                    commands.WaitUntilCompleted ();
+                }
                 return true;
             }
         }
@@ -294,7 +315,7 @@ namespace MetalTensors.Layers
             }
         }
         public readonly OptimizableVector? BiasVectors;
-        public MPSCnnConvolutionWeightsAndBiasesState? convWtsAndBias;
+        MPSCnnConvolutionWeightsAndBiasesState? convWtsAndBias;
         public MPSCnnConvolutionWeightsAndBiasesState ConvWtsAndBias {
             get {
                 weightInitTask.Wait ();

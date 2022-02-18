@@ -77,17 +77,23 @@ namespace Tests
             var uoutput = SaveModelJpeg (autoEncoder, 0.5f, 0.5f, "Untrained");
             var data = GetPix2pixDataSet ();
             var batchSize = 16;
-            var numBatches = 50;
-            for (var bi = 0; bi < numBatches; bi++) {
-                var (ins, outs) = data.GetBatch (0, batchSize, autoEncoder.Device.Current ());
-                var h = autoEncoder.Fit (ins, outs);
-                var loss = h.Loss;
-                Console.WriteLine ($"AUTOENCODER BATCH {bi} LOSS {loss[0].Format()}");
+            var batchesPerStep = 50;
+            var numSteps = 10;
+            var row = 0;
+            for (var si = 0; si < numSteps; si++) {
+                for (var bi = 0; bi < batchesPerStep; bi++) {
+                    var (ins, outs) = data.GetBatch (row, batchSize, autoEncoder.Device.Current ());
+                    row = (row + batchSize) % data.Count;
+                    var h = autoEncoder.Fit (ins, ins);
+                    var loss = h.Loss;
+                    h.DisposeSourceImages ();
+                    Console.WriteLine ($"AUTOENCODER BATCH {si}/{bi} LOSS {loss[0].Format()}");
+                }
+                var output = SaveModelJpeg (autoEncoder, 0.5f, 0.5f, $"Trained{si}");
+                Assert.AreEqual (256, output.Shape[0]);
+                Assert.AreEqual (256, output.Shape[1]);
+                Assert.AreEqual (3, output.Shape[2]);
             }
-            var output = SaveModelJpeg (autoEncoder, 0.5f, 0.5f, "Trained");
-            Assert.AreEqual (256, output.Shape[0]);
-            Assert.AreEqual (256, output.Shape[1]);
-            Assert.AreEqual (3, output.Shape[2]);
         }
     }
 }

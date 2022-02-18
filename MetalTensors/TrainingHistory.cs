@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Metal;
 using MetalPerformanceShaders;
+using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
@@ -24,17 +26,38 @@ namespace MetalTensors
         /// </summary>
         public class BatchHistory
         {
+            public IMTLDevice Device { get; }
             public Tensor[] Results { get; }
             public Tensor[] Loss { get; }
             public Dictionary<string, Tensor[]> IntermediateValues { get; }
             public MPSImage[] SourceImages { get; private set; }
 
-            public BatchHistory (Tensor[] results, Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues, MPSImage[] sourceImages)
+            public BatchHistory (Tensor[] results, Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues, MPSImage[] sourceImages, IMTLDevice device)
             {
                 Results = results;
                 Loss = loss;
                 IntermediateValues = intermediateValues;
                 SourceImages = sourceImages;
+                Device = device;
+            }
+
+            public float AverageLoss {
+                get {
+                    var n = 0;
+                    var sum = 0.0;
+                    foreach (var r in Results) {
+                        var len = r.Length;
+                        var ar = new float[len];
+                        r.Copy (ar, Device);
+                        foreach (var x in ar) {
+                            sum += x;
+                            n += 1;
+                        }
+                    }
+                    if (n > 0)
+                        return (float)(sum / n);
+                    return 0.0f;
+                }
             }
 
             /// <summary>

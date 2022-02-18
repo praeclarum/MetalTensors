@@ -35,10 +35,10 @@ namespace MetalTensors
             //
             var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
             var resultsAreNeeded = outputs.Select (x => true).ToArray ();
-            var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
-            evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            var infGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
+            infGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
-            return evalGraph;
+            return infGraph;
         }
 
         public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)
@@ -47,7 +47,9 @@ namespace MetalTensors
             if (queue == null)
                 throw new Exception ("Failed to create command queue");
 
-            var semaphore = new Semaphore (2, 2);
+            using var semaphore = new Semaphore (2, 2);
+
+            MetalGraph.ReloadFromDataSources ();
 
             //
             // Init history

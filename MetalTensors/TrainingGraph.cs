@@ -153,7 +153,7 @@ namespace MetalTensors
             if (queue == null)
                 throw new Exception ("Failed to create command queue");
 
-            var semaphore = new Semaphore (2, 2);
+            using var semaphore = new Semaphore (2, 2);
 
             MPSCommandBuffer lcb = EncodeBatch (inputsBatch, outputsBatch, AddHistory, semaphore, queue);
 
