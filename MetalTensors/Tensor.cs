@@ -25,6 +25,7 @@ namespace MetalTensors
 
         public abstract int[] Shape { get; }
         public string ShapeString => "(" + string.Join (", ", Shape) + ")";
+        public int Length => Shape.Aggregate (1, (a, x) => a * x);
 
         public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
 
@@ -43,6 +44,20 @@ namespace MetalTensors
         protected virtual TensorHandle CreateHandle (string? label) => new TensorHandle (this, label);
 
         public override string ToString () => Label + " (" + string.Join (", ", Shape) + ") {type=" + GetType ().Name + "}";
+
+        public string Format ()
+        {
+            var len = Length;
+            var clen = Math.Min (len, 10);
+            var vals = new float[clen];
+            try {
+                Copy (vals, MetalExtensions.Current (null));
+                return "[" + string.Join (", ", vals) + "]";
+            }
+            catch (Exception ex) {
+                return $"[error: {ex.Message}]";
+            }
+        }
 
         //public virtual Tensor Clone () => this;
 

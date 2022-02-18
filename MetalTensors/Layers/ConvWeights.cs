@@ -127,7 +127,10 @@ namespace MetalTensors.Layers
             descriptor.StrideInPixelsX = (nuint)strideX;
             descriptor.StrideInPixelsY = (nuint)strideY;
 
-            createWeightValues = () => new ConvWeightValues (inChannels, outChannels, kernelSizeX, kernelSizeY, bias, weightsInit, biasInit, device);
+            createWeightValues = () => {
+                Console.WriteLine ($"CREATING WEIGHT VALUES {label}");
+                return new ConvWeightValues (inChannels, outChannels, kernelSizeX, kernelSizeY, bias, weightsInit, biasInit, device);
+            };
             convWeights = new Lazy<ConvWeightValues> (createWeightValues);
 
             this.bias = bias;
@@ -187,15 +190,17 @@ namespace MetalTensors.Layers
         public override void Purge ()
         {
             try {
-                ConvWeightValues? oldWeights = null;
-                lock (convWeightsMutex) {
-                    //Console.WriteLine ($"Purge Conv2dDataSource {this.Label}");
-                    if (convWeights.IsValueCreated) {
-                        oldWeights = convWeights.Value;
-                        convWeights = new Lazy<ConvWeightValues> (createWeightValues);
-                    }
-                }
-                oldWeights?.Dispose ();
+                // DONT PURGE UNTIL WE HAVE A WAY TO STORE WEIGHTS
+                //Console.WriteLine ($"PURGING WEIGHT VALUES {label}");
+                //ConvWeightValues? oldWeights = null;
+                //lock (convWeightsMutex) {
+                //    //Console.WriteLine ($"Purge Conv2dDataSource {this.Label}");
+                //    if (convWeights.IsValueCreated) {
+                //        oldWeights = convWeights.Value;
+                //        convWeights = new Lazy<ConvWeightValues> (createWeightValues);
+                //    }
+                //}
+                //oldWeights?.Dispose ();
             }
             catch (Exception ex) {
                 Console.WriteLine ($"Failed to purge weights: {ex}");

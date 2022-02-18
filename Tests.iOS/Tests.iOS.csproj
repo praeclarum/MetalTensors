@@ -129,6 +129,7 @@
     <Compile Include="ReductionLayerTests.cs" />
     <Compile Include="ImagingTests.cs" />
     <Compile Include="MPSVectorTests.cs" />
+    <Compile Include="AutoEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MetalTensors.iOS\MetalTensors.iOS.csproj">

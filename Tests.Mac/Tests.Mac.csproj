@@ -119,6 +119,9 @@
     <Compile Include="..\Tests.iOS\MPSVectorTests.cs">
       <Link>MPSVectorTests.cs</Link>
     </Compile>
+    <Compile Include="..\Tests.iOS\AutoEncoderTests.cs">
+      <Link>AutoEncoderTests.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />

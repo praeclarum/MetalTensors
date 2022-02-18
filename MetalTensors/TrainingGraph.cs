@@ -124,7 +124,7 @@ namespace MetalTensors
             return new TrainingHistory (h);
         }
 
-        public TrainingHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
         {
             var batchSize = inputsBatch.Length;
 
@@ -159,7 +159,7 @@ namespace MetalTensors
 
             lcb.WaitUntilCompleted ();
 
-            return new TrainingHistory (h);
+            return h[0];
         }
     }
 }

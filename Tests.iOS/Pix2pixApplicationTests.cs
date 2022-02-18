@@ -146,8 +146,8 @@ namespace Tests
         {
             var data = GetPix2pixDataSet ();
             var (inputs, outputs) = data.GetRow (0, MetalExtensions.Current(null));
-            inputs[0].SaveImage (JpegUrl ("Pix2pixLeft"), 0.5f, 0.5f);
-            outputs[0].SaveImage (JpegUrl ("Pix2pixRight"), 0.5f, 0.5f);
+            inputs[0].SaveImage (JpegUrl (name: "Left"), 0.5f, 0.5f);
+            outputs[0].SaveImage (JpegUrl (name: "Right"), 0.5f, 0.5f);
         }
 
         [Test]
@@ -205,17 +205,17 @@ namespace Tests
 
             var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
             var goutput = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
-            goutput.SaveImage (JpegUrl ("Pix2pixTrainedGen"), 0.5f, 0.5f);
+            goutput.SaveImage (JpegUrl (name: "TrainedGen"), 0.5f, 0.5f);
             Assert.AreEqual (pix2pix.Generator.Output.Shape[0], goutput.Shape[0]);
             Assert.AreEqual (pix2pix.Generator.Output.Shape[1], goutput.Shape[1]);
             Assert.AreEqual (pix2pix.Generator.Output.Shape[2], goutput.Shape[2]);
             var droutput = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
-            droutput.SaveImage (JpegUrl ("Pix2pixTrainedDiscrReal"));
+            droutput.SaveImage (JpegUrl (name: "TrainedDiscrReal"));
             Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], droutput.Shape[0]);
             Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], droutput.Shape[1]);
             Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], droutput.Shape[2]);
             var dfoutput = pix2pix.Discriminator.Predict (goutput, pix2pix.Device);
-            dfoutput.SaveImage (JpegUrl ("Pix2pixTrainedDiscrFake"));
+            dfoutput.SaveImage (JpegUrl (name: "TrainedDiscrFake"));
         }
     }
 }

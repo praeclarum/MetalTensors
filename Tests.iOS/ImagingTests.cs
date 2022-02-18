@@ -26,37 +26,39 @@ namespace Tests
             Directory.CreateDirectory (OutputDirectory);
         }
 
-        public static string JpegPath ([CallerMemberName] string name = "Image")
+        public static string JpegPath ([CallerMemberName] string name = "Image", [CallerFilePath] string codeFile = "")
         {
-            return Path.Combine (OutputDirectory, $"{name}.jpg");
+            var codeName = System.IO.Path.GetFileNameWithoutExtension (codeFile);
+            return Path.Combine (OutputDirectory, $"{codeName}_{name}.jpg");
         }
 
-        public static NSUrl JpegUrl ([CallerMemberName] string name = "Image")
+        public static NSUrl JpegUrl ([CallerMemberName] string name = "Image", [CallerFilePath] string codeFile = "")
         {
-            return NSUrl.FromFilename (JpegPath (name));
+            return NSUrl.FromFilename (JpegPath (name: name, codeFile: codeFile));
         }
 
-        public static string PngPath ([CallerMemberName] string name = "Image")
+        public static string PngPath ([CallerMemberName] string name = "Image", [CallerFilePath] string codeFile = "")
         {
-            return Path.Combine (OutputDirectory, $"{name}.png");
+            var codeName = System.IO.Path.GetFileNameWithoutExtension (codeFile);
+            return Path.Combine (OutputDirectory, $"{codeName}_{name}.png");
         }
 
-        public static NSUrl PngUrl ([CallerMemberName] string name = "Image")
+        public static NSUrl PngUrl ([CallerMemberName] string name = "Image", [CallerFilePath] string codeFile = "")
         {
-            return NSUrl.FromFilename (PngPath (name));
+            return NSUrl.FromFilename (PngPath (name: name, codeFile: codeFile));
         }
 
-        public static Tensor SaveModelJpeg (Tensor input, Tensor output, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
+        public static Tensor SaveModelJpeg (Tensor input, Tensor output, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage", [CallerFilePath] string codeFile = "")
         {
             var model = output.Model (input, trainable: false);
-            return SaveModelJpeg (model, a, b, name);
+            return SaveModelJpeg (model, a, b, name: name, codeFile: codeFile);
         }
 
-        public static Tensor SaveModelJpeg (Model model, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage")
+        public static Tensor SaveModelJpeg (Model model, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage", [CallerFilePath] string codeFile = "")
         {
             var input = GetImageInput (model.Input);
             var output = model.Predict (input);
-            output.SaveImage (JpegUrl (name));
+            output.SaveImage (JpegUrl (name, codeFile));
             return output;
         }
 

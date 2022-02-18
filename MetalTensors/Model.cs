@@ -26,6 +26,8 @@ namespace MetalTensors
         public Layer[] Layers { get; }
         public Model[] Submodels { get; }
 
+        public IMTLDevice? Device => compiledModels.FirstOrDefault ().Value?.Device;
+
         public override int MinInputCount => Inputs.Length;
 
         public override int[] GetOutputShape (params Tensor[] inputs) => Outputs[0].Shape;
@@ -190,7 +192,7 @@ namespace MetalTensors
         public CompiledModel Compile (Func<Tensor, Tensor, Tensor> outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
             Compile (new CustomLoss(outputLoss), optimizer, device);
 
-        public CompiledModel? TryGetCompiledModel (IMTLDevice device)
+        CompiledModel? TryGetCompiledModel (IMTLDevice device)
         {
             var key = device.Handle;
             if (compiledModels.TryGetValue (key, out var gs))
@@ -221,7 +223,7 @@ namespace MetalTensors
             return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval, cm.EvaluationGraph);
         }
 
-        public TrainingHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
         {
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
                 throw new InvalidOperationException ($"Models must be compiled before being Fit");
