@@ -71,6 +71,7 @@ namespace MetalTensors.Layers
         private readonly float biasInit;
 
         int updateCount;
+        int loadedUpdateCount;
         MPSNNOptimizerAdam? optimizer;
         bool trainable;
 
@@ -188,16 +189,19 @@ namespace MetalTensors.Layers
                 // just to get the descriptor :-(
                 var cw = convWeights;                
                 if (cw.IsValueCreated) {
-                    var wv = cw.Value;
-                    var wtsB = wv.ConvWtsAndBias;
-                    using var pool = new NSAutoreleasePool ();
-                    using var queue = device.CreateCommandQueue ();
-                    if (queue == null)
-                        throw new Exception ($"Failed to create queue to load values");
-                    var commands = MPSCommandBuffer.Create (queue);
-                    wtsB.Synchronize (commands);
-                    commands.Commit ();
-                    commands.WaitUntilCompleted ();
+                    if (updateCount != loadedUpdateCount) {
+                        loadedUpdateCount = updateCount;
+                        using var pool = new NSAutoreleasePool ();
+                        var wv = cw.Value;
+                        var wtsB = wv.ConvWtsAndBias;
+                        using var queue = device.CreateCommandQueue ();
+                        if (queue == null)
+                            throw new Exception ($"Failed to create queue to load values");
+                        var commands = MPSCommandBuffer.Create (queue);
+                        wtsB.Synchronize (commands);
+                        commands.Commit ();
+                        commands.WaitUntilCompleted ();
+                    }
                 }
                 return true;
             }

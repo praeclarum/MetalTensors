@@ -62,6 +62,20 @@ namespace Tests
             return output;
         }
 
+        public static Tensor SaveModelPng (Tensor input, Tensor output, float a=1.0f, float b=0.0f, [CallerMemberName] string name = "ModelImage", [CallerFilePath] string codeFile = "")
+        {
+            var model = output.Model (input, trainable: false);
+            return SaveModelPng (model, a, b, name: name, codeFile: codeFile);
+        }
+
+        public static Tensor SaveModelPng (Model model, float a = 1.0f, float b = 0.0f, [CallerMemberName] string name = "ModelImage", [CallerFilePath] string codeFile = "")
+        {
+            var input = GetImageInput (model.Input);
+            var output = model.Predict (input);
+            output.SaveImage (PngUrl (name, codeFile), a, b);
+            return output;
+        }
+
         public static Tensor GetImageInput (Tensor input)
         {
             if (input.Shape[0] == 512)

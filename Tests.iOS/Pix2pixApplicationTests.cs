@@ -127,10 +127,9 @@ namespace Tests
             Assert.AreEqual (3, pix2pix.Discriminator.Output.Shape.Length);
             Assert.AreEqual (1, pix2pix.Discriminator.Output.Shape[^1]);
 
-            Assert.NotNull (pix2pix.Gan);
-
-            Assert.AreEqual (3, pix2pix.Gan.Output.Shape.Length);
-            Assert.AreEqual (1, pix2pix.Gan.Output.Shape[^1]);
+            //Assert.NotNull (pix2pix.Gan);
+            //Assert.AreEqual (3, pix2pix.Gan.Output.Shape.Length);
+            //Assert.AreEqual (1, pix2pix.Gan.Output.Shape[^1]);
         }
 
         [Test]
@@ -189,8 +188,14 @@ namespace Tests
 
             var data = GetPix2pixDataSet ();
 
-            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
-                Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
+            SampleModel ("Train0");
+            var lastP = 0.0;
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 50.1f, progress: p => {
+                //Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
+                if ((p - lastP) >= 0.02) {
+                    lastP = p;
+                    SampleModel ($"Train{(int)(p * 100)}");
+                }
             });
 
             var trainImagesPerSecond = imageCount / (trainTime.TotalSeconds);
@@ -203,19 +208,27 @@ namespace Tests
             Console.WriteLine ($"{totalImagesPerSecond} Images/sec");
             Console.WriteLine ($"{TimeSpan.FromSeconds (data.Count / totalImagesPerSecond)}/epoch");
 
-            var (inputs, outputs) = data.GetRow (0, pix2pix.Device);
-            var goutput = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
-            goutput.SaveImage (JpegUrl (name: "TrainedGen"), 0.5f, 0.5f);
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[0], goutput.Shape[0]);
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[1], goutput.Shape[1]);
-            Assert.AreEqual (pix2pix.Generator.Output.Shape[2], goutput.Shape[2]);
-            var droutput = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
-            droutput.SaveImage (JpegUrl (name: "TrainedDiscrReal"));
-            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], droutput.Shape[0]);
-            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], droutput.Shape[1]);
-            Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], droutput.Shape[2]);
-            var dfoutput = pix2pix.Discriminator.Predict (goutput, pix2pix.Device);
-            dfoutput.SaveImage (JpegUrl (name: "TrainedDiscrFake"));
+            SampleModel ("Trained");
+
+            void SampleModel (string postfix)
+            {
+                for (var row = 0; row < 1; row++) {
+                    var (inputs, outputs) = data.GetRow (row, pix2pix.Device);
+                    var goutput = pix2pix.Generator.Predict (inputs[0], pix2pix.Device);
+                    goutput.SaveImage (JpegUrl (name: $"Gen{row}{postfix}"), 0.5f, 0.5f);
+                    Assert.AreEqual (pix2pix.Generator.Output.Shape[0], goutput.Shape[0]);
+                    Assert.AreEqual (pix2pix.Generator.Output.Shape[1], goutput.Shape[1]);
+                    Assert.AreEqual (pix2pix.Generator.Output.Shape[2], goutput.Shape[2]);
+                    var droutput = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
+                    Console.WriteLine ($"REAL DISCR {droutput.Format()}");
+                    droutput.SaveImage (PngUrl (name: $"DiscrReal{row}{postfix}"));
+                    Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], droutput.Shape[0]);
+                    Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], droutput.Shape[1]);
+                    Assert.AreEqual (pix2pix.Discriminator.Output.Shape[2], droutput.Shape[2]);
+                    var dfoutput = pix2pix.Discriminator.Predict (goutput, pix2pix.Device);
+                    dfoutput.SaveImage (PngUrl (name: $"DiscrFake{row}{postfix}"));
+                }
+            }
         }
     }
 }

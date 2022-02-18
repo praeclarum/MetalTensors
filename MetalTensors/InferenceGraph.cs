@@ -43,6 +43,8 @@ namespace MetalTensors
 
         public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)
         {
+            using var pool = new NSAutoreleasePool ();
+
             using var queue = Device.CreateCommandQueue ();
             if (queue == null)
                 throw new Exception ("Failed to create command queue");
@@ -80,11 +82,15 @@ namespace MetalTensors
         {
             var batchSize = inputsBatch.Length;
 
+            using var pool = new NSAutoreleasePool ();
+
             using var queue = Device.CreateCommandQueue ();
             if (queue == null)
                 throw new Exception ("Failed to create command queue");
 
-            var semaphore = new Semaphore (2, 2);
+            using var semaphore = new Semaphore (2, 2);
+
+            MetalGraph.ReloadFromDataSources ();
 
             //
             // Init history

@@ -14,7 +14,8 @@ namespace MetalTensors.Applications
 
         const float lambdaL1 = 100.0f;
 
-        const float learningRate = 0.0002f;
+        const float gLearningRate = 0.0002f;
+        const float dLearningRate = 0.0004f;
 
         readonly IMTLDevice device;
 
@@ -38,9 +39,9 @@ namespace MetalTensors.Applications
             if (compiled)
                 return;
             compiled = true;
-            Discriminator.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: learningRate));
+            Discriminator.Compile (Loss.SumSigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
             Discriminator.IsTrainable = false;
-            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: learningRate));
+            Gan.Compile (Loss.MeanSquaredError, new AdamOptimizer (learningRate: gLearningRate));
         }
 
         static Model CreateGenerator ()
@@ -113,16 +114,27 @@ namespace MetalTensors.Applications
             var kw = 4;
             var ndf = 64;
 
-            var disc = image.Conv (ndf, size: kw, stride: 2).LeakyReLU (a: 0.2f);
+            var disc =
+                image
+                .Conv (ndf, size: kw, stride: 2)
+                .LeakyReLU (a: 0.2f);
 
             int nf_mult;
             for (var n = 1; n < nlayers; n++) {
                 nf_mult = Math.Min (1 << n, 8);
-                disc = disc.Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias).BatchNorm ().LeakyReLU (a: 0.2f);
+                disc =
+                    disc
+                    .Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias)
+                    .BatchNorm ()
+                    .LeakyReLU (a: 0.2f);
             }
 
             nf_mult = Math.Min (1 << nlayers, 8);
-            disc = disc.Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias).BatchNorm ().LeakyReLU (a: 0.2f);
+            disc =
+                disc
+                .Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias)
+                .BatchNorm ()
+                .LeakyReLU (a: 0.2f);
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
@@ -165,7 +177,8 @@ namespace MetalTensors.Applications
                 trainSW.Start ();
                 var fakes = Generator.Predict (segments);
                 var realsAndFakes = reals.Concat(fakes).ToArray ();
-                Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss}");
                 Gan.Fit (segments, zerosBatch);
                 trainSW.Stop ();
                 numTrainedImages += segments.Length;

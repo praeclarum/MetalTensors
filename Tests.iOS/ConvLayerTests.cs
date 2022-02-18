@@ -43,7 +43,7 @@ namespace Tests
         {
             var image = Tensor.InputImage ("image", 512, 512, 3);
             var conv = image.Conv (1, 3, stride: 1);
-            var output = SaveModelJpeg (image, conv.Add (0.5f));
+            var output = SaveModelPng (image, conv);
             Assert.AreEqual (512, output.Shape[0]);
             Assert.AreEqual (512, output.Shape[1]);
             Assert.AreEqual (1, output.Shape[2]);
@@ -54,10 +54,32 @@ namespace Tests
         {
             var image = Tensor.InputImage ("image", 512, 512, 3);
             var conv = image.Conv (1, 3, stride: 1).Sigmoid();
-            var output = SaveModelJpeg (image, conv);
+            var output = SaveModelPng (image, conv);
             Assert.AreEqual (512, output.Shape[0]);
             Assert.AreEqual (512, output.Shape[1]);
             Assert.AreEqual (1, output.Shape[2]);
+        }
+
+        //[Test] RGFloat not supported
+        public void Conv2 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (2, 3, stride: 1);
+            var output = SaveModelPng (image, conv.Add (0.5f));
+            Assert.AreEqual (512, output.Shape[0]);
+            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (2, output.Shape[2]);
+        }
+
+        [Test]
+        public void Conv3 ()
+        {
+            var image = Tensor.InputImage ("image", 512, 512, 3);
+            var conv = image.Conv (3, 3, stride: 1);
+            var output = SaveModelPng (image, conv.Add (0.5f));
+            Assert.AreEqual (512, output.Shape[0]);
+            Assert.AreEqual (512, output.Shape[1]);
+            Assert.AreEqual (3, output.Shape[2]);
         }
 
         [Test]

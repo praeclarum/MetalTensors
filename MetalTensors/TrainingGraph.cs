@@ -81,6 +81,10 @@ namespace MetalTensors
             if (validateInterval <= 0)
                 throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
 
+            using var pool = new NSAutoreleasePool ();
+
+            MetalGraph.ReloadFromDataSources ();
+
             //
             // Set the learning rate
             //
@@ -127,6 +131,10 @@ namespace MetalTensors
         public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
         {
             var batchSize = inputsBatch.Length;
+
+            using var pool = new NSAutoreleasePool ();
+
+            MetalGraph.ReloadFromDataSources ();
 
             //
             // Set the learning rate
