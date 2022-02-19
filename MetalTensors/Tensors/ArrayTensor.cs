@@ -16,6 +16,17 @@ namespace MetalTensors.Tensors
 
         public override bool IsStatic => true;
 
+        [ConfigCtor]
+        public ArrayTensor (int[] shape)
+        {
+            this.shape = shape;
+            var len = 1;
+            foreach (var s in shape) {
+                len *= s;
+            }
+            data = new float[len];
+        }
+
         public ArrayTensor (int[] shape, float[] data)
         {
             this.data = data;
@@ -25,10 +36,14 @@ namespace MetalTensors.Tensors
         public ArrayTensor (float[] data)
         {
             this.data = data;
-            this.shape = new int[] { data.Length };
+            shape = new int[] { data.Length };
         }
 
-        public override void Copy (Span<float> destination, IMTLDevice device)
+        public override Config Config => base.Config.Update (new Config {
+            { "shape", Shape },
+        });
+
+        public override void Copy (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
             Span<float> dataSpan = data;

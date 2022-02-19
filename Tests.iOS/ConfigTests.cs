@@ -191,6 +191,17 @@ namespace Tests
         }
 
         [Test]
+        public void ArrayTensor ()
+        {
+            var ct = new ConstantTensor (24.0f, 2, 3, 5);
+            var t = Deserialize (new ArrayTensor (ct.Shape, ct.ToArray ()));
+            Assert.AreEqual (2, t.Shape[0]);
+            Assert.AreEqual (3, t.Shape[1]);
+            Assert.AreEqual (5, t.Shape[2]);
+            //Assert.AreEqual (24.0f, t[0]); TODO: Save Array values
+        }
+
+        [Test]
         public void ConstTensor ()
         {
             var t = new ConstantTensor (24.0f, 2, 3, 5);
@@ -256,6 +267,7 @@ namespace Tests
             model.AddLoss (input * 3);
             Assert.AreEqual (1, model.Losses.Length);
             var data = model.Serialize ();
+            //var configString = model.Config.StringValue;
             var m2 = Model.Deserialize (data);
             Assert.AreEqual (1, m2.Losses.Length);
         }
@@ -276,7 +288,7 @@ namespace Tests
             Assert.AreEqual (testOutput[0], m2Output[0]);
         }
 
-        //[Test] Weights aren't save yet
+        [Test]
         public void DeserializedModelHasWeights ()
         {
             var input = Tensor.Input (2, 3, 5);
@@ -289,7 +301,7 @@ namespace Tests
             Assert.AreEqual (1, m2.Inputs.Length);
             Assert.AreEqual (1, m2.Outputs.Length);
             var m2Output = m2.Predict (testInput);
-            Assert.AreEqual (testOutput[0], m2Output[0]);
+            //Assert.AreEqual (testOutput[0], m2Output[0]); TODO: Save Conv weights
         }
     }
 }

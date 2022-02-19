@@ -31,7 +31,7 @@ namespace MetalTensors.Tensors
             { "inputs", ModelInputs },
         });
 
-        public override void Copy (Span<float> destination, IMTLDevice device)
+        public override void Copy (Span<float> destination, IMTLDevice? device = null)
         {
             BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination, device);
         }

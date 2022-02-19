@@ -47,7 +47,7 @@ namespace MetalTensors.Tensors
             return base.ToString () + "=" + ConstantValue;
         }
 
-        public override void Copy (Span<float> destination, IMTLDevice device)
+        public override void Copy (Span<float> destination, IMTLDevice? device = null)
         {
             var n = ValidateCopyDestination (destination);
             var c = ConstantValue;
