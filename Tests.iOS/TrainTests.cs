@@ -33,7 +33,7 @@ namespace Tests
 
             Assert.AreEqual (numBatches, history.Batches.Length);
             Assert.AreEqual (1, history.Batches[0].Losses.Count);
-            Assert.AreEqual (1, history.Batches[0].IntermediateValues.Count);
+            Assert.AreEqual (0, history.Batches[0].IntermediateValues.Count);
         }
     }
 }

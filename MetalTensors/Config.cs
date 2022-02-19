@@ -6,8 +6,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace MetalTensors
 {
@@ -15,7 +16,7 @@ namespace MetalTensors
     {
         static int nextId = 1;
         public int Id { get; }
-        public virtual Config Config => new Config { ObjectType = GetType ().Name };
+        public virtual Config Config => new Config { Id = Id, ObjectType = GetType ().Name };
         public Configurable ()
         {
             Id = Interlocked.Increment (ref nextId);
@@ -25,6 +26,11 @@ namespace MetalTensors
     public class Config : IEnumerable
     {
         readonly Dictionary<string, object> arguments = new Dictionary<string, object> ();
+
+        public int Id {
+            get => (int)(this["id"] ?? 0);
+            set => Add ("id", value);
+        }
 
         public string Name {
             get => (this["name"] ?? "").ToString ();
@@ -63,9 +69,7 @@ namespace MetalTensors
 
         public override string ToString ()
         {
-            using var s = new StringWriter ();
-            Write (s);
-            return s.ToString ();
+            return Encoding.UTF8.GetString (Serialize ());
         }
 
         public Config Add (string parameter, object argument)
@@ -96,79 +100,127 @@ namespace MetalTensors
 
         public void Write (TextWriter w)
         {
-            var references = new Dictionary<object, int> ();
-            WriteValue (this, w, references);
+            var settings = new XmlWriterSettings {
+                Indent = true,
+                NewLineChars = "\n",
+                OmitXmlDeclaration = true,
+                Encoding = Encoding.UTF8,
+            };
+            using var xw = XmlWriter.Create (w, settings);
+            Write (xw);
         }
 
-        static void WriteValue (object? value, TextWriter w, Dictionary<object, int> references)
+        public void Write (XmlWriter w)
+        {
+            var references = new Dictionary<object, int> ();
+            WriteConfig (this, w, references);
+        }
+
+        static bool ValueGoesInAttribute (object? value)
+        {
+            return value switch {
+                null => true,
+                string s => s.Length < 256 && !(s.Contains('\r') || s.Contains ('\n') || s.Contains ('\t')),
+                IConvertible _ => true,
+                Config _ => false,
+                int[] _ => true,
+                _ => false
+            };
+        }
+
+        static string GetValueString (object? value)
+        {
+            return value switch {
+                null => "null",
+                string s => s,
+                IConvertible co => co.ToString(CultureInfo.InvariantCulture),
+                int[] ints => string.Join(" ", ints),
+                var x => x.ToString (),
+            };
+        }
+
+        static void WriteValue (object? value, XmlWriter w, Dictionary<object, int> references)
         {
             if (value is null) {
-                w.Write ("null");
+                w.WriteElementString ("null", "");
             }
             else if (value is string s) {
-                w.Write ($"\"{EscapeString (s)}\"");
+                w.WriteString (s);
             }
             else if (value is Config c) {
-                w.Write ("{");
-                var head = " ";
-                foreach (var a in c.arguments) {
-                    w.Write (head);
-                    w.Write ($"\"{EscapeString (a.Key)}\"");
-                    w.Write (": ");
-                    WriteValue (a.Value, w, references);
-                    head = ", ";
-                }
-                w.Write (" }");
+                WriteConfig (c, w, references);
             }
             else if (value is IList l) {
-                w.Write ("[");
-                var lhead = "";
+                w.WriteStartElement ("Array");
                 foreach (var e in l) {
-                    w.Write (lhead);
+                    w.WriteStartElement ("Item");
                     WriteValue (e, w, references);
-                    lhead = ", ";
+                    w.WriteEndElement ();
                 }
-                w.Write ("]");
+                w.WriteEndElement ();
             }
             else if (value is IConvertible co) {
-                w.Write (co.ToString (CultureInfo.InvariantCulture));
+                w.WriteString (co.ToString (CultureInfo.InvariantCulture));
             }
             else if (value is Configurable conf) {
-                if (references.TryGetValue (value, out var _)) {
-                    w.Write ($"{{ \"ref\": {conf.Id} }}");
-                }
-                else {
-                    var vc = conf.Config.Add ("id", conf.Id);
-                    WriteValue (vc, w, references);
-                }
+                WriteConfigurable (conf, w, references);
             }
             else {
-                w.Write ("{}");
+                throw new NotSupportedException ($"Cannot write {value}");
             }                
         }
 
-        static JsonEncodedText EscapeString (string s)
+        private static void WriteConfigurable (Configurable conf, XmlWriter w, Dictionary<object, int> references)
         {
-            return JsonEncodedText.Encode(s);
+            if (references.TryGetValue (conf, out var _)) {
+                w.WriteStartElement (conf.Config.ObjectType);
+                w.WriteAttributeString ("refid", conf.Id.ToString ());
+                w.WriteEndElement ();
+            }
+            else {
+                WriteConfig (conf.Config, w, references);
+            }
+        }
+
+        private static void WriteConfig (Config c, XmlWriter w, Dictionary<object, int> references)
+        {
+            w.WriteStartElement (c.ObjectType);
+            w.WriteAttributeString ("id", c.Id.ToString ());
+            var rem = new List<KeyValuePair<string, object>> ();
+            foreach (var a in c.arguments) {
+                if (a.Key == "id" || a.Key == "type")
+                    continue;
+                if (ValueGoesInAttribute (a.Value)) {
+                    w.WriteAttributeString (a.Key, GetValueString (a.Value));
+                }
+                else {
+                    rem.Add (a);
+                }
+            }
+            foreach (var a in rem) {
+                w.WriteStartElement (a.Key);
+                WriteValue (a.Value, w, references);
+                w.WriteEndElement ();
+            }
+            w.WriteEndElement ();
         }
 
         public static T Read<T> (string path) where T : Configurable
         {
-            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return Read<T> (JsonDocument.Parse (stream));
+            return Read<T> (XDocument.Load (path));
         }
 
         public static T Read<T> (Stream stream) where T : Configurable
         {
-            return Read<T> (JsonDocument.Parse (stream));
+            return Read<T> (XDocument.Load (stream));
         }
 
         public static T Read<T> (TextReader reader) where T : Configurable
         {
-            return Read<T> (JsonDocument.Parse (reader.ReadToEnd ()));
+            return Read<T> (XDocument.Load (reader));
         }
 
-        public static T Read<T> (JsonDocument document) where T : Configurable
+        public static T Read<T> (XDocument document) where T : Configurable
         {
             throw new NotImplementedException ();
         }
