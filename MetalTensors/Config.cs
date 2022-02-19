@@ -12,11 +12,14 @@ using System.Xml.Linq;
 
 namespace MetalTensors
 {
-    public abstract class Configurable
+    public class Configurable
     {
-        static int nextId = 1;
+        static int nextId = 0;
+        public static Configurable Null { get; } = new Configurable ();
+
         public int Id { get; }
         public virtual Config Config => new Config { Id = Id, ObjectType = GetType ().Name };
+
         public Configurable ()
         {
             Id = Interlocked.Increment (ref nextId);
@@ -151,7 +154,7 @@ namespace MetalTensors
                 WriteConfig (c, w, references);
             }
             else if (value is IList l) {
-                w.WriteStartElement ("Array");
+                w.WriteStartElement ("List");
                 foreach (var e in l) {
                     w.WriteStartElement ("Item");
                     WriteValue (e, w, references);
@@ -222,7 +225,85 @@ namespace MetalTensors
 
         public static T Read<T> (XDocument document) where T : Configurable
         {
-            throw new NotImplementedException ();
+            return Read<T> (document.Root);
+        }
+
+        public static T Read<T> (XElement element) where T : Configurable
+        {
+            var references = new Dictionary<int, Configurable> ();
+            return (T)ReadConfigurable (element, references);
+        }
+
+        static Configurable ReadConfigurable (XElement element, Dictionary<int, Configurable> references)
+        {
+            var typeName = element.Name.LocalName;
+            var id = int.Parse (element.Attribute ("id").Value);
+            references[id] = Configurable.Null;
+            if (ConfigurableReaders.GetReader (typeName) is ConfigurableReader reader) {
+                var c = reader.Read (element, references);
+                references[id] = c;
+                return c;
+            }
+            throw new NotSupportedException ($"Cannot read elements of type {typeName}");
+        }
+
+        static class ConfigurableReaders
+        {
+            static readonly Dictionary<string, ConfigurableReader> readers = new Dictionary<string, ConfigurableReader> ();
+
+            static ConfigurableReaders ()
+            {
+                var asm = typeof (Model).Assembly;
+                var ctype = typeof (Configurable);
+                var atypes = asm.GetTypes ();
+                var ctypes =
+                    atypes
+                    .Where (t => ctype.IsAssignableFrom (t))
+                    .Select (t => new ConfigurableReader (t));
+                foreach (var t in ctypes) {
+                    readers[t.TypeName] = t;
+                }
+            }
+
+            public static ConfigurableReader? GetReader (string typeName)
+            {
+                if (readers.TryGetValue (typeName, out var r))
+                    return r;
+                return null;
+            }
+        }
+
+        class ConfigurableReader
+        {
+            public Type ObjectType { get; }
+            public string TypeName => ObjectType.Name;
+
+            public ConfigurableReader (Type type)
+            {
+                ObjectType = type;
+            }
+
+            public override string ToString ()
+            {
+                return TypeName + " Reader";
+            }
+
+            public Configurable Read (XElement element, Dictionary<int, Configurable> references)
+            {
+                var ctorValues = new Dictionary<string, object> ();
+                foreach (var a in element.Attributes ()) {
+                    var name = a.Name.LocalName;
+                    if (name == "id" || name == "refid")
+                        continue;
+                    ctorValues[name] = ReadValue (name, a.Value, typeof(string));
+                }
+                throw new NotImplementedException ();
+            }
+
+            object ReadValue (string localName, string value, Type valueType)
+            {
+                return value;
+            }
         }
     }
 }
