@@ -28,14 +28,14 @@ namespace MetalTensors
         {
             public IMTLDevice Device { get; }
             public Tensor[] Results { get; }
-            public Tensor[] Loss { get; }
+            public Dictionary<string, float> Losses { get; }
             public Dictionary<string, Tensor[]> IntermediateValues { get; }
             public MPSImage[] SourceImages { get; private set; }
 
-            public BatchHistory (Tensor[] results, Tensor[] loss, Dictionary<string, Tensor[]> intermediateValues, MPSImage[] sourceImages, IMTLDevice device)
+            public BatchHistory (Tensor[] results, Dictionary<string, float> losses, Dictionary<string, Tensor[]> intermediateValues, MPSImage[] sourceImages, IMTLDevice device)
             {
                 Results = results;
-                Loss = loss;
+                Losses = losses;
                 IntermediateValues = intermediateValues;
                 SourceImages = sourceImages;
                 Device = device;
@@ -45,14 +45,9 @@ namespace MetalTensors
                 get {
                     var n = 0;
                     var sum = 0.0;
-                    foreach (var r in Loss) {
-                        var len = r.Length;
-                        var ar = new float[len];
-                        r.Copy (ar, Device);
-                        foreach (var x in ar) {
-                            sum += x;
-                            n += 1;
-                        }
+                    foreach (var r in Losses) {
+                        sum += r.Value;
+                        n += 1;
                     }
                     if (n > 0)
                         return (float)(sum / n);

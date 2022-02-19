@@ -19,10 +19,12 @@ namespace MetalTensors
         public string Label { get; }
         public MPSNNGraph MetalGraph { get; }
         readonly TensorHandle[] sourceHandles;
-        readonly LayerHandle[] intermediateHandles;
+        protected readonly LayerHandle[] intermediateHandles;
         readonly int[] sourceToInputMap;
         readonly int[] sourceToOutputMap;
         MPSImage?[]? madeStaticImages;
+        readonly Tensor[] modelInputs;
+        readonly Tensor[] modelOutputs;
 
         protected Graph (string label, MPSNNGraph graph, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
         {
@@ -30,6 +32,8 @@ namespace MetalTensors
             Label = label;
             this.MetalGraph = graph;
             graph.Label = Label;
+            this.modelInputs = inputs;
+            this.modelOutputs = outputs;
 
             sourceHandles = graph.SourceImageHandles.Select (x => (TensorHandle)x).ToArray ();
             var ns = sourceHandles.Length;
@@ -164,8 +168,7 @@ namespace MetalTensors
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (results, loss, bh, temporaryBatchImages, cmdBuf.Device);
-                OnBatchCompleted (h);
+                var h = new TrainingHistory.BatchHistory (results, new Dictionary<string, float>(), bh, temporaryBatchImages, cmdBuf.Device);
                 recordHistory (h);
             });
 
@@ -177,11 +180,7 @@ namespace MetalTensors
             return commandBuffer;
         }
 
-        protected virtual void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
-        {
-        }
-
-        (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetSourceImages (Tensor[][] inputs, Tensor[][] outputs)
+        protected (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetSourceImages (Tensor[][] inputs, Tensor[][] outputs)
         {
             var batchSize = inputs.Length;
             var temps = new List<MPSImage> ();
@@ -220,7 +219,7 @@ namespace MetalTensors
                                 images[si][bi] = image;
                             }
                             else {
-                                throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}");
+                                throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}. The model expects {modelInputs.Length} inputs and {modelOutputs.Length} outputs. Provided data has {inputs[0].Length} inputs and {outputs[0].Length} outputs.");
                             }
                         }
                     }

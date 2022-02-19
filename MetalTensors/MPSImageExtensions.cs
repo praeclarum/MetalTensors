@@ -8,11 +8,25 @@ using MetalPerformanceShaders;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CoreGraphics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MetalTensors
 {
     public static class MPSImageExtensions
     {
+        public static void Dispose (this NSArray<MPSImage>[]? images)
+        {
+            if (images != null) {
+                foreach (var imgs in images) {
+                    foreach (var i in imgs) {
+                        i.Dispose ();
+                    }
+                    imgs.Dispose ();
+                }
+            }
+        }
+
         public static unsafe void Fill (this MPSImage image, float constant)
         {
             var dtype = image.PixelFormat;
@@ -60,6 +74,33 @@ namespace MetalTensors
             var dev = device.Current ();
             using var neuron = new MPSCnnNeuronLinear (dev, a, b);
             return Filter (image, neuron, dev);
+        }
+
+        public static float ReduceMeanValue (this IEnumerable<MPSImage> images)
+        {
+            var sum = 0.0f;
+            var n = 0;
+            foreach (var i in images) {
+                sum += i.ReduceMeanValue ();
+                n += 1;
+            }
+            if (n > 0)
+                return sum / n;
+            return 0.0f;
+        }
+
+        public static float ReduceMeanValue (this MPSImage image)
+        {
+            var n = image.FeatureChannels * image.Width * image.Height;
+            var floats = new float[n];
+            unsafe {
+                fixed (float* p = floats) {
+                    image.ReadBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+                }
+            }
+            if (n > 0)
+                return floats.Sum() / n;
+            return 0.0f;
         }
 
         public static CGImage ToCGImage (this MPSImage image, int numComponents = 3)

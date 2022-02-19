@@ -114,12 +114,5 @@ namespace MetalTensors
 
             return h;
         }
-
-        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
-        {
-            //foreach (var r in batchResults.Results) {
-            //    Console.WriteLine (Label + " Result = " + r);
-            //}
-        }
     }
 }
