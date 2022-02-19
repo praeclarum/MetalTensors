@@ -65,17 +65,17 @@ namespace Tests
             return autoEncoder;
         }
 
-        //[Test]
+        [Test]
         public void EncoderUntrained ()
         {
             var encoder = MakeEncoder ();
             var output = SaveModelJpeg (encoder, 0.5f, 0.5f);
             Assert.AreEqual (16, output.Shape[0]);
             Assert.AreEqual (16, output.Shape[1]);
-            Assert.AreEqual (128, output.Shape[2]);
+            Assert.AreEqual (256, output.Shape[2]);
         }
 
-        [Test]
+        //[Test]
         public void Train ()
         {
             var autoEncoder = MakeAutoEncoder ();
