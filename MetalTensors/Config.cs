@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace MetalTensors
@@ -43,6 +44,21 @@ namespace MetalTensors
         {
         }
 
+        IEnumerator IEnumerable.GetEnumerator () => new ReadOnlyDictionary<string, object> (arguments).GetEnumerator ();
+
+        public byte[] Serialize ()
+        {
+            using var stream = new MemoryStream ();
+            Write (stream);
+            return stream.ToArray ();
+        }
+
+        public static T Deserialize<T> (byte[] data) where T : Configurable
+        {
+            using var stream = new MemoryStream (data);
+            return Read<T> (stream);
+        }
+
         public string StringValue => ToString ();
 
         public override string ToString ()
@@ -69,6 +85,12 @@ namespace MetalTensors
         public void Write (string path)
         {
             using var w = new StreamWriter (path, false, Encoding.UTF8);
+            Write (w);
+        }
+
+        public void Write (Stream stream)
+        {
+            using var w = new StreamWriter (stream, Encoding.UTF8);
             Write (w);
         }
 
@@ -125,14 +147,30 @@ namespace MetalTensors
             }                
         }
 
-        static string EscapeString (string s)
+        static JsonEncodedText EscapeString (string s)
         {
-            return s.Replace ("\\", "\\\\").Replace ("\n", "\\n").Replace ("\r", "\\r").Replace ("\t", "\\r");
+            return JsonEncodedText.Encode(s);
         }
 
-        IEnumerator IEnumerable.GetEnumerator ()
+        public static T Read<T> (string path) where T : Configurable
         {
-            return new ReadOnlyDictionary<string, object> (arguments).GetEnumerator ();
+            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return Read<T> (JsonDocument.Parse (stream));
+        }
+
+        public static T Read<T> (Stream stream) where T : Configurable
+        {
+            return Read<T> (JsonDocument.Parse (stream));
+        }
+
+        public static T Read<T> (TextReader reader) where T : Configurable
+        {
+            return Read<T> (JsonDocument.Parse (reader.ReadToEnd ()));
+        }
+
+        public static T Read<T> (JsonDocument document) where T : Configurable
+        {
+            throw new NotImplementedException ();
         }
     }
 }

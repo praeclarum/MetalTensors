@@ -190,7 +190,7 @@ namespace Tests
 
             SampleModel ("Train0");
             var lastP = 0.0;
-            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 1.1f, progress: p => {
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
                 //Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
                 if ((p - lastP) >= 0.02) {
                     lastP = p;
@@ -220,7 +220,7 @@ namespace Tests
                     Assert.AreEqual (pix2pix.Generator.Output.Shape[1], goutput.Shape[1]);
                     Assert.AreEqual (pix2pix.Generator.Output.Shape[2], goutput.Shape[2]);
                     var droutput = pix2pix.Discriminator.Predict (outputs[0], pix2pix.Device);
-                    Console.WriteLine ($"REAL DISCR {droutput.Format ()}");
+                    //Console.WriteLine ($"REAL DISCR {droutput.Format ()}");
                     droutput.SaveImage (PngUrl (name: $"DiscrReal{row}{postfix}"));
                     Assert.AreEqual (pix2pix.Discriminator.Output.Shape[0], droutput.Shape[0]);
                     Assert.AreEqual (pix2pix.Discriminator.Output.Shape[1], droutput.Shape[1]);
