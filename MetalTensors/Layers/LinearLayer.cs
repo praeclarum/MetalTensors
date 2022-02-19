@@ -8,8 +8,8 @@ namespace MetalTensors.Layers
         public float Scale { get; }
         public float Offset { get; }
 
-        public LinearLayer (float scale, float offset = 0.0f, string? name = null)
-            : base (name)
+        public LinearLayer (float scale, float offset = 0.0f, string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
             Scale = scale;
             Offset = offset;

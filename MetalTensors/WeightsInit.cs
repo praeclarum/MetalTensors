@@ -7,33 +7,35 @@ namespace MetalTensors
 {
     public abstract class WeightsInit : Configurable
     {
-        public static WeightsInit Default = new GlorotUniformInit (1.0f);
+        public static WeightsInit Default = new GlorotUniformInit (scale: 1.0f);
 
         public static WeightsInit GlorotUniform (float scale = 1.0f) => new GlorotUniformInit (scale);
         public static WeightsInit Normal (float mean, float standardDeviation) => new NormalInit (mean, standardDeviation);
         public static WeightsInit Uniform (float min, float max) => new UniformInit (min, max);
 
         public abstract Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut);
+    }
 
-        class GlorotUniformInit : WeightsInit
+    public class GlorotUniformInit : WeightsInit
+    {
+        // https://github.com/keras-team/keras/blob/8e76f053e8823988626e74cb386fc01ec857859a/keras/initializers/initializers_v2.py#L503
+        // https://github.com/keras-team/keras/blob/8e76f053e8823988626e74cb386fc01ec857859a/keras/initializers/initializers_v2.py#L687
+
+        public float Scale { get; }
+
+        public GlorotUniformInit (float scale = 1.0f)
         {
-            // https://github.com/keras-team/keras/blob/8e76f053e8823988626e74cb386fc01ec857859a/keras/initializers/initializers_v2.py#L503
-            // https://github.com/keras-team/keras/blob/8e76f053e8823988626e74cb386fc01ec857859a/keras/initializers/initializers_v2.py#L687
+            Scale = scale;
+        }
 
-            readonly float weightScale;
+        public override Config Config => base.Config.Add ("scale", 1.0f);
 
-            public GlorotUniformInit (float weightScale)
-            {
-                this.weightScale = weightScale;
-            }
-
-            public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
-            {
-                var scale = weightScale / Math.Max (1.0, (fanIn + fanOut) / 2.0);
-                var limit = Math.Sqrt (3.0 * scale);
-                //Console.WriteLine ($"LIMIT {limit}");
-                return vector.UniformInitAsync ((float)-limit, (float)limit, seed, downloadToCpu: true);
-            }
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
+        {
+            var scale = Scale / Math.Max (1.0, (fanIn + fanOut) / 2.0);
+            var limit = Math.Sqrt (3.0 * scale);
+            //Console.WriteLine ($"LIMIT {limit}");
+            return vector.UniformInitAsync ((float)-limit, (float)limit, seed, downloadToCpu: true);
         }
     }
 

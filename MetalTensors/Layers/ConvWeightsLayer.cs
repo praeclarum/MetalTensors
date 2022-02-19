@@ -22,8 +22,8 @@ namespace MetalTensors.Layers
 
         public ConvWeights Weights { get; }
 
-        protected ConvWeightsLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit, string? name = null)
-            : base (name)
+        protected ConvWeightsLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit, string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
             Weights = new ConvWeights (Name, inFeatureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, bias, weightsInit, biasInit);
             Padding = padding;

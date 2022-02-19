@@ -50,8 +50,8 @@ namespace MetalTensors
         }
 
         [ConfigCtor]
-        public Model (Tensor[] inputs, Tensor[] outputs, string? name = null)
-            : base (name ?? (outputs.Length > 0 ? outputs[0].Label + " Model" : null))
+        public Model (Tensor[] inputs, Tensor[] outputs, string? name = null, bool isTrainable = true)
+            : base (name ?? (outputs.Length > 0 ? outputs[0].Label + " Model" : null), isTrainable: isTrainable)
         {
             if (outputs == null || outputs.Length < 1)
                 throw new ArgumentException ("At least one output must be given", nameof (outputs));

@@ -5,8 +5,8 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 2;
 
-        protected BinopLayer (string? name = null)
-            : base (name)
+        protected BinopLayer (string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
         }
 

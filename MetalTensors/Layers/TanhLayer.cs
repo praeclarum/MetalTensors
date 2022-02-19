@@ -5,7 +5,7 @@ namespace MetalTensors.Layers
 {
     public class TanhLayer : UnopLayer
     {
-        public TanhLayer (string? name = null) : base (name)
+        public TanhLayer (string? name = null, bool isTrainable = true) : base (name, isTrainable: isTrainable)
         {
         }
 

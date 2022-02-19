@@ -21,7 +21,7 @@ namespace MetalTensors
 
         public abstract int MinInputCount { get; }
 
-        public bool IsTrainable { get; set; } = true;
+        public bool IsTrainable { get; set; }
 
         public string Name => name;
 
@@ -31,14 +31,18 @@ namespace MetalTensors
 
         public void AddLoss (Tensor loss) => losses.Add (loss);
 
-        protected Layer (string? name = null)
+        protected Layer (string? name = null, bool isTrainable = true)
         {
             this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + Id : name!;
+            IsTrainable = isTrainable;
         }
 
         public override string ToString () => Name;
 
-        public override Config Config => base.Config.Add ("name", Name);
+        public override Config Config => base.Config.Update (new Config {
+            { "name", Name },
+            { "isTrainable", IsTrainable },
+        });
 
         public virtual void ValidateInputShapes (params Tensor[] inputs)
         {

@@ -6,7 +6,7 @@ namespace MetalTensors.Layers
 {
     public class MultiplyLayer : BinopLayer
     {
-        public MultiplyLayer (string? name = null) : base (name)
+        public MultiplyLayer (string? name = null, bool isTrainable = true) : base (name, isTrainable: isTrainable)
         {
         }
 

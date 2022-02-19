@@ -9,8 +9,8 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 1;
 
-        public ConcatLayer (string? name = null)
-            : base (name)
+        public ConcatLayer (string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
         }
 

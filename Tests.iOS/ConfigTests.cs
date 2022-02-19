@@ -233,6 +233,21 @@ namespace Tests
             Assert.AreEqual (-3.0f, t2[0]);
         }
 
+
+        [Test]
+        public void DeserializeModelIsTrainable ()
+        {
+            var input = Tensor.Input (2, 3, 5);
+            var output = input.LeakyReLU (0.3f);
+            var model = output.Model (input);
+            Assert.AreEqual (true, model.IsTrainable);
+            model.IsTrainable = false;
+            Assert.AreEqual (false, model.IsTrainable);
+            var data = model.Serialize ();
+            var m2 = Model.Deserialize (data);
+            Assert.AreEqual (false, m2.IsTrainable);
+        }
+
         [Test]
         public void DeserializeSisoModel ()
         {
@@ -240,6 +255,22 @@ namespace Tests
             var output = input.LeakyReLU (0.3f);
             var model = output.Model (input);
             var testInput = Tensor.Constant (-10.0f, 2, 3, 5);
+            var testOutput = model.Predict (testInput);
+            var data = model.Serialize ();
+            var m2 = Model.Deserialize (data);
+            Assert.AreEqual (1, m2.Inputs.Length);
+            Assert.AreEqual (1, m2.Outputs.Length);
+            var m2Output = m2.Predict (testInput);
+            Assert.AreEqual (testOutput[0], m2Output[0]);
+        }
+
+        [Test]
+        public void DeserializedModelHasWeights ()
+        {
+            var input = Tensor.Input (2, 3, 5);
+            var output = input.Conv (7, 3);
+            var model = output.Model (input);
+            var testInput = Tensor.Constant (1.0f, 2, 3, 5);
             var testOutput = model.Predict (testInput);
             var data = model.Serialize ();
             var m2 = Model.Deserialize (data);

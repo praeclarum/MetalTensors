@@ -17,8 +17,8 @@ namespace MetalTensors.Layers
 
         public float Epsilon => Weights.Epsilon;
 
-        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null)
-            : base (name)
+        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
             Weights = new BatchNormWeights (Name, featureChannels, epsilon);
             FeatureChannels = featureChannels;

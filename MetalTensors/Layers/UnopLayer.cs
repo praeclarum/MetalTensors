@@ -5,8 +5,8 @@ namespace MetalTensors.Layers
 {
     public abstract class UnopLayer : Layer
     {
-        protected UnopLayer (string? name = null)
-            : base (name)
+        protected UnopLayer (string? name = null, bool isTrainable = true)
+            : base (name, isTrainable: isTrainable)
         {
         }
 
