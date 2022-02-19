@@ -210,17 +210,20 @@ namespace MetalTensors
             //
             // Encode the graph
             //
-            var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
+            using var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
             var destinationStates = new NSMutableArray<NSArray<MPSState>> ();
-            NSArray<MPSImage>? returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, null, intermediateImagesMA, null);
+            var returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, null, intermediateImagesMA, null);
             var intermediateImages = intermediateImagesMA.ToArray ();
 
             //
             // Synchronize needed images
             //
-            foreach (var imBatch in intermediateImages) {
-                //Console.WriteLine (ims);
-                MPSImageBatch.Synchronize (imBatch, commandBuffer);
+            for (var i = 0; i < intermediateHandles.Length; i++) {
+                if (i < intermediateImages.Length) {
+                    if (intermediateIsLoss[i]) {
+                        MPSImageBatch.Synchronize (intermediateImages[i], commandBuffer);
+                    }
+                }
             }
 
             //
