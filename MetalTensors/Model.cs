@@ -39,6 +39,12 @@ namespace MetalTensors
         public Tensor Output => Outputs[0];
         public Tensor Input => Inputs[0];
 
+        readonly List<Tensor> losses = new List<Tensor> ();
+
+        public Tensor[] Losses => losses.ToArray ();
+
+        public void AddLoss (Tensor loss) => losses.Add (loss);
+
         public Model (Tensor input, Tensor output, string? name = null)
             : this (new[] { input }, new[] { output }, name)
         {
@@ -50,7 +56,7 @@ namespace MetalTensors
         }
 
         [ConfigCtor]
-        public Model (Tensor[] inputs, Tensor[] outputs, string? name = null, bool isTrainable = true)
+        public Model (Tensor[] inputs, Tensor[] outputs, string? name = null, bool isTrainable = true, Tensor[]? losses = null)
             : base (name ?? (outputs.Length > 0 ? outputs[0].Label + " Model" : null), isTrainable: isTrainable)
         {
             if (outputs == null || outputs.Length < 1)
@@ -59,6 +65,9 @@ namespace MetalTensors
             KeepDropoutDuringInference = true;
             Inputs = inputs;
             Outputs = outputs;
+
+            if (losses != null)
+                this.losses.AddRange (losses);
 
             //
             // Build graph
@@ -107,7 +116,11 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
-        public override Config Config => base.Config.Add ("inputs", Inputs).Add ("outputs", Outputs);
+        public override Config Config => base.Config.Update (new Config {
+            { "inputs", Inputs },
+            { "outputs", Outputs },
+            { "losses", Losses },
+        });
 
         public override string ToString () => $"{Name} {{trainable:{IsTrainable}}}";
 

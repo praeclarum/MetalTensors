@@ -66,9 +66,7 @@ namespace MetalTensors
                     })
                     .Where (x => x != null)
                     .Cast<Tensor> ();
-                var addedLosses =
-                    flatModel.Layers.Append(model)
-                    .SelectMany(x => x.Losses);
+                var addedLosses = model.Losses;
                 losses = labelLosses.Concat (addedLosses).ToArray ();
                 if (losses.Length == 0)
                     throw new InvalidOperationException ("Model has no losses");

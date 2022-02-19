@@ -25,12 +25,6 @@ namespace MetalTensors
 
         public string Name => name;
 
-        readonly List<Tensor> losses = new List<Tensor> ();
-
-        public Tensor[] Losses => losses.ToArray ();
-
-        public void AddLoss (Tensor loss) => losses.Add (loss);
-
         protected Layer (string? name = null, bool isTrainable = true)
         {
             this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + Id : name!;

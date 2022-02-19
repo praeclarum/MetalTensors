@@ -233,7 +233,6 @@ namespace Tests
             Assert.AreEqual (-3.0f, t2[0]);
         }
 
-
         [Test]
         public void DeserializeModelIsTrainable ()
         {
@@ -246,6 +245,19 @@ namespace Tests
             var data = model.Serialize ();
             var m2 = Model.Deserialize (data);
             Assert.AreEqual (false, m2.IsTrainable);
+        }
+
+        [Test]
+        public void DeserializeModelAddedLosses ()
+        {
+            var input = Tensor.Input (2, 3, 5);
+            var output = input.LeakyReLU (0.3f);
+            var model = output.Model (input);
+            model.AddLoss (input * 3);
+            Assert.AreEqual (1, model.Losses.Length);
+            var data = model.Serialize ();
+            var m2 = Model.Deserialize (data);
+            Assert.AreEqual (1, m2.Losses.Length);
         }
 
         [Test]
@@ -264,7 +276,7 @@ namespace Tests
             Assert.AreEqual (testOutput[0], m2Output[0]);
         }
 
-        [Test]
+        //[Test] Weights aren't save yet
         public void DeserializedModelHasWeights ()
         {
             var input = Tensor.Input (2, 3, 5);

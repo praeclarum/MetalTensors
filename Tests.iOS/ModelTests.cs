@@ -143,18 +143,5 @@ namespace Tests
             Assert.AreEqual (x, model.Input);
             model.Compile ();
         }
-
-        [Test]
-        public void CompileInputAddLoss ()
-        {
-            var x = Tensor.Input ("x", 3);
-            var denseLayer = new DenseLayer (3, 32);
-            var y = denseLayer.Call(x).ReLU ().Dense (5);
-            var model = new Model (x, y);
-            denseLayer.AddLoss ((y - 1).Abs ());
-            Assert.AreEqual (x, model.Input);
-            var cm = model.Compile ();
-            Assert.AreEqual (1, cm.Losses.Length);
-        }
     }
 }
