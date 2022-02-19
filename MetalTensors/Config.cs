@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -258,7 +259,7 @@ namespace MetalTensors
                 var atypes = asm.GetTypes ();
                 var ctypes =
                     atypes
-                    .Where (t => ctype.IsAssignableFrom (t))
+                    .Where (t => ctype.IsAssignableFrom (t) && !t.IsAbstract)
                     .Select (t => new ConfigurableReader (t));
                 foreach (var t in ctypes) {
                     readers[t.TypeName] = t;
@@ -276,11 +277,19 @@ namespace MetalTensors
         class ConfigurableReader
         {
             public Type ObjectType { get; }
+            public ConstructorInfo Constructor { get; }
+            public ParameterInfo[] Parameters { get; }
+            public Dictionary<string, int> ParameterIndex { get; } = new Dictionary<string, int> ();
             public string TypeName => ObjectType.Name;
 
             public ConfigurableReader (Type type)
             {
                 ObjectType = type;
+                Constructor = type.GetConstructors ().OrderByDescending (x => x.GetParameters ().Length).First ();
+                Parameters = Constructor.GetParameters ();
+                for (var i = 0; i < Parameters.Length; i++) {
+                    ParameterIndex[Parameters[i].Name] = i;
+                }
             }
 
             public override string ToString ()
@@ -290,14 +299,17 @@ namespace MetalTensors
 
             public Configurable Read (XElement element, Dictionary<int, Configurable> references)
             {
-                var ctorValues = new Dictionary<string, object> ();
+                var arguments = new object[Parameters.Length];
                 foreach (var a in element.Attributes ()) {
                     var name = a.Name.LocalName;
                     if (name == "id" || name == "refid")
                         continue;
-                    ctorValues[name] = ReadValue (name, a.Value, typeof(string));
+                    if (ParameterIndex.TryGetValue (name, out var pindex)) {
+                        arguments[pindex] = ReadValue (name, a.Value, Parameters[pindex].ParameterType);
+                    }
                 }
-                throw new NotImplementedException ();
+                var obj = (Configurable)Constructor.Invoke (arguments);
+                return obj;
             }
 
             object ReadValue (string localName, string value, Type valueType)
