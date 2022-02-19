@@ -16,11 +16,10 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public abstract class Tensor
+    public abstract class Tensor : Configurable
     {
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
-        public int Id => Handle.Id;
         public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
@@ -34,6 +33,8 @@ namespace MetalTensors
 
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
+
+        public override Config Config => base.Config.Add ("name", Label).Add ("shape", Shape);
 
         protected Tensor (string? label = null)
         {

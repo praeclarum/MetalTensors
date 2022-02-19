@@ -328,5 +328,11 @@ namespace MetalTensors
         {
             throw new NotSupportedException ($"Cannot create MPS filter nodes from models directly.");
         }
+
+        public void Save (string path)
+        {
+            var config = Config;
+            config.Write (path);
+        }
     }
 }

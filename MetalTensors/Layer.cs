@@ -12,9 +12,8 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public abstract class Layer
+    public abstract class Layer : Configurable
     {
-        static int nextId = 1;
         readonly string name;
 
         readonly ConcurrentDictionary<string, MPSNNFilterNode> cachedFilterNodes =
@@ -34,11 +33,12 @@ namespace MetalTensors
 
         protected Layer (string? name = null)
         {
-            var id = Interlocked.Increment (ref nextId);
-            this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + id : name!;
+            this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + Id : name!;
         }
 
         public override string ToString () => Name;
+
+        public override Config Config => base.Config.Add ("name", Name);
 
         public virtual void ValidateInputShapes (params Tensor[] inputs)
         {

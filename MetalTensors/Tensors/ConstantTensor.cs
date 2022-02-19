@@ -35,6 +35,10 @@ namespace MetalTensors.Tensors
         {
         }
 
+        public override Config Config => base.Config.Update (new Config {
+            { "constant", ConstantValue },
+        });
+
         protected override TensorHandle CreateHandle (string? label) => new ConstantHandle (this, label, ConstantValue);
 
         public override string ToString ()

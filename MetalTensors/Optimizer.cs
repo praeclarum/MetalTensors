@@ -2,7 +2,7 @@
 
 namespace MetalTensors
 {
-    public abstract class Optimizer
+    public abstract class Optimizer : Configurable
     {
         public const float DefaultLearningRate = 1e-3f;
 

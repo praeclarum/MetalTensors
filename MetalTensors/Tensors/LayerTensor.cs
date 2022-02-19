@@ -24,6 +24,11 @@ namespace MetalTensors.Tensors
             Layer.ValidateInputShapes (inputs);
         }
 
+        public override Config Config => base.Config.Update (new Config {
+            { "layer", Layer },
+            { "inputs", LayerInputs },
+        });
+
         public override void Copy (Span<float> destination, IMTLDevice device)
         {
             var computed = Layer.ExecuteAsync (LayerInputs, device).Result;

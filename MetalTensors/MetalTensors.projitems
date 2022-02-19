@@ -70,6 +70,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Layers\LinearLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MPSVectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />
