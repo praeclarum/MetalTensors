@@ -138,7 +138,7 @@ namespace MetalTensors
                 null => "null",
                 string s => s,
                 IConvertible co => co.ToString(CultureInfo.InvariantCulture),
-                int[] ints => string.Join(" ", ints),
+                int[] ints => string.Join(", ", ints),
                 var x => x.ToString (),
             };
         }
@@ -305,16 +305,27 @@ namespace MetalTensors
                     if (name == "id" || name == "refid")
                         continue;
                     if (ParameterIndex.TryGetValue (name, out var pindex)) {
-                        arguments[pindex] = ReadValue (name, a.Value, Parameters[pindex].ParameterType);
+                        arguments[pindex] = ReadValueString (name, a.Value, Parameters[pindex].ParameterType);
                     }
                 }
+                // TODO: Read argument child elements
                 var obj = (Configurable)Constructor.Invoke (arguments);
                 return obj;
             }
 
-            object ReadValue (string localName, string value, Type valueType)
+            static readonly char[] arraySplits = new[] { ' ', ',' };
+
+            object ReadValueString (string localName, string value, Type valueType)
             {
-                return value;
+                if (valueType == typeof (string))
+                    return value;
+                if (valueType == typeof (int))
+                    return int.Parse (value);
+                if (valueType == typeof (float))
+                    return float.Parse (value);
+                if (valueType == typeof (int[]))
+                    return value.Split(arraySplits, StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse (x)).ToArray ();
+                throw new NotSupportedException ($"Cannot convert \"{value}\" to {valueType}");
             }
         }
     }
