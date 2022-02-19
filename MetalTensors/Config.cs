@@ -27,6 +27,8 @@ namespace MetalTensors
         }
     }
 
+    public class ConfigCtorAttribute : Attribute { }
+
     public class Config : IEnumerable
     {
         readonly Dictionary<string, object> arguments = new Dictionary<string, object> ();
@@ -175,12 +177,13 @@ namespace MetalTensors
 
         static void WriteConfigurable (Configurable conf, XmlWriter w, HashSet<Configurable> references)
         {
-            if (references.TryGetValue (conf, out var _)) {
+            if (references.Contains (conf)) {
                 w.WriteStartElement (conf.Config.ObjectType);
                 w.WriteAttributeString ("refid", conf.Id.ToString ());
                 w.WriteEndElement ();
             }
             else {
+                references.Add (conf);
                 WriteConfig (conf.Config, w, references);
             }
         }
@@ -326,7 +329,11 @@ namespace MetalTensors
             public ConfigurableReader (Type type)
             {
                 ObjectType = type;
-                Constructor = type.GetConstructors ().OrderByDescending (x => x.GetParameters ().Length).First ();
+
+                var ctors = type.GetConstructors ();
+                Constructor =
+                    ctors.FirstOrDefault (x => x.GetCustomAttribute (typeof (ConfigCtorAttribute)) != null) ??
+                    ctors.OrderByDescending (x => x.GetParameters ().Length).First ();
                 Parameters = Constructor.GetParameters ();
                 for (var i = 0; i < Parameters.Length; i++) {
                     ParameterIndex[Parameters[i].Name] = i;

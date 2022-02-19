@@ -48,6 +48,7 @@ namespace MetalTensors
         {
         }
 
+        [ConfigCtor]
         public Model (Tensor[] inputs, Tensor[] outputs, string? name = null)
             : base (name ?? (outputs.Length > 0 ? outputs[0].Label + " Model" : null))
         {

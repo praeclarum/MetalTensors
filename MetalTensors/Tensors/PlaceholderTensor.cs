@@ -13,11 +13,13 @@ namespace MetalTensors.Tensors
 
         public override bool IsStatic => false;
 
-        protected PlaceholderTensor (string label, int[] shape)
-            : base (label)
+        protected PlaceholderTensor (string? name, int[] shape)
+            : base (name)
         {
             this.shape = shape.NormalizeShape ();
-        }        
+        }
+
+        public override Config Config => base.Config.Add ("shape", Shape);
 
         public override void Copy (Span<float> destination, IMTLDevice device)
         {

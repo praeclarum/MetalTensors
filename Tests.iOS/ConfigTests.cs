@@ -54,5 +54,21 @@ namespace Tests
             var t2 = Config.Deserialize<Tensor> (data);
             Assert.AreEqual (-3.0f, t2[0]);
         }
+
+        [Test]
+        public void DeserializeSisoModel ()
+        {
+            var input = Tensor.Input (2, 3, 5);
+            var output = input.LeakyReLU (0.3f);
+            var model = output.Model (input);
+            var testInput = Tensor.Constant (-10.0f, 2, 3, 5);
+            var testOutput = model.Predict (testInput);
+            var data = model.Config.Serialize ();
+            var m2 = Config.Deserialize<Model> (data);
+            Assert.AreEqual (1, m2.Inputs.Length);
+            Assert.AreEqual (1, m2.Outputs.Length);
+            var m2Output = m2.Predict (testInput);
+            Assert.AreEqual (testOutput[0], m2Output[0]);
+        }
     }
 }

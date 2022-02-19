@@ -210,6 +210,11 @@ namespace MetalTensors
             return new InputTensor (label, shape);
         }
 
+        public static Tensor Input (params int[] shape)
+        {
+            return new InputTensor (shape);
+        }
+
         public static Tensor Input (Tensor mimic)
         {
             return new InputTensor (mimic.Label, mimic.Shape);
