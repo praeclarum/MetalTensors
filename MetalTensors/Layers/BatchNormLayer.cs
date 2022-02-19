@@ -15,11 +15,19 @@ namespace MetalTensors.Layers
         public int FeatureChannels { get; }
         public BatchNormWeights Weights { get; }
 
-        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon)
+        public float Epsilon => Weights.Epsilon;
+
+        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null)
+            : base (name)
         {
             Weights = new BatchNormWeights (Name, featureChannels, epsilon);
             FeatureChannels = featureChannels;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "featureChannels", FeatureChannels },
+            { "epsilon", Epsilon },
+        });
 
         public override int[] GetOutputShape (params Tensor[] inputs)
         {

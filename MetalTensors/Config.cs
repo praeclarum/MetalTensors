@@ -286,7 +286,9 @@ namespace MetalTensors
             if (valueType == typeof (int))
                 return int.Parse (value);
             if (valueType == typeof (float))
-                return float.Parse (value);
+                return float.Parse (value, CultureInfo.InvariantCulture);
+            if (valueType == typeof (bool))
+                return bool.Parse (value);
             if (valueType == typeof (int[]))
                 return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
             if (typeof (Enum).IsAssignableFrom (valueType)) {

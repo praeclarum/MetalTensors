@@ -22,11 +22,25 @@ namespace MetalTensors.Layers
 
         public ConvWeights Weights { get; }
 
-        protected ConvWeightsLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit)
+        protected ConvWeightsLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit, string? name = null)
+            : base (name)
         {
             Weights = new ConvWeights (Name, inFeatureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, bias, weightsInit, biasInit);
             Padding = padding;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "inFeatureChannels", InFeatureChannels },
+            { "outFeatureChannels", OutFeatureChannels },
+            { "sizeX", SizeX },
+            { "sizeY", SizeY },
+            { "strideX", StrideX },
+            { "strideY", StrideY },
+            { "padding", Padding },
+            { "bias", Bias },
+            { "biasInit", BiasInit },
+            { "weightsInit", WeightsInit },
+        });
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {

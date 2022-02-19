@@ -5,7 +5,7 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors
 {
-    public abstract class WeightsInit
+    public abstract class WeightsInit : Configurable
     {
         public static WeightsInit Default = new GlorotUniformInit (1.0f);
 
@@ -35,39 +35,49 @@ namespace MetalTensors
                 return vector.UniformInitAsync ((float)-limit, (float)limit, seed, downloadToCpu: true);
             }
         }
+    }
 
-        class NormalInit : WeightsInit
+    public class NormalInit : WeightsInit
+    {
+        public float Mean { get; }
+        public float StandardDeviation { get; }
+
+        public NormalInit (float mean, float standardDeviation)
         {
-            readonly float mean;
-            readonly float standardDeviation;
-
-            public NormalInit (float mean, float standardDeviation)
-            {
-                this.mean = mean;
-                this.standardDeviation = standardDeviation;
-            }
-
-            public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
-            {
-                return vector.NormalInitAsync (mean, standardDeviation, seed, downloadToCpu: true);
-            }
+            Mean = mean;
+            StandardDeviation = standardDeviation;
         }
 
-        class UniformInit : WeightsInit
+        public override Config Config => base.Config.Update (new Config {
+            { "mean", Mean },
+            { "standardDeviation", StandardDeviation },
+        });
+
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
         {
-            readonly float min;
-            readonly float max;
-
-            public UniformInit (float min, float max)
-            {
-                this.min = min;
-                this.max = max;
-            }
-
-            public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
-            {
-                return vector.UniformInitAsync (min, max, seed, downloadToCpu: true);
-            }
+            return vector.NormalInitAsync (Mean, StandardDeviation, seed, downloadToCpu: true);
         }
-    }    
+    }
+
+    public class UniformInit : WeightsInit
+    {
+        public float Min { get; }
+        public float Max { get; }
+
+        public UniformInit (float min, float max)
+        {
+            Min = min;
+            Max = max;
+        }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "min", Min },
+            { "max", Max },
+        });
+
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
+        {
+            return vector.UniformInitAsync (Min, Max, seed, downloadToCpu: true);
+        }
+    }
 }

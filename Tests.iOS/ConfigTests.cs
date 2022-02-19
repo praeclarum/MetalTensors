@@ -39,7 +39,20 @@ namespace Tests
         {
             var t = Deserialize (new AvgPoolLayer (2, 3, 5, 7, ConvPadding.Valid, name: "Foo"));
             Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (2, t.SizeX);
+            Assert.AreEqual (3, t.SizeY);
+            Assert.AreEqual (5, t.StrideX);
+            Assert.AreEqual (7, t.StrideY);
             Assert.AreEqual (ConvPadding.Valid, t.Padding);
+        }
+
+        [Test]
+        public void BatchNormLayer ()
+        {
+            var t = Deserialize (new BatchNormLayer (11, epsilon: 0.0123f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (11, t.FeatureChannels);
+            Assert.AreEqual (0.0123f, t.Epsilon);
         }
 
         [Test]
@@ -47,6 +60,40 @@ namespace Tests
         {
             var t = Deserialize (new ConcatLayer (name: "Foo"));
             Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void ConvLayer ()
+        {
+            var t = Deserialize (new ConvLayer (11, 17, 2, 3, 5, 7, ConvPadding.Full, true, WeightsInit.Normal (-0.123f, 4.567f), 8.9f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (11, t.InFeatureChannels);
+            Assert.AreEqual (17, t.OutFeatureChannels);
+            Assert.AreEqual (2, t.SizeX);
+            Assert.AreEqual (3, t.SizeY);
+            Assert.AreEqual (5, t.StrideX);
+            Assert.AreEqual (7, t.StrideY);
+            Assert.AreEqual (8.9f, t.BiasInit);
+            Assert.AreEqual (true, t.Bias);
+            Assert.AreEqual (typeof (NormalInit), t.WeightsInit.GetType ());
+            Assert.AreEqual (ConvPadding.Full, t.Padding);
+        }
+
+        [Test]
+        public void DenseLayer ()
+        {
+            var t = Deserialize (new DenseLayer (11, 17, 2, 3, true, WeightsInit.Uniform (-0.123f, 4.567f), 8.9f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (11, t.InFeatureChannels);
+            Assert.AreEqual (17, t.OutFeatureChannels);
+            Assert.AreEqual (2, t.SizeX);
+            Assert.AreEqual (3, t.SizeY);
+            Assert.AreEqual (1, t.StrideX);
+            Assert.AreEqual (1, t.StrideY);
+            Assert.AreEqual (8.9f, t.BiasInit);
+            Assert.AreEqual (true, t.Bias);
+            Assert.AreEqual (typeof (UniformInit), t.WeightsInit.GetType ());
+            Assert.AreEqual (ConvPadding.Valid, t.Padding);
         }
 
         [Test]
