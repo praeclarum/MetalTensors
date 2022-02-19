@@ -16,13 +16,19 @@ namespace MetalTensors.Layers
         public ReductionType ReductionType { get; }
         public float Weight { get; }
 
-        public LossLayer (string? label, LossType lossType, ReductionType reductionType, float weight)
-            : base (label)
+        public LossLayer (LossType lossType, ReductionType reductionType, float weight, string? name = null)
+            : base (name)
         {
             LossType = lossType;
             ReductionType = reductionType;
             Weight = weight;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "lossType", LossType },
+            { "reductionType", ReductionType },
+            { "weight", Weight },
+        });
 
         public override void ValidateInputShapes (params Tensor[] inputs)
         {

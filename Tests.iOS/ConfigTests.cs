@@ -74,6 +74,76 @@ namespace Tests
         }
 
         [Test]
+        public void LossLayer ()
+        {
+            var t = Deserialize (new LossLayer (LossType.SoftMaxCrossEntropy, ReductionType.Sum, 0.123f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (0.123f, t.Weight);
+            Assert.AreEqual (LossType.SoftMaxCrossEntropy, t.LossType);
+            Assert.AreEqual (ReductionType.Sum, t.ReductionType);
+        }
+
+        [Test]
+        public void MaxPoolLayer ()
+        {
+            var t = Deserialize (new MaxPoolLayer (2, 3, 5, 7, ConvPadding.Full, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (ConvPadding.Full, t.Padding);
+        }
+
+        [Test]
+        public void MultiplyLayer ()
+        {
+            var t = Deserialize (new MultiplyLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void ReLULayer ()
+        {
+            var t = Deserialize (new ReLULayer (0.123f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (0.123f, t.A);
+        }
+
+        [Test]
+        public void SigmoidLayer ()
+        {
+            var t = Deserialize (new SigmoidLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void SoftMaxLayer ()
+        {
+            var t = Deserialize (new SoftMaxLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void SubtractLayer ()
+        {
+            var t = Deserialize (new SubtractLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void TanhLayer ()
+        {
+            var t = Deserialize (new TanhLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void UpsampleLayer ()
+        {
+            var t = Deserialize (new UpsampleLayer (2, 3, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (2, t.ScaleX);
+            Assert.AreEqual (3, t.ScaleY);
+        }
+
+        [Test]
         public void ConstTensor ()
         {
             var t = new ConstantTensor (24.0f, 2, 3, 5);

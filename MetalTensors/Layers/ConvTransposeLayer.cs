@@ -12,18 +12,6 @@ namespace MetalTensors.Layers
     /// </summary>
     public class ConvTransposeLayer : ConvWeightsLayer
     {
-        // Most MPS neural network filters are considered forward filters.
-        // Some (for example, convolution transpose and unpooling) are considered reverse filters.
-        // For the reverse filters, the image stride is measured in destination values rather than source values
-        // and has the effect of enlarging the image rather than reducing it.
-        // When a reverse filter is used to "undo" the effects of a forward filter,
-        // the size policy should be the opposite of the forward padding method.
-        // For example, if the forward filter used MPSNNPaddingMethodSizeValidOnly | MPSNNPaddingMethodAddRemainderToTopLeft,
-        // the reverse filter should use MPSNNPaddingMethodSizeFull | MPSNNPaddingMethodAddRemainderToTopLeft.
-        // Some consideration of the geometry of inputs and outputs will reveal why this is so.
-        // It is usually not important to adjust the centering method
-        // because the size of the reverse result generally doesn't suffer from centering asymmetries.
-
         static readonly IMPSNNPadding samePadding1 = new SamePadding (1);
         static readonly IMPSNNPadding samePadding2 = new SamePadding (2);
         static readonly IMPSNNPadding samePadding3 = new SamePadding (3);

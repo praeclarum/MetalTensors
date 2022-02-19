@@ -107,7 +107,7 @@ namespace MetalTensors
                     input = lt.Inputs[0];
                 }
             }
-            var layer = new LossLayer (prediction.Label + " Loss", LossType, ReductionType, weight);
+            var layer = new LossLayer (LossType, ReductionType, weight, prediction.Label + " Loss");
             return layer.Call (input, truth);
         }
     }
