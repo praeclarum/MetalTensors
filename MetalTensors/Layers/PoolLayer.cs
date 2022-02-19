@@ -17,7 +17,8 @@ namespace MetalTensors.Layers
         public int StrideY { get; }
         public ConvPadding Padding { get; }
 
-        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
+        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, string? name = null)
+            : base (name)
         {
             if (sizeX < 1)
                 throw new ArgumentOutOfRangeException (nameof (sizeX), "Pooling width must be > 0");
@@ -34,6 +35,14 @@ namespace MetalTensors.Layers
             StrideY = strideY;
             Padding = padding;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "sizeX", SizeX },
+            { "sizeY", SizeY },
+            { "strideX", StrideX },
+            { "strideY", StrideY },
+            { "padding", Padding },
+        });
 
         public override void ValidateInputShapes (params Tensor[] inputs)
         {

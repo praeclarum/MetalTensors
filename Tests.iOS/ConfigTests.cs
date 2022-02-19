@@ -3,6 +3,7 @@ using System.IO;
 using MetalPerformanceShaders;
 using MetalTensors;
 using MetalTensors.Applications;
+using MetalTensors.Layers;
 using MetalTensors.Tensors;
 using NUnit.Framework;
 
@@ -12,6 +13,66 @@ namespace Tests
 {
     public class ConfigTests
     {
+        T Deserialize<T> (T value) where T : Configurable
+        {
+            var data = value.Config.Serialize ();
+            var dataString = value.Config.StringValue;
+            return Config.Deserialize<T> (data);
+        }
+
+        [Test]
+        public void AbsLayer ()
+        {
+            var t = Deserialize (new AbsLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void AddLayer ()
+        {
+            var t = Deserialize (new AddLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void AvgPoolLayer ()
+        {
+            var t = Deserialize (new AvgPoolLayer (2, 3, 5, 7, ConvPadding.Valid, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (ConvPadding.Valid, t.Padding);
+        }
+
+        [Test]
+        public void ConcatLayer ()
+        {
+            var t = Deserialize (new ConcatLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void DivideLayer ()
+        {
+            var t = Deserialize (new DivideLayer (name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+        }
+
+        [Test]
+        public void DropoutLayer ()
+        {
+            var t = Deserialize (new DropoutLayer (0.123f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (0.123f, t.DropProbability);
+        }
+
+        [Test]
+        public void LinearLayer ()
+        {
+            var t = Deserialize (new LinearLayer (0.123f, -3.14f, name: "Foo"));
+            Assert.AreEqual ("Foo", t.Name);
+            Assert.AreEqual (0.123f, t.Scale);
+            Assert.AreEqual (-3.14f, t.Offset);
+        }
+
         [Test]
         public void ConstTensor ()
         {

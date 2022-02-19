@@ -8,11 +8,17 @@ namespace MetalTensors.Layers
         public float Scale { get; }
         public float Offset { get; }
 
-        public LinearLayer (float scale, float offset = 0.0f)
+        public LinearLayer (float scale, float offset = 0.0f, string? name = null)
+            : base (name)
         {
             Scale = scale;
             Offset = offset;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "scale", Scale },
+            { "offset", Offset },
+        });
 
         protected override MPSNNFilterNode CreateUnopNode (MPSNNImageNode imageNode)
         {

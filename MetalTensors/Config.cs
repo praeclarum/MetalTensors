@@ -289,6 +289,9 @@ namespace MetalTensors
                 return float.Parse (value);
             if (valueType == typeof (int[]))
                 return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
+            if (typeof (Enum).IsAssignableFrom (valueType)) {
+                return Enum.Parse (valueType, value, ignoreCase: true);
+            }
             throw new NotSupportedException ($"Cannot convert string \"{value}\" to {valueType}");
         }
 

@@ -4,7 +4,8 @@ namespace MetalTensors
 {
     public enum ConvPadding
     {
-        Same,
-        Valid
+        Valid = -1,
+        Same = 0,
+        Full = 1,
     }
 }

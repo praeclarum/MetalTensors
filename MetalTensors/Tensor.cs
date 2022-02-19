@@ -382,9 +382,9 @@ namespace MetalTensors
             return Linear (1.0f / other);
         }
 
-        public Tensor Dropout (float keepProbability)
+        public Tensor Dropout (float dropProbability)
         {
-            return new DropoutLayer (keepProbability).Call (this);
+            return new DropoutLayer (dropProbability).Call (this);
         }
 
         public Tensor LeakyReLU (float a = ReLULayer.DefaultLeakyA)
