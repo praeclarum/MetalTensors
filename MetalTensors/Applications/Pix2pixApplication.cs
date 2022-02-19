@@ -31,7 +31,12 @@ namespace MetalTensors.Applications
             this.device = device.Current ();
             Generator = CreateGenerator ();
             Discriminator = CreateDiscriminator (height, width);
-            Gan = Discriminator.Call (Generator);
+
+            var ganInputs = Generator.Inputs.Select (Tensor.Input).ToArray ();
+            var genOutput = Generator.Call (ganInputs);
+            var discOutput = Discriminator.Call (genOutput);
+            var ganOutputs = new[] { discOutput, genOutput };
+            Gan = new Model (ganInputs, ganOutputs, name: "GAN");
         }
 
         void CompileIfNeeded ()
@@ -39,9 +44,9 @@ namespace MetalTensors.Applications
             if (compiled)
                 return;
             compiled = true;
-            Discriminator.Compile (Loss.SumSigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
+            Discriminator.Compile (Loss.SigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
             Discriminator.IsTrainable = false;
-            Gan.Compile (Loss.SumSigmoidCrossEntropy, new AdamOptimizer (learningRate: gLearningRate));
+            Gan.Compile (new[] { Loss.SigmoidCrossEntropy, Loss.MeanAbsoluteError }, new[] { 0.0f, 1.0f }, new AdamOptimizer (learningRate: gLearningRate));
         }
 
         static Model CreateGenerator ()
@@ -84,17 +89,17 @@ namespace MetalTensors.Applications
                     var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
-                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias);//.BatchNorm ();
                     //var up = down.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     return input.Concat (up).Model (input, name);
                 }
                 else {
                     var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
-                    var downnorm = downconv.BatchNorm ();
+                    var downnorm = downconv;//.BatchNorm ();
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias);//.BatchNorm ();
                     //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
                     return input.Concat (updrop).Model (input, name);
@@ -125,7 +130,7 @@ namespace MetalTensors.Applications
                 disc =
                     disc
                     .Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias)
-                    .BatchNorm ()
+                    //.BatchNorm ()
                     .LeakyReLU (a: 0.2f);
             }
 
@@ -133,7 +138,7 @@ namespace MetalTensors.Applications
             disc =
                 disc
                 .Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias)
-                .BatchNorm ()
+                //.BatchNorm ()
                 .LeakyReLU (a: 0.2f);
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
@@ -178,9 +183,15 @@ namespace MetalTensors.Applications
                 var fakes = Generator.Predict (segments);
                 var realsAndFakes = reals.Concat(fakes).ToArray ();
                 var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
-                Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss}");
-                Gan.Fit (segments, zerosBatch);
+                var zerosAndReals = zerosBatch.Zip (reals, (a, b) => new[] { a[0], b[0] }).ToArray ();
+                var ganh = Gan.Fit (segments, zerosAndReals);
+                Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss} GANLOSS {ganh.AverageLoss}");
                 trainSW.Stop ();
+                ganh.DisposeSourceImages ();
+                dh.DisposeSourceImages ();
+                segments.Dispose ();
+                reals.Dispose ();
+                fakes.Dispose ();
                 numTrainedImages += segments.Length;
                 progress?.Invoke ((double)numTrainedImages / (double)numImagesToTrain);
             }
