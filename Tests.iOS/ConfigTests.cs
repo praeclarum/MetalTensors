@@ -50,10 +50,9 @@ namespace Tests
         public void DeserializeLeakyReLUTensor ()
         {
             var t = Tensor.Constant (-10.0f, 2, 3, 5).LeakyReLU (0.3f);
-            var dataStr = t.Config.StringValue;
             var data = t.Config.Serialize ();
             var t2 = Config.Deserialize<Tensor> (data);
-            Assert.AreEqual (35.0f, t2[0]);
+            Assert.AreEqual (-3.0f, t2[0]);
         }
     }
 }

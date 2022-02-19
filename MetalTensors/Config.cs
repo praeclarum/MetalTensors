@@ -237,14 +237,56 @@ namespace MetalTensors
         static Configurable ReadConfigurable (XElement element, Dictionary<int, Configurable> references)
         {
             var typeName = element.Name.LocalName;
-            var id = int.Parse (element.Attribute ("id").Value);
-            references[id] = Configurable.Null;
-            if (ConfigurableReaders.GetReader (typeName) is ConfigurableReader reader) {
-                var c = reader.Read (element, references);
-                references[id] = c;
-                return c;
+            if (element.Attribute ("refid") is XAttribute ra) {
+                if (references.TryGetValue (int.Parse (ra.Value), out var c)) {
+                    return c;
+                }
+                else {
+                    throw new Exception ($"Missing definition of {typeName} with refid={ra.Value}");
+                }
             }
-            throw new NotSupportedException ($"Cannot read elements of type {typeName}");
+            else {
+                var id = int.Parse (element.Attribute ("id").Value);
+                references[id] = Configurable.Null;
+                if (ConfigurableReaders.GetReader (typeName) is ConfigurableReader reader) {
+                    var c = reader.Read (element, references);
+                    references[id] = c;
+                    return c;
+                }
+                throw new NotSupportedException ($"Cannot read elements of type {typeName}");
+            }
+        }
+
+        static object ReadValueElement (XElement element, Type valueType, Dictionary<int, Configurable> references)
+        {
+            if (typeof (Configurable).IsAssignableFrom (valueType)) {
+                return ReadConfigurable (element, references);
+            }
+            else if (typeof (Array).IsAssignableFrom (valueType)) {
+                var et = valueType.GetElementType ();
+                var items = element.Elements ().Select (x => ReadValueElement (x, et, references)).ToArray ();
+                var result = Array.CreateInstance (et, items.Length);
+                for (var i = 0; i < items.Length; i++) {
+                    result.SetValue (items[i], i);
+                }
+                return result;
+            }
+            throw new NotSupportedException ($"Cannot convert element \"{element.Name}\" to {valueType}");
+        }
+
+        static readonly char[] arraySplits = new[] { ' ', ',' };
+
+        static object ReadValueString (string value, Type valueType)
+        {
+            if (valueType == typeof (string))
+                return value;
+            if (valueType == typeof (int))
+                return int.Parse (value);
+            if (valueType == typeof (float))
+                return float.Parse (value);
+            if (valueType == typeof (int[]))
+                return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
+            throw new NotSupportedException ($"Cannot convert string \"{value}\" to {valueType}");
         }
 
         static class ConfigurableReaders
@@ -306,33 +348,25 @@ namespace MetalTensors
                     if (name == "id" || name == "refid")
                         continue;
                     if (ParameterIndex.TryGetValue (name, out var pindex) && arguments[pindex] is null) {
-                        arguments[pindex] = ReadValueString (name, a.Value, Parameters[pindex].ParameterType);
+                        arguments[pindex] = ReadValueString (a.Value, Parameters[pindex].ParameterType);
                         hasArg[pindex] = true;
                         numArgs++;
                     }
                 }
-                // TODO: Read argument child elements
+                foreach (var c in element.Elements ()) {
+                    var name = c.Name.LocalName;
+                    if (ParameterIndex.TryGetValue (name, out var pindex) && arguments[pindex] is null) {
+                        arguments[pindex] = ReadValueElement (c.Elements ().First (), Parameters[pindex].ParameterType, references);
+                        hasArg[pindex] = true;
+                        numArgs++;
+                    }
+                }
                 if (numArgs != Parameters.Length) {
                     var missing = Parameters.Select ((x, i) => hasArg[i] ? null : x.Name).Where (x => x != null);
                     throw new Exception ($"{TypeName} config is missing parameters: " + string.Join (", ", missing));
                 }
                 var obj = (Configurable)Constructor.Invoke (arguments);
                 return obj;
-            }
-
-            static readonly char[] arraySplits = new[] { ' ', ',' };
-
-            object ReadValueString (string localName, string value, Type valueType)
-            {
-                if (valueType == typeof (string))
-                    return value;
-                if (valueType == typeof (int))
-                    return int.Parse (value);
-                if (valueType == typeof (float))
-                    return float.Parse (value);
-                if (valueType == typeof (int[]))
-                    return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
-                throw new NotSupportedException ($"Cannot convert \"{value}\" to {valueType}");
             }
         }
     }

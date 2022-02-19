@@ -9,10 +9,13 @@ namespace MetalTensors.Layers
 
         public float A { get; }
 
-        public ReLULayer (float a = 0.0f)
+        public ReLULayer (float a = 0.0f, string? name = null)
+            : base (name: name)
         {
             A = a;
         }
+
+        public override Config Config => base.Config.Add ("a", A);
 
         protected override MPSNNFilterNode CreateUnopNode (MPSNNImageNode imageNode)
         {
