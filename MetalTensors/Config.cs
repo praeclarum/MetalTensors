@@ -116,7 +116,7 @@ namespace MetalTensors
 
         public void Write (XmlWriter w)
         {
-            var references = new Dictionary<object, int> ();
+            var references = new HashSet<Configurable> ();
             WriteConfig (this, w, references);
         }
 
@@ -124,7 +124,7 @@ namespace MetalTensors
         {
             return value switch {
                 null => true,
-                string s => s.Length < 256 && !(s.Contains('\r') || s.Contains ('\n') || s.Contains ('\t')),
+                string s => s.Length < 256 && !(s.Contains ('\r') || s.Contains ('\n') || s.Contains ('\t')),
                 IConvertible _ => true,
                 Config _ => false,
                 int[] _ => true,
@@ -137,44 +137,43 @@ namespace MetalTensors
             return value switch {
                 null => "null",
                 string s => s,
-                IConvertible co => co.ToString(CultureInfo.InvariantCulture),
-                int[] ints => string.Join(", ", ints),
+                IConvertible co => co.ToString (CultureInfo.InvariantCulture),
+                int[] ints => string.Join (", ", ints),
                 var x => x.ToString (),
             };
         }
 
-        static void WriteValue (object? value, XmlWriter w, Dictionary<object, int> references)
+        static void WriteValueElement (object? value, XmlWriter w, HashSet<Configurable> references)
         {
             if (value is null) {
-                w.WriteElementString ("null", "");
-            }
-            else if (value is string s) {
-                w.WriteString (s);
+                w.WriteElementString ("Null", "");
             }
             else if (value is Config c) {
                 WriteConfig (c, w, references);
             }
-            else if (value is IList l) {
-                w.WriteStartElement ("List");
-                foreach (var e in l) {
-                    w.WriteStartElement ("Item");
-                    WriteValue (e, w, references);
-                    w.WriteEndElement ();
-                }
-                w.WriteEndElement ();
-            }
-            else if (value is IConvertible co) {
-                w.WriteString (co.ToString (CultureInfo.InvariantCulture));
-            }
             else if (value is Configurable conf) {
                 WriteConfigurable (conf, w, references);
             }
+            else if (value is string s) {
+                w.WriteElementString ("String", s);
+            }
+            else if (value is IConvertible co) {
+                var typeName = value.GetType ().Name;
+                w.WriteElementString (typeName, co.ToString (CultureInfo.InvariantCulture));
+            }
+            else if (value is Array l) {
+                w.WriteStartElement ("Array");
+                foreach (var e in l) {
+                    WriteValueElement (e, w, references);
+                }
+                w.WriteEndElement ();
+            }
             else {
                 throw new NotSupportedException ($"Cannot write {value}");
-            }                
+            }
         }
 
-        private static void WriteConfigurable (Configurable conf, XmlWriter w, Dictionary<object, int> references)
+        static void WriteConfigurable (Configurable conf, XmlWriter w, HashSet<Configurable> references)
         {
             if (references.TryGetValue (conf, out var _)) {
                 w.WriteStartElement (conf.Config.ObjectType);
@@ -186,7 +185,7 @@ namespace MetalTensors
             }
         }
 
-        private static void WriteConfig (Config c, XmlWriter w, Dictionary<object, int> references)
+        static void WriteConfig (Config c, XmlWriter w, HashSet<Configurable> references)
         {
             w.WriteStartElement (c.ObjectType);
             w.WriteAttributeString ("id", c.Id.ToString ());
@@ -203,7 +202,7 @@ namespace MetalTensors
             }
             foreach (var a in rem) {
                 w.WriteStartElement (a.Key);
-                WriteValue (a.Value, w, references);
+                WriteValueElement (a.Value, w, references);
                 w.WriteEndElement ();
             }
             w.WriteEndElement ();
@@ -300,15 +299,23 @@ namespace MetalTensors
             public Configurable Read (XElement element, Dictionary<int, Configurable> references)
             {
                 var arguments = new object[Parameters.Length];
+                var hasArg = new bool[Parameters.Length];
+                var numArgs = 0;
                 foreach (var a in element.Attributes ()) {
                     var name = a.Name.LocalName;
                     if (name == "id" || name == "refid")
                         continue;
-                    if (ParameterIndex.TryGetValue (name, out var pindex)) {
+                    if (ParameterIndex.TryGetValue (name, out var pindex) && arguments[pindex] is null) {
                         arguments[pindex] = ReadValueString (name, a.Value, Parameters[pindex].ParameterType);
+                        hasArg[pindex] = true;
+                        numArgs++;
                     }
                 }
                 // TODO: Read argument child elements
+                if (numArgs != Parameters.Length) {
+                    var missing = Parameters.Select ((x, i) => hasArg[i] ? null : x.Name).Where (x => x != null);
+                    throw new Exception ($"{TypeName} config is missing parameters: " + string.Join (", ", missing));
+                }
                 var obj = (Configurable)Constructor.Invoke (arguments);
                 return obj;
             }
@@ -324,7 +331,7 @@ namespace MetalTensors
                 if (valueType == typeof (float))
                     return float.Parse (value);
                 if (valueType == typeof (int[]))
-                    return value.Split(arraySplits, StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse (x)).ToArray ();
+                    return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
                 throw new NotSupportedException ($"Cannot convert \"{value}\" to {valueType}");
             }
         }

@@ -37,6 +37,7 @@ namespace MetalTensors.Tensors
 
         public override Config Config => base.Config.Update (new Config {
             { "constant", ConstantValue },
+            { "shape", Shape },
         });
 
         protected override TensorHandle CreateHandle (string? label) => new ConstantHandle (this, label, ConstantValue);

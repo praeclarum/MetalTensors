@@ -34,7 +34,7 @@ namespace MetalTensors
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
 
-        public override Config Config => base.Config.Add ("name", Label).Add ("shape", Shape);
+        public override Config Config => base.Config.Add ("name", Label);
 
         protected Tensor (string? label = null)
         {
