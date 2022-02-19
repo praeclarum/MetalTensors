@@ -38,7 +38,7 @@ namespace MetalTensors
                 throw new ArgumentException ("Loss weights length mismatch", nameof (outputLossWeights));
             }
             if (model.Outputs.Length != outputLosses.Length) {
-                throw new ArgumentException ($"Number of losses ({outputLosses.Length}) must match the number of outputs ({model.Outputs.Length})", nameof (outputLosses));
+                throw new ArgumentException ($"The number of provided losses ({outputLosses.Length}) must match the number of outputs ({model.Outputs.Length})", nameof (outputLosses));
             }
 
             Model = model;

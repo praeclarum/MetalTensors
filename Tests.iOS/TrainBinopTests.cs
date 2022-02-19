@@ -28,18 +28,12 @@ namespace Tests
             var history = model.Fit (DataSet.Generated (GenTrainingData, 100), batchSize: 16, numBatches: 100, validationInterval: 50);
 
             var batch = history.Batches[^1];
-            Assert.AreEqual (1, batch.Loss[0].Shape[0]);
+            Assert.AreEqual (1, history.Batches[0].Losses.Count);
 
             var belowMinLoss = false;
             for (var bi = 0; bi < history.Batches.Length; bi++) {
                 var b = history.Batches[bi];
-                var sum = 0.0f;
-                var count = 0;
-                foreach (var l in b.Loss) {
-                    sum += l[0];
-                    count++;
-                }
-                var bl = sum / count;
+                var bl = b.AverageLoss;
                 //Console.WriteLine ($"BATCH {bi:#,0} LOSS {bl}");
                 if (bl < minLoss) {
                     belowMinLoss = true;

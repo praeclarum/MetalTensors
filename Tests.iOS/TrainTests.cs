@@ -32,7 +32,7 @@ namespace Tests
             Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);
 
             Assert.AreEqual (numBatches, history.Batches.Length);
-            Assert.AreEqual (batchSize, history.Batches[0].Loss.Length);
+            Assert.AreEqual (1, history.Batches[0].Losses.Count);
             Assert.AreEqual (1, history.Batches[0].IntermediateValues.Count);
         }
     }
