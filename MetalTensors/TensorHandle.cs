@@ -7,17 +7,14 @@ namespace MetalTensors
 {
     public class TensorHandle : NSObject, IMPSHandle
     {
-        static int nextId = 1;
-
-        public int Id { get; }
+        public int Id => Tensor.Id;
         public string Label { get; }
         public Tensor Tensor { get; }
 
         public TensorHandle (Tensor tensor, string? label)
         {
-            Id = Interlocked.Increment (ref nextId);
-            Label = string.IsNullOrWhiteSpace (label) ? tensor.GetType ().Name + Id : label!;
             Tensor = tensor;
+            Label = string.IsNullOrWhiteSpace (label) ? tensor.GetType ().Name + tensor.Id : label!;
         }
 
         public override string ToString () => Label;

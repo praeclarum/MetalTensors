@@ -25,6 +25,12 @@ namespace MetalTensors.Tensors
             ModelInputs = inputs;
         }
 
+        public override Config Config => base.Config.Update (new Config {
+            { "model", BaseModel },
+            { "outputIndex", OutputIndex },
+            { "inputs", ModelInputs },
+        });
+
         public override void Copy (Span<float> destination, IMTLDevice device)
         {
             BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination, device);

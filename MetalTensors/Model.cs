@@ -105,6 +105,8 @@ namespace MetalTensors
             Submodels = submodels.ToArray ();
         }
 
+        public override Config Config => base.Config.Add ("inputs", Inputs).Add ("outputs", Outputs);
+
         public override string ToString () => $"{Name} {{trainable:{IsTrainable}}}";
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
