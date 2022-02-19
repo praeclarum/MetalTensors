@@ -186,7 +186,7 @@ namespace Tests
         {
             var pix2pix = new Pix2pixApplication ();
 
-            var data = GetPix2pixDataSet ();
+            var data = GetPix2pixDataSet (b2a: true);
 
             SampleModel ("Train0");
             var lastP = 0.0;
