@@ -13,7 +13,7 @@ namespace Tests
     public class ConfigTests
     {
         [Test]
-        public void ConstTensorConfig ()
+        public void ConstTensor ()
         {
             var t = new ConstantTensor (24.0f, 2, 3, 5);
             var c = t.Config;
@@ -63,8 +63,8 @@ namespace Tests
             var model = output.Model (input);
             var testInput = Tensor.Constant (-10.0f, 2, 3, 5);
             var testOutput = model.Predict (testInput);
-            var data = model.Config.Serialize ();
-            var m2 = Config.Deserialize<Model> (data);
+            var data = model.Serialize ();
+            var m2 = Model.Deserialize (data);
             Assert.AreEqual (1, m2.Inputs.Length);
             Assert.AreEqual (1, m2.Outputs.Length);
             var m2Output = m2.Predict (testInput);

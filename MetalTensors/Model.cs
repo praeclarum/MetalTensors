@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Metal;
 using MetalPerformanceShaders;
@@ -334,8 +335,38 @@ namespace MetalTensors
 
         public void Save (string path)
         {
+            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Save (stream);
+        }
+
+        public byte[] Serialize ()
+        {
+            using var stream = new MemoryStream ();
+            Save (stream);
+            return stream.ToArray ();
+        }
+
+        public void Save (Stream stream)
+        {
             var config = Config;
-            config.Write (path);
+            config.Write (stream);
+        }
+
+        public static Model Load (string path)
+        {
+            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return Load (stream);
+        }
+
+        public static Model Deserialize (byte[] data)
+        {
+            using var stream = new MemoryStream (data);
+            return Load (stream);
+        }
+
+        public static Model Load (Stream stream)
+        {
+            return Config.Read<Model> (stream);
         }
     }
 }
