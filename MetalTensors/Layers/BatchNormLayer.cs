@@ -17,7 +17,7 @@ namespace MetalTensors.Layers
         public override int MinInputCount => 1;
 
         public int FeatureChannels { get; }
-        public Weights BatchNormWeights { get; }
+        public Weights Weights { get; }
 
         public float Epsilon { get; }
 
@@ -27,7 +27,7 @@ namespace MetalTensors.Layers
         public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true)
             : base (name, isTrainable: isTrainable)
         {
-            BatchNormWeights = new Weights ();
+            Weights = new Weights ();
             FeatureChannels = featureChannels;
             Epsilon = epsilon;
         }
@@ -35,6 +35,7 @@ namespace MetalTensors.Layers
         public override Config Config => base.Config.Update (new Config {
             { "featureChannels", FeatureChannels },
             { "epsilon", Epsilon },
+            { "weights", Weights },
         });
 
         public override int[] GetOutputShape (params Tensor[] inputs)
@@ -110,10 +111,10 @@ namespace MetalTensors.Layers
             gammaVector = new OptimizableVector (device, vectorDescriptor);
             meanVector = Vector (vectorDescriptor, device);
             varianceVector = Vector (vectorDescriptor, device);
-            batchNormWeights.BatchNormWeights.Read ("Beta", betaVector, initialValue: 0.0f);
-            batchNormWeights.BatchNormWeights.Read ("Gamma", gammaVector, initialValue: 1.0f);
-            batchNormWeights.BatchNormWeights.Read ("Mean", meanVector, initialValue: 0.0f);
-            batchNormWeights.BatchNormWeights.Read ("Variance", varianceVector, initialValue: 1.0f);
+            batchNormWeights.Weights.Read ("Beta", betaVector, initialValue: 0.0f);
+            batchNormWeights.Weights.Read ("Gamma", gammaVector, initialValue: 1.0f);
+            batchNormWeights.Weights.Read ("Mean", meanVector, initialValue: 0.0f);
+            batchNormWeights.Weights.Read ("Variance", varianceVector, initialValue: 1.0f);
 
             gammaAndBeta = new MPSCnnNormalizationGammaAndBetaState (gammaVector.Value.Data, betaVector.Value.Data);
             meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Data, varianceVector.Data);
@@ -204,12 +205,6 @@ namespace MetalTensors.Layers
 
             return gammaAndBeta;
         }
-
-        //public Dictionary<string, float[]> GetWeights ()
-        //{
-        //    var r = new Dictionary<string, float[]> ();
-        //    return r;
-        //}
 
         public bool WeightsAreFinite ()
         {

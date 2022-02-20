@@ -12,7 +12,7 @@ namespace MetalTensors
     /// Responsible for storing weights when they are Purged from memory.
     /// Also, conveniently, can be serialized.
     /// </summary>
-    public class Weights
+    public class Weights : Configurable
     {
         readonly ConcurrentDictionary<string, Memory<float>> buffers = new ConcurrentDictionary<string, Memory<float>> ();
 
