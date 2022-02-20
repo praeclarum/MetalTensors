@@ -21,7 +21,7 @@ namespace MetalTensors.Tensors
 
         public override Config Config => base.Config.Add ("shape", Shape);
 
-        public override void Copy (Span<float> destination, IMTLDevice? device = null)
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             var n = ValidateCopyDestination (destination);
             for (var i = 0; i < n; i++) {

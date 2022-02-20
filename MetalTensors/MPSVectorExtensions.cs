@@ -42,7 +42,7 @@ namespace MetalTensors
             var v = new MPSVector (device, descriptor);
             if (v.Data == null)
                 throw new Exception ($"Failed to create vector with length {descriptor.Length}");
-            initialValue.Copy (v.ToSpan (), device);
+            initialValue.CopyTo (v.ToSpan (), device);
             return v;
         }
 
@@ -224,7 +224,7 @@ namespace MetalTensors
             var v = new MPSVector (dev, descriptor);
             if (v.Data == null)
                 throw new Exception ($"Failed to create vector with length {descriptor.Length}");
-            initialValue.Copy (v.ToSpan (), dev);
+            initialValue.CopyTo (v.ToSpan (), dev);
             v.MarkAsModifiedByCpu ();
             return v;
         }

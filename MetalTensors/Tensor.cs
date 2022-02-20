@@ -51,7 +51,7 @@ namespace MetalTensors
             var len = Length;
             var vals = new float[len];
             try {
-                Copy (vals, device);
+                CopyTo (vals, device);
                 return "[" + string.Join (", ", vals.Take(100)) + "]";
             }
             catch (Exception ex) {
@@ -61,12 +61,12 @@ namespace MetalTensors
 
         //public virtual Tensor Clone () => this;
 
-        public abstract void Copy (Span<float> destination, IMTLDevice? device = null);
+        public abstract void CopyTo (Span<float> destination, IMTLDevice? device = null);
 
         public float[] ToArray (IMTLDevice? device = null)
         {
             var r = new float[Shape.GetShapeLength ()];
-            Copy (r, device);
+            CopyTo (r, device);
             return r;
         }
 
@@ -80,7 +80,7 @@ namespace MetalTensors
                 Span<float> elements = len < 1024 ?
                     stackalloc float[len] :
                     new float[len];
-                Copy (elements);
+                CopyTo (elements);
 
                 var i = 0;
                 var n = Math.Min (shape.Length, indexes.Length);

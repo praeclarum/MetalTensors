@@ -31,9 +31,9 @@ namespace MetalTensors.Tensors
             { "inputs", ModelInputs },
         });
 
-        public override void Copy (Span<float> destination, IMTLDevice? device = null)
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
-            BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination, device);
+            BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].CopyTo (destination, device);
         }
 
         public override MPSNNImageNode GetImageNode (MetalImageNodeContext context)

@@ -98,7 +98,7 @@ namespace MetalTensors.Tensors
         //    return newTensor;
         //}
 
-        public unsafe override void Copy (Span<float> destination, IMTLDevice? device = null)
+        public unsafe override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
             var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;

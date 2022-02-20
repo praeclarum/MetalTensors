@@ -29,11 +29,11 @@ namespace MetalTensors.Tensors
             { "inputs", LayerInputs },
         });
 
-        public override void Copy (Span<float> destination, IMTLDevice? device = null)
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             var dev = device.Current ();
             var computed = Layer.ExecuteAsync (LayerInputs, dev).Result;
-            computed.Copy (destination, dev);
+            computed.CopyTo (destination, dev);
         }
 
         public override MPSNNImageNode GetImageNode (MetalImageNodeContext context)

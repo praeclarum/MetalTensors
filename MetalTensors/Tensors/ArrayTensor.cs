@@ -43,7 +43,7 @@ namespace MetalTensors.Tensors
             { "shape", Shape },
         });
 
-        public override void Copy (Span<float> destination, IMTLDevice? device = null)
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
             Span<float> dataSpan = data;
