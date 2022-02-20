@@ -10,8 +10,8 @@ namespace MetalTensors.Layers
         static readonly MPSNNDefaultPadding validPadding = MPSNNDefaultPadding.Create (
             MPSNNPaddingMethod.AddRemainderToTopLeft | MPSNNPaddingMethod.AlignCentered | MPSNNPaddingMethod.SizeValidOnly);
 
-        public ConvLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit, string? name = null, bool isTrainable = true)
-            : base (inFeatureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit, name, isTrainable: isTrainable)
+        public ConvLayer (int inFeatureChannels, int outFeatureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, bool bias, WeightsInit weightsInit, float biasInit, string? name = null, bool isTrainable = true, Weights? weights = null)
+            : base (inFeatureChannels, outFeatureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit, biasInit, name, isTrainable: isTrainable, weights: weights)
         {
         }
 

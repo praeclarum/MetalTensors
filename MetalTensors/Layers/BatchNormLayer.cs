@@ -19,8 +19,8 @@ namespace MetalTensors.Layers
 
         public override int MinInputCount => 1;
 
-        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true, Weights? weights = null)
+            : base (name, isTrainable: isTrainable, weights: weights)
         {
             FeatureChannels = featureChannels;
             Epsilon = epsilon;
@@ -41,9 +41,9 @@ namespace MetalTensors.Layers
             return new MPSCnnBatchNormalizationNode (inputs[0].ImageNode, GetDataSource<BatchNormDataSource> (device));
         }
 
-        protected override IWeightsDataSource CreateDataSource (IMTLDevice device)
+        protected override IWeightsDataSource CreateDataSource (IMTLCommandQueue queue)
         {
-            return new BatchNormDataSource (this, device);
+            return new BatchNormDataSource (this, queue);
         }
     }
 
@@ -83,12 +83,12 @@ namespace MetalTensors.Layers
 
         public override float Epsilon => batchNormWeights.Epsilon;
 
-        public BatchNormDataSource (BatchNormLayer batchNormWeights, IMTLDevice device)
+        public BatchNormDataSource (BatchNormLayer batchNormWeights, IMTLCommandQueue queue)
         {
             // https://github.com/apple/turicreate/blob/d332b2a856b0eadb97f6475a5728a624afe27e02/src/ml/neural_net/mps_weight.mm#L449
 
             this.batchNormWeights = batchNormWeights;
-            this.device = device;
+            this.device = queue.Device;
 
             vectorDescriptor = VectorDescriptor (batchNormWeights.FeatureChannels);
 

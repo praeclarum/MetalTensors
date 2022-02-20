@@ -14,14 +14,14 @@ namespace MetalTensors
 {
     public class TrainingGraph : Graph
     {
-        readonly (ConvDataSource Weights, bool Trainable)[] convWeights;
+        readonly (IWeightsDataSource Weights, bool Trainable)[] weightDataSources;
 
         readonly bool[] intermediateIsLoss;
 
         public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device)
             : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), inputs, outputs, device)
         {
-            convWeights = cweights;
+            weightDataSources = cweights;
             intermediateIsLoss = new bool[intermediateHandles.Length];
             for (var i = 0; i < intermediateHandles.Length; i++) {
                 var handle = intermediateHandles[i];
@@ -31,7 +31,7 @@ namespace MetalTensors
             }
         }
 
-        static MPSNNGraph CreateTrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device, out (ConvDataSource Weights, bool Trainable)[] cweights)
+        static MPSNNGraph CreateTrainingGraph (string label, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device, out (IWeightsDataSource Weights, bool Trainable)[] weightDataSources)
         {
             if (losses.Length < 1) {
                 throw new ArgumentException ("Loss is required in order to train", nameof(losses));
@@ -46,24 +46,24 @@ namespace MetalTensors
             var thisImageNode = trainingOutput.GetImageNode (context);
 
             var initialGrad = new MPSNNInitialGradientNode (thisImageNode);
-            var convWeightsL = new List<(ConvDataSource, bool)> ();
+            var weightsL = new List<(IWeightsDataSource, bool)> ();
 
             var trainingGraphTermini = initialGrad.GetTrainingGraph (null, (gradientNode, inferenceNode, inferenceSource, gradientSource) => {
                 //Console.WriteLine ($"gradientNode={gradientNode}, inferenceNode={inferenceNode}, inferenceSource={inferenceSource}, gradientSource={gradientSource}");
                 gradientNode.ResultImage.Format = MPSImageFeatureChannelFormat.Float32;
                 if (inferenceNode.ResultImage.MPSHandle is LayerHandle lh &&
-                         lh.Layer.GetMetalConvDataSource (device) is ConvDataSource cw) {
+                         lh.Layer is WeightsLayer wl &&
+                         wl.TryGetDataSource (device) is IWeightsDataSource cw) {
                     if (!trainable.ContainsKey (lh.Layer)) {
                         throw new Exception ($"Cannot tell if {lh.Layer} is trainable");
                     }
                     var train = trainable[lh.Layer];
-                    convWeightsL.Add ((cw, train));
-                    
+                    weightsL.Add ((cw, train));                    
                     //Console.WriteLine (lh);
-                }                
+                }
             });
 
-            cweights = convWeightsL.ToArray ();
+            weightDataSources = weightsL.ToArray ();
 
             var trainingGraphTerminiImageNodes = trainingGraphTermini.Select (x => x.ResultImage).ToArray ();
             var resultsNeeded = trainingGraphTerminiImageNodes.Select (x => true).ToArray ();
@@ -97,7 +97,7 @@ namespace MetalTensors
             //
             // Set the learning rate
             //
-            foreach (var c in convWeights) {
+            foreach (var c in weightDataSources) {
                 c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
             }
 
@@ -149,7 +149,7 @@ namespace MetalTensors
             //
             // Set the learning rate
             //
-            foreach (var c in convWeights) {
+            foreach (var c in weightDataSources) {
                 c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
             }
 

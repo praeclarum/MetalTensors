@@ -96,17 +96,6 @@ namespace MetalTensors
             }
         }
 
-        public virtual MPSCnnConvolutionDataSource? GetMetalConvDataSource (IMTLDevice device)
-        {
-            return null;
-        }
-
-        static IMTLDevice? FindDevice (Tensor[] tensors)
-        {
-            // TODO: Scan inputs for the correct device to use
-            return null;
-        }
-
         public virtual MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
         {
             var inputImageNodes = inputs.Select (x => (x.GetImageNode (context), x.Shape)).ToArray ();

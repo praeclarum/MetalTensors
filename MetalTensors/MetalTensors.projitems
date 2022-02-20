@@ -12,7 +12,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tensor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TrainingGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Model.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\LossLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeightsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\MaxPoolLayer.cs" />
