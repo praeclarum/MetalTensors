@@ -69,7 +69,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)MPSVectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Weights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\WeightsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\TrainableLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Archive.cs" />

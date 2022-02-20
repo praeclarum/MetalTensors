@@ -38,9 +38,8 @@ namespace MetalTensors.Layers
             WeightsInit weightsInit,
             float biasInit,
             string? name,
-            bool isTrainable,
-            Weights? weights)
-            : base (name, isTrainable: isTrainable, weights: weights)
+            bool isTrainable)
+            : base (name, isTrainable: isTrainable)
         {
             if (inFeatureChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inFeatureChannels), "Number of convolution input channels must be > 0");
@@ -155,10 +154,9 @@ namespace MetalTensors.Layers
         int updateCount;
         int loadedUpdateCount;
         MPSNNOptimizerAdam? optimizer;
-        bool trainable;
+        bool trainable; // SetOptimizationOptions needs to be called in order to Update
 
         Lazy<ConvWeightValues> convWeights;
-        readonly object convWeightsMutex = new object ();
         readonly Func<ConvWeightValues> createWeightValues;
         readonly MPSCnnConvolutionDescriptor descriptor;
 
@@ -204,8 +202,6 @@ namespace MetalTensors.Layers
                 return new ConvWeightValues (layer, weightsQueue);
             };
             convWeights = new Lazy<ConvWeightValues> (createWeightValues);
-
-            this.trainable = false; // SetOptimizationOptions needs to be called in order to Update
         }
 
         public void SetOptimizationOptions (bool trainable, float learningRate)
@@ -373,7 +369,7 @@ namespace MetalTensors.Layers
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
                 BiasVectors = new OptimizableVector (device, vDescBiases);
-                layer.Weights.AddParameter ("Bias", BiasVectors, layer.BiasInit);
+                layer.AddParameter ("Bias", BiasVectors, layer.BiasInit);
             }
             else {
                 BiasVectors = null;
@@ -389,7 +385,7 @@ namespace MetalTensors.Layers
             weightInitTask = Task.Run (async () => {
                 var fanIn = inChannels * kernelSizeX * kernelSizeY;
                 var fanOut = outChannels * kernelSizeX * kernelSizeY;
-                await layer.Weights.AddParameter ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
+                await layer.AddParameterAsync ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }

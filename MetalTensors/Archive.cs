@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MetalTensors
@@ -54,7 +56,8 @@ namespace MetalTensors
     public class ArchiveWriter : IDisposable
     {
         bool disposed = false;
-        ZipArchive archive;
+        readonly HashSet<string> wroteBuffers = new HashSet<string> ();
+        readonly ZipArchive archive;
 
         public ArchiveWriter (Stream stream)
         {
@@ -90,7 +93,13 @@ namespace MetalTensors
 
         void WriteBuffer (Configurable source, string bufferName, ReadOnlySpan<float> values)
         {
-            throw new NotImplementedException ($"Cannot save weights {source}.{bufferName} = {values.Length}");
+            var entryName = $"{source.GetType().Name}.{source.Id}.{bufferName}.floats";
+            if (wroteBuffers.Contains (entryName))
+                return;
+            wroteBuffers.Add (entryName);
+            var entry = archive.CreateEntry (entryName);
+            using var s = entry.Open ();
+            s.Write (MemoryMarshal.Cast<float, byte> (values));
         }
     }
 }
