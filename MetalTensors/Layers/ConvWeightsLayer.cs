@@ -367,7 +367,8 @@ namespace MetalTensors.Layers
 
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
-                BiasVectors = new OptimizableVector (device, vDescBiases, biasInit);
+                BiasVectors = new OptimizableVector (device, vDescBiases);
+                layer.Weights.Read ("Bias", BiasVectors, layer.BiasInit);
             }
             else {
                 BiasVectors = null;
@@ -381,10 +382,9 @@ namespace MetalTensors.Layers
                 NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
 
             weightInitTask = Task.Run (async () => {
-                var seed = (int)DateTime.Now.Ticks;
                 var fanIn = inChannels * kernelSizeX * kernelSizeY;
                 var fanOut = outChannels * kernelSizeX * kernelSizeY;
-                await layer.WeightsInit.InitWeightsAsync (weightVectors.Value, seed, fanIn, fanOut, queue).ConfigureAwait (false);
+                await layer.Weights.ReadAsync ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }

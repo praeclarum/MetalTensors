@@ -52,6 +52,7 @@ namespace MetalTensors.Layers
                 queue = device.CreateCommandQueue ();
                 if (queue == null)
                     throw new Exception ($"Failed to create queue to load values");
+                queue.Label = "WeightsLayer";
                 if (!deviceQueues.TryAdd (key, queue)) {
                     queue = deviceQueues[key];
                 }

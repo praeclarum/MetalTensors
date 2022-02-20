@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Metal;
 using MetalPerformanceShaders;
 using MetalTensors.Layers;
@@ -14,31 +15,43 @@ namespace MetalTensors
     /// </summary>
     public class Weights : Configurable
     {
-        readonly ConcurrentDictionary<string, Memory<float>> buffers = new ConcurrentDictionary<string, Memory<float>> ();
+        public ConcurrentDictionary<string, Memory<float>> Variables { get; } = new ConcurrentDictionary<string, Memory<float>> ();
 
         public Weights ()
         {
         }
 
-        public void Read (string vectorName, OptimizableVector vector, float initialValue)
+        public void Read (string variableName, MPSVector vector, float initialValue)
         {
-            if (buffers.TryGetValue (vectorName, out var memory)) {
-                vector.Value.Init (memory);
-            }
-            else {
-                vector.Value.Fill (initialValue);
-                buffers[vectorName] = vector.Value.ToSpan ().ToArray ();
-            }
-        }
-
-        public void Read (string vectorName, MPSVector vector, float initialValue)
-        {
-            if (buffers.TryGetValue (vectorName, out var memory)) {
+            if (Variables.TryGetValue (variableName, out var memory)) {
                 vector.Init (memory);
             }
             else {
                 vector.Fill (initialValue);
-                buffers[vectorName] = vector.ToSpan ().ToArray ();
+                Variables[variableName] = vector.ToSpan ().ToArray ();
+            }
+        }
+
+        public void Read (string variableName, OptimizableVector vector, float initialValue)
+        {
+            if (Variables.TryGetValue (variableName, out var memory)) {
+                vector.Value.Init (memory);
+            }
+            else {
+                vector.Value.Fill (initialValue);
+                Variables[variableName] = vector.Value.ToSpan ().ToArray ();
+            }
+        }
+
+        public async Task ReadAsync (string variableName, OptimizableVector vector, WeightsInit initialValue, int fanIn, int fanOut, IMTLCommandQueue queue)
+        {
+            if (Variables.TryGetValue (variableName, out var memory)) {
+                vector.Value.Init (memory);
+            }
+            else {
+                var seed = (int)DateTime.Now.Ticks;
+                await initialValue.InitWeightsAsync (vector.Value, seed, fanIn: fanIn, fanOut: fanOut, queue: queue).ConfigureAwait (false);
+                Variables[variableName] = vector.Value.ToSpan ().ToArray ();
             }
         }
     }
