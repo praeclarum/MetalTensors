@@ -13,8 +13,8 @@ namespace MetalTensors
         void WriteBuffers (WriteBuffer writer);
     }
 
-    public delegate Memory<float> ReadBuffer (string name);
-    public delegate void WriteBuffer (string name, Span<float> values);
+    public delegate void ReadBuffer (string name, Span<float> values);
+    public delegate void WriteBuffer (string name, ReadOnlySpan<float> values);
 
     public class ArchiveReader
     {
@@ -39,13 +39,13 @@ namespace MetalTensors
             foreach (var r in references) {
                 var c = r.Value;
                 if (c is IHasBuffers hb) {
-                    hb.ReadBuffers ((x) => ReadBuffer (c, x));
+                    hb.ReadBuffers ((x, y) => ReadBuffer (c, x, y));
                 }
             }
             return value;
         }
 
-        float[] ReadBuffer (Configurable source, string bufferName)
+        void ReadBuffer (Configurable source, string bufferName, Span<float> values)
         {
             throw new NotImplementedException ($"Cannot read weights {source}.{bufferName}");
         }
@@ -88,7 +88,7 @@ namespace MetalTensors
             }
         }
 
-        void WriteBuffer (Configurable source, string bufferName, Span<float> values)
+        void WriteBuffer (Configurable source, string bufferName, ReadOnlySpan<float> values)
         {
             throw new NotImplementedException ($"Cannot save weights {source}.{bufferName} = {values.Length}");
         }

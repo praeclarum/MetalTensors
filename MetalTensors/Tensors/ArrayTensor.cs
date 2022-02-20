@@ -7,7 +7,7 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Tensors
 {
-    public class ArrayTensor : Tensor
+    public class ArrayTensor : Tensor, IHasBuffers
     {
         readonly float[] data;
         readonly int[] shape;
@@ -73,6 +73,16 @@ namespace MetalTensors.Tensors
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }
             return image;
+        }
+
+        public void ReadBuffers (ReadBuffer reader)
+        {
+            reader ("Values", data);
+        }
+
+        public void WriteBuffers (WriteBuffer writer)
+        {
+            writer ("Values", data);
         }
     }
 }
