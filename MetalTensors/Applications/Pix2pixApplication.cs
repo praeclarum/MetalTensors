@@ -89,7 +89,7 @@ namespace MetalTensors.Applications
                     var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
-                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias);//.BatchNorm ();
+                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     //var up = down.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     return input.Concat (up).Model (input, name);
                 }
@@ -99,7 +99,7 @@ namespace MetalTensors.Applications
                     var downnorm = downconv;//.BatchNorm ();
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias);//.BatchNorm ();
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
                     //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
                     return input.Concat (updrop).Model (input, name);
@@ -130,7 +130,7 @@ namespace MetalTensors.Applications
                 disc =
                     disc
                     .Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias)
-                    //.BatchNorm ()
+                    .BatchNorm ()
                     .LeakyReLU (a: 0.2f);
             }
 
@@ -138,7 +138,7 @@ namespace MetalTensors.Applications
             disc =
                 disc
                 .Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias)
-                //.BatchNorm ()
+                .BatchNorm ()
                 .LeakyReLU (a: 0.2f);
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
