@@ -56,6 +56,11 @@ namespace MetalTensors
             data.DidModify (new NSRange (0, (nint)data.Length));
         }
 
+        public static void DownloadFromGpu (this MPSVector vector, IMTLCommandBuffer commandBuffer)
+        {
+            vector.Synchronize (commandBuffer);
+        }
+
         public static unsafe Span<float> ToSpan (this MPSVector vector)
         {
             var vspan = new Span<float> ((float*)vector.Data.Contents, (int)vector.Length);

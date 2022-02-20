@@ -306,14 +306,14 @@ namespace MetalTensors.Layers
                 var v = convWeights.Value;
                 var opt = optimizer;
                 if (opt != null) {
-                    Interlocked.Increment (ref updateCount);
-
-                    opt.Encode (commandBuffer, gradientState, sourceState, v.momentumVectors, v.velocityVectors, v.ConvWtsAndBias);
 
                     //Console.WriteLine ($"Update of ConvDataSource {this.Label}");
+                    opt.Encode (commandBuffer, gradientState, sourceState, v.momentumVectors, v.velocityVectors, v.ConvWtsAndBias);
+
+                    Interlocked.Increment (ref updateCount);
                 }
                 else {
-                    throw new Exception ($"Attempted to Update without an Optimizer");
+                    throw new InvalidOperationException ($"Attempted to Update ConvWeightsLayer without an Optimizer");
                 }
                 return v.ConvWtsAndBias;
             }

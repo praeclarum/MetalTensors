@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading;
 using Foundation;
 using Metal;
 using MetalPerformanceShaders;
@@ -52,6 +53,7 @@ namespace MetalTensors.Layers
         const float bnRunningUpdateMomentum = 0.9f;
 
         readonly BatchNormLayer batchNormWeights;
+        readonly IMTLCommandQueue weightsQueue;
         readonly IMTLDevice device;
 
         readonly MPSVectorDescriptor vectorDescriptor;
@@ -64,7 +66,10 @@ namespace MetalTensors.Layers
         readonly MPSVector varianceVector;
         readonly MPSCnnNormalizationMeanAndVarianceState meanAndVariance;
 
-        MPSNNOptimizerAdam? updater;
+        int updateCount;
+        int loadedUpdateCount;
+        MPSNNOptimizerAdam? optimizer;
+        bool trainable;
         readonly MPSNNOptimizerStochasticGradientDescent meanUpdater;
         readonly MPSNNOptimizerStochasticGradientDescent varianceUpdater;
 
@@ -88,6 +93,7 @@ namespace MetalTensors.Layers
             // https://github.com/apple/turicreate/blob/d332b2a856b0eadb97f6475a5728a624afe27e02/src/ml/neural_net/mps_weight.mm#L449
 
             this.batchNormWeights = batchNormWeights;
+            this.weightsQueue = queue;
             this.device = queue.Device;
 
             vectorDescriptor = VectorDescriptor (batchNormWeights.FeatureChannels);
@@ -142,16 +148,19 @@ namespace MetalTensors.Layers
 
         public void SetOptimizationOptions (bool trainable, float learningRate)
         {
+            this.trainable = trainable;
             if (trainable) {
-                var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
-                updater = new MPSNNOptimizerAdam (
-                    device,
-                    beta1: 0.9f, beta2: 0.999f, epsilon: 1e-8f,
-                    timeStep: 0,
-                    optimizerDescriptor: odesc);
-            }
-            else {
-                updater = null;
+                if (optimizer is MPSNNOptimizerAdam adam) {
+                    adam.SetLearningRate (learningRate);
+                }
+                else {
+                    var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
+                    optimizer = new MPSNNOptimizerAdam (
+                        device,
+                        beta1: 0.9f, beta2: 0.999f, epsilon: 1e-7f,
+                        timeStep: 0,
+                        optimizerDescriptor: odesc);
+                }
             }
         }
 
@@ -159,6 +168,17 @@ namespace MetalTensors.Layers
         public override bool Load {
             get {
                 //Console.WriteLine ($"Load BatchNormDataSource {this.Label}");
+                if (updateCount != loadedUpdateCount) {
+                    loadedUpdateCount = updateCount;
+                    using var pool = new NSAutoreleasePool ();
+                    var commands = MPSCommandBuffer.Create (weightsQueue);
+                    betaVector.DownloadFromGpu (commands);
+                    gammaVector.DownloadFromGpu (commands);
+                    meanVector.DownloadFromGpu (commands);
+                    varianceVector.DownloadFromGpu (commands);
+                    commands.Commit ();
+                    commands.WaitUntilCompleted ();
+                }
                 return true;
             }
         }
@@ -168,43 +188,38 @@ namespace MetalTensors.Layers
             //Console.WriteLine ($"Purge BatchNormDataSource {this.Label}");
         }
 
-        public override MPSCnnNormalizationGammaAndBetaState UpdateGammaAndBeta (IMTLCommandBuffer commandBuffer, MPSCnnBatchNormalizationState batchNormalizationState)
+        public override MPSCnnNormalizationGammaAndBetaState? UpdateGammaAndBeta (IMTLCommandBuffer commandBuffer, MPSCnnBatchNormalizationState batchNormalizationState)
         {
-            var u = updater;
+            if (trainable) {
+                var opt = optimizer;
 
-            if (u != null && batchNormalizationState.Mean is IMTLBuffer mean && batchNormalizationState.Variance is IMTLBuffer variance) {
-                //
-                // Update mean and variance
-                //
-                using var meanState = new MPSVector (mean, vectorDescriptor);
-                using var varianceState = new MPSVector (variance, vectorDescriptor);
-                meanUpdater.Encode (commandBuffer, inputGradientVector: meanState, inputValuesVector: meanVector, null, meanVector);
-                varianceUpdater.Encode (commandBuffer, inputGradientVector: varianceState, inputValuesVector: varianceVector, null, varianceVector);
+                if (opt != null && batchNormalizationState.Mean is IMTLBuffer mean && batchNormalizationState.Variance is IMTLBuffer variance) {
+                    //
+                    // Update mean and variance
+                    //
+                    using var meanState = new MPSVector (mean, vectorDescriptor);
+                    using var varianceState = new MPSVector (variance, vectorDescriptor);
+                    meanUpdater.Encode (commandBuffer, inputGradientVector: meanState, inputValuesVector: meanVector, null, meanVector);
+                    varianceUpdater.Encode (commandBuffer, inputGradientVector: varianceState, inputValuesVector: varianceVector, null, varianceVector);
 
-                //
-                // Update gamma and beta
-                // This update must come last, since the MPS API we use will decrement read counts.
-                //
-                u.Encode (commandBuffer, batchNormalizationState, momentumVectors, velocityVectors, gammaAndBeta);
+                    //
+                    // Update gamma and beta
+                    // This update must come last, since the MPS API we use will decrement read counts.
+                    //
+                    opt.Encode (commandBuffer, batchNormalizationState, momentumVectors, velocityVectors, gammaAndBeta);
+
+                    Interlocked.Increment (ref updateCount);
+                }
+                else {
+                    throw new InvalidOperationException ($"Attempted to Update BatchNormLayer without an Optimizer");
+                }
+
+                return gammaAndBeta;
             }
-
-            return gammaAndBeta;
-        }
-
-        public bool WeightsAreFinite ()
-        {
-            return betaVector.IsFinite () &&
-                gammaVector.IsFinite () &&
-                meanVector.IsFinite () &&
-                varianceVector.IsFinite ();
-        }
-
-        void MarkAsModifiedByCpu ()
-        {
-            betaVector.MarkAsModifiedByCpu ();
-            gammaVector.MarkAsModifiedByCpu ();
-            meanVector.MarkAsModifiedByCpu ();
-            varianceVector.MarkAsModifiedByCpu ();
+            else {
+                batchNormalizationState.ReadCount--;
+                return null;
+            }
         }
     }
 }
