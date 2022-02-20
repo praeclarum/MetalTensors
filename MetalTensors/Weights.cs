@@ -84,24 +84,6 @@ namespace MetalTensors
             ValuePointer = Value.Data.Contents;
         }
 
-        /// <summary>
-        /// Momentum and Velocity are initialized to 0. Value is copied from the tensor.
-        /// </summary>
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, Tensor initialValue)
-            : this (device, descriptor)
-        {
-            initialValue.Copy (Value.ToSpan (), device);
-        }
-
-        /// <summary>
-        /// Momentum and Velocity are initialized to 0. Value is filled with a constant.
-        /// </summary>
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)
-            : this (device, descriptor)
-        {
-            Value.Fill (initialValue);
-        }
-
         public void Dispose ()
         {
             if (!disposed) {
