@@ -91,6 +91,12 @@ namespace MetalTensors
         [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
         static extern void memset_pattern16 (IntPtr b, IntPtr pattern16, nint len);
 
+        public static void Init (this MPSVector vector, Memory<float> values)
+        {
+            vector.MarkAsModifiedByCpu ();
+            throw new NotImplementedException ();
+        }
+
         public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, bool downloadToCpu = true)
         {
             var descriptor = MPSMatrixRandomDistributionDescriptor.CreateUniform (minimum, maximum);
@@ -174,6 +180,9 @@ namespace MetalTensors
         public static MPSVector Vector (int length, MPSDataType dataType = MPSDataType.Float32, IMTLDevice? device = null) =>
             Vector (VectorDescriptor (length, dataType), device);
 
+        /// <summary>
+        /// Creates an uninitialized vector
+        /// </summary>
         public static MPSVector Vector (MPSVectorDescriptor descriptor, IMTLDevice? device = null)
         {
             if (descriptor.Length <= 0)

@@ -13,9 +13,8 @@ using static MetalTensors.MetalHelpers;
 
 namespace MetalTensors.Layers
 {
-    public class ConvWeights
+    public class ConvWeights : Weights
     {
-        public string Label { get; }
         public int InChannels { get; }
         public int OutChannels { get; }
         public int SizeX { get; }
@@ -29,17 +28,20 @@ namespace MetalTensors.Layers
         static readonly ConcurrentDictionary<IntPtr, IMTLCommandQueue> deviceQueues =
             new ConcurrentDictionary<IntPtr, IMTLCommandQueue> ();
 
-        readonly ConcurrentDictionary<IntPtr, ConvDataSource> deviceWeights =
+        readonly ConcurrentDictionary<IntPtr, ConvDataSource> deviceDataSources =
             new ConcurrentDictionary<IntPtr, ConvDataSource> ();
 
-        public ConvWeights (string label, int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit)
+        public string Name { get; }
+
+        public ConvWeights (string name, int inChannels, int outChannels, int kernelSizeX, int kernelSizeY, int strideX, int strideY, bool bias, WeightsInit weightsInit, float biasInit)
+            : base ()
         {
             if (inChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution input channels must be > 0");
             if (outChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inChannels), "Number of convolution output channels must be > 0");
 
-            Label = label;
+            Name = name;
             InChannels = inChannels;
             OutChannels = outChannels;
             SizeX = kernelSizeX;
@@ -54,7 +56,7 @@ namespace MetalTensors.Layers
         public MPSCnnConvolutionDataSource GetDataSource (IMTLDevice device)
         {
             var key = device.Handle;
-            if (deviceWeights.TryGetValue (key, out var w))
+            if (deviceDataSources.TryGetValue (key, out var w))
                 return w;
 
             if (!deviceQueues.TryGetValue (key, out var queue)) {
@@ -70,9 +72,9 @@ namespace MetalTensors.Layers
 
             w = new ConvDataSource (this, queue);
 
-            if (deviceWeights.TryAdd (key, w))
+            if (deviceDataSources.TryAdd (key, w))
                 return w;
-            return deviceWeights[key];
+            return deviceDataSources[key];
         }
     }
 
@@ -125,7 +127,7 @@ namespace MetalTensors.Layers
             : this (convWeights.InChannels, convWeights.OutChannels,
                     convWeights.SizeX, convWeights.SizeY, convWeights.StrideX, convWeights.StrideY,
                     convWeights.Bias, convWeights.WeightsInit, convWeights.BiasInit,
-                    convWeights.Label, weightsQueue)
+                    convWeights.Name, weightsQueue)
         {
         }
 
@@ -389,141 +391,5 @@ namespace MetalTensors.Layers
         }
     }
 
-    sealed class OptimizableVector : IDisposable
-    {
-        public readonly int VectorLength;
-        public readonly int VectorByteSize;
-        public readonly MPSVectorDescriptor VectorDescriptor;
-        public readonly MPSVector Value;
-        public readonly MPSVector Momentum;
-        public readonly MPSVector Velocity;
-        public readonly IntPtr ValuePointer;
-        private bool disposed;
-
-        /// <summary>
-        /// Momentum and Velocity are initialized to 0. Value is left uninitialized.
-        /// </summary>
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor)
-        {
-            VectorLength = (int)descriptor.Length;
-            VectorByteSize = descriptor.GetByteSize ();
-            VectorDescriptor = descriptor;
-            Value = Vector (descriptor, device);
-            Momentum = Vector (0.0f, descriptor, device);
-            Velocity = Vector (0.0f, descriptor, device);
-            ValuePointer = Value.Data.Contents;
-        }
-
-        /// <summary>
-        /// Momentum and Velocity are initialized to 0. Value is copied from the tensor.
-        /// </summary>
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, Tensor initialValue)
-            : this (device, descriptor)
-        {
-            initialValue.Copy (Value.ToSpan (), device);
-        }
-
-        /// <summary>
-        /// Momentum and Velocity are initialized to 0. Value is filled with a constant.
-        /// </summary>
-        public OptimizableVector (IMTLDevice device, MPSVectorDescriptor descriptor, float initialValue)
-            : this (device, descriptor)
-        {
-            Value.Fill (initialValue);
-        }
-
-        public void Dispose ()
-        {
-            if (!disposed) {
-                disposed = true;
-                Velocity.Dispose ();
-                Momentum.Dispose ();
-                Value.Dispose ();
-            }
-        }
-
-        /// <summary>
-        /// Flush the underlying MTLBuffer from the device's caches, and invalidate any CPU caches if needed.
-        /// This will call[id < MTLBlitEncoder > synchronizeResource: ] on the vector's MTLBuffer, if any.
-        /// This is necessary for all MTLStorageModeManaged resources.For other resources, including temporary
-        /// resources (these are all MTLStorageModePrivate), and buffers that have not yet been allocated, nothing is done.
-        /// It is more efficient to use this method than to attempt to do this yourself with the data property.
-        /// </summary>
-        /// <param name="commandBuffer"></param>
-        public void DownloadFromGpu (IMTLCommandBuffer commandBuffer)
-        {
-            Value.Synchronize (commandBuffer);
-            Momentum.Synchronize (commandBuffer);
-            Velocity.Synchronize (commandBuffer);
-        }
-
-
-        /// <summary>
-        /// Informs the GPU that the CPU has modified the vectors.
-        /// </summary>
-        public void MarkAsModifiedByCpu ()
-        {
-            Value.MarkAsModifiedByCpu ();
-            Momentum.MarkAsModifiedByCpu ();
-            Velocity.MarkAsModifiedByCpu ();
-        }
-
-        public bool IsFinite ()
-        {
-            return Value.IsFinite () && Momentum.IsFinite () && Velocity.IsFinite ();
-        }
-
-        public void Zero ()
-        {
-            Value.Zero ();
-            Velocity.Zero ();
-            Momentum.Zero ();
-        }
-
-#if PB_SERIALIZATION
-        public NetworkData.OptimizableVector GetData (bool includeTrainingParameters)
-        {
-            return new NetworkData.OptimizableVector {
-                Value = GetVectorData (Value),
-                Momentum = includeTrainingParameters ? GetVectorData (Momentum) : null,
-                Velocity = includeTrainingParameters ? GetVectorData (Velocity) : null,
-            };
-        }
-
-        public void SetData (NetworkData.OptimizableVector data)
-        {
-            if (data == null)
-                return;
-            SetVectorData (Value, data.Value);
-            SetVectorData (Momentum, data.Momentum);
-            SetVectorData (Velocity, data.Velocity);
-        }
-
-        NetworkData.Vector GetVectorData (MPSVector vector)
-        {
-            var v = new NetworkData.Vector ();
-            v.Values.AddRange (vector.ToArray ());
-            return v;
-        }
-
-        bool SetVectorData (MPSVector vector, NetworkData.Vector data)
-        {
-            if (data == null)
-                return false;
-
-            var vs = data.Values;
-            var n = (int)vector.Length;
-            if (n != vs.Count)
-                return false;
-
-            unsafe {
-                var p = (float*)vector.Data.Contents;
-                for (var i = 0; i < n; i++) {
-                    *p++ = vs[i];
-                }
-            }
-            return true;
-        }
-#endif
-    }
+    
 }

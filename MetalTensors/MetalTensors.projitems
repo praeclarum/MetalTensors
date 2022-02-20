@@ -50,7 +50,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Applications\Pix2pixApplication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AvgPoolLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormLayer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormWeights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConcatLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvTransposeLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReductionType.cs" />
@@ -71,6 +70,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MPSVectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Weights.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />
