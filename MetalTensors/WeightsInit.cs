@@ -13,7 +13,7 @@ namespace MetalTensors
         public static WeightsInit Normal (float mean, float standardDeviation) => new NormalInit (mean, standardDeviation);
         public static WeightsInit Uniform (float min, float max) => new UniformInit (min, max);
 
-        public abstract Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut);
+        public abstract Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut, IMTLCommandQueue queue);
     }
 
     public class GlorotUniformInit : WeightsInit
@@ -30,12 +30,12 @@ namespace MetalTensors
 
         public override Config Config => base.Config.Add ("scale", 1.0f);
 
-        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut, IMTLCommandQueue queue)
         {
             var scale = Scale / Math.Max (1.0, (fanIn + fanOut) / 2.0);
             var limit = Math.Sqrt (3.0 * scale);
             //Console.WriteLine ($"LIMIT {limit}");
-            return vector.UniformInitAsync ((float)-limit, (float)limit, seed, downloadToCpu: true);
+            return vector.UniformInitAsync ((float)-limit, (float)limit, seed, downloadToCpu: true, queue: queue);
         }
     }
 
@@ -55,9 +55,9 @@ namespace MetalTensors
             { "standardDeviation", StandardDeviation },
         });
 
-        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut, IMTLCommandQueue queue)
         {
-            return vector.NormalInitAsync (Mean, StandardDeviation, seed, downloadToCpu: true);
+            return vector.NormalInitAsync (Mean, StandardDeviation, seed, downloadToCpu: true, queue: queue);
         }
     }
 
@@ -77,9 +77,9 @@ namespace MetalTensors
             { "max", Max },
         });
 
-        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut)
+        public override Task InitWeightsAsync (MPSVector vector, int seed, int fanIn, int fanOut, IMTLCommandQueue queue)
         {
-            return vector.UniformInitAsync (Min, Max, seed, downloadToCpu: true);
+            return vector.UniformInitAsync (Min, Max, seed, downloadToCpu: true, queue: queue);
         }
     }
 }

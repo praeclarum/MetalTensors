@@ -97,13 +97,13 @@ namespace MetalTensors
             throw new NotImplementedException ();
         }
 
-        public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, bool downloadToCpu = true)
+        public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, bool downloadToCpu = true, IMTLCommandQueue? queue = null)
         {
             var descriptor = MPSMatrixRandomDistributionDescriptor.CreateUniform (minimum, maximum);
-            return RandomInitAsync (vector, descriptor, seed, downloadToCpu);
+            return RandomInitAsync (vector, descriptor, seed, downloadToCpu, queue);
         }
 
-        public static Task NormalInitAsync (this MPSVector vector, float mean, float standardDeviation, int seed, bool downloadToCpu = true)
+        public static Task NormalInitAsync (this MPSVector vector, float mean, float standardDeviation, int seed, bool downloadToCpu = true, IMTLCommandQueue? queue = null)
         {
             var descriptor = new MPSMatrixRandomDistributionDescriptor {
                 DistributionType = MPSMatrixRandomDistribution.Normal,
@@ -115,7 +115,7 @@ namespace MetalTensors
             //var d2 = Runtime.GetNSObject<MPSMatrixRandomDistributionDescriptor> (IntPtr_objc_msgSend_float_float (classMPSMatrixRandomDistributionDescriptor, selCreateNormal, mean, standardDeviation));
             //if (d2 == null)
             //    throw new Exception ($"Failed to create normal distribution descriptor");
-            return RandomInitAsync (vector, descriptor, seed, downloadToCpu);
+            return RandomInitAsync (vector, descriptor, seed, downloadToCpu, queue);
         }
 
         // MISSING XAMARIN BINDING
@@ -124,13 +124,15 @@ namespace MetalTensors
         //static readonly IntPtr selCreateNormal = Selector.GetHandle ("normalDistributionDescriptorWithMean:standardDeviation:");
         //static readonly IntPtr classMPSMatrixRandomDistributionDescriptor = Class.GetHandle ("MPSMatrixRandomDistributionDescriptor");
 
-        public static Task RandomInitAsync (this MPSVector vector, MPSMatrixRandomDistributionDescriptor descriptor, int seed, bool downloadToCpu = true)
+        public static Task RandomInitAsync (this MPSVector vector, MPSMatrixRandomDistributionDescriptor descriptor, int seed, bool downloadToCpu = true, IMTLCommandQueue? queue = null)
         {
             using var pool = new NSAutoreleasePool ();
             var device = vector.Device;
-            var queue = device.CreateCommandQueue ();
-            if (queue == null)
-                throw new Exception ($"Failed to create command queue to generate random data");
+            if (queue == null) {
+                queue = device.CreateCommandQueue ();
+                if (queue == null)
+                    throw new Exception ($"Failed to create command queue to generate random data");
+            }
             var command = MPSCommandBuffer.Create (queue);
             var random = new MPSMatrixRandomMtgp32 (device, vector.DataType, (nuint)seed, descriptor);
             random.EncodeToCommandBuffer (command, vector);
