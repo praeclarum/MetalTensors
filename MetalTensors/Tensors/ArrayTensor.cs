@@ -9,7 +9,7 @@ namespace MetalTensors.Tensors
 {
     public class ArrayTensor : Tensor, IHasBuffers
     {
-        readonly float[] data;
+        float[] data;
         readonly int[] shape;
 
         public override int[] Shape => shape;
@@ -77,12 +77,14 @@ namespace MetalTensors.Tensors
 
         public void ReadBuffers (ReadBuffer reader)
         {
-            reader ("Values", data);
+            if (reader ("values") is float[] d && d.Length == data.Length) {
+                data = d;
+            }
         }
 
         public void WriteBuffers (WriteBuffer writer)
         {
-            writer ("Values", data);
+            writer ("values", data);
         }
     }
 }

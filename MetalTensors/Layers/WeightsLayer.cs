@@ -27,25 +27,28 @@ namespace MetalTensors.Layers
         /// <summary>
         /// Values stored after deserialization or a memory purge.
         /// </summary>
-        readonly ConcurrentDictionary<string, Memory<float>> weightValues = new ConcurrentDictionary<string, Memory<float>> ();
+        readonly ConcurrentDictionary<string, float[]?> weightValues = new ConcurrentDictionary<string, float[]?> ();
+
         /// <summary>
-        /// Values represented by metal. Data can is reflected between the CPU and GPU with manual synchronization.
+        /// Values represented by Metal. Data is reflected between the CPU and GPU with manual synchronization.
         /// </summary>
         readonly ConcurrentDictionary<string, MPSVector> weightVectors = new ConcurrentDictionary<string, MPSVector> ();
 
-        public WeightsLayer (string? name = null, bool isTrainable = true)
+        public string[] ParameterNames { get; }
+
+        protected WeightsLayer (string? name, bool isTrainable, string[] parameterNames)
             : base (name, isTrainable: isTrainable)
         {
+            ParameterNames = parameterNames;
         }
 
         public void AddParameter (string parameterName, MPSVector vector, float initialValue)
         {
-            if (weightValues.TryGetValue (parameterName, out var memory)) {
+            if (weightValues.TryGetValue (parameterName, out var memory) && memory != null) {
                 vector.Init (memory);
             }
             else {
                 vector.Fill (initialValue);
-                weightValues[parameterName] = vector.ToSpan ().ToArray ();
                 weightVectors[parameterName] = vector;
             }
         }
@@ -53,12 +56,11 @@ namespace MetalTensors.Layers
         public void AddParameter (string parameterName, OptimizableVector vectors, float initialValue)
         {
             var vector = vectors.Value;
-            if (weightValues.TryGetValue (parameterName, out var memory)) {
+            if (weightValues.TryGetValue (parameterName, out var memory) && memory != null) {
                 vector.Init (memory);
             }
             else {
                 vector.Fill (initialValue);
-                weightValues[parameterName] = vector.ToSpan ().ToArray ();
                 weightVectors[parameterName] = vector;
             }
         }
@@ -66,20 +68,21 @@ namespace MetalTensors.Layers
         public async Task AddParameterAsync (string parameterName, OptimizableVector vectors, WeightsInit initialValue, int fanIn, int fanOut, IMTLCommandQueue queue)
         {
             var vector = vectors.Value;
-            if (weightValues.TryGetValue (parameterName, out var memory)) {
+            if (weightValues.TryGetValue (parameterName, out var memory) && memory != null) {
                 vector.Init (memory);
             }
             else {
                 var seed = (int)DateTime.Now.Ticks;
                 await initialValue.InitWeightsAsync (vector, seed, fanIn: fanIn, fanOut: fanOut, queue: queue).ConfigureAwait (false);
-                weightValues[parameterName] = vector.ToSpan ().ToArray ();
                 weightVectors[parameterName] = vector;
             }
         }
 
         public void ReadBuffers (ReadBuffer reader)
         {
-            throw new NotImplementedException ();
+            foreach (var p in ParameterNames) {
+                weightValues[p] = reader (p);
+            }
         }
 
         public void WriteBuffers (WriteBuffer writer)

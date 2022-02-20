@@ -204,10 +204,10 @@ namespace MetalTensors
             Compile (new[] { outputLoss }, optimizer, device);
 
         public CompiledModel Compile (Loss outputLoss, float learningRate, IMTLDevice? device = null) =>
-            Compile (new[] { outputLoss }, new AdamOptimizer(learningRate: learningRate), device);
+            Compile (new[] { outputLoss }, new AdamOptimizer (learningRate: learningRate), device);
 
         public CompiledModel Compile (Func<Tensor, Tensor, Tensor> outputLoss, Optimizer optimizer, IMTLDevice? device = null) =>
-            Compile (new CustomLoss(outputLoss), optimizer, device);
+            Compile (new CustomLoss (outputLoss), optimizer, device);
 
         CompiledModel? TryGetCompiledModel (IMTLDevice device)
         {
@@ -218,7 +218,7 @@ namespace MetalTensors
         }
 
         public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, int epochs = DefaultEpochs, IMTLDevice? device = null)
-        {            
+        {
             var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
             return Fit (dataSet, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
         }
@@ -346,41 +346,20 @@ namespace MetalTensors
             throw new NotSupportedException ($"Cannot create MPS filter nodes from models directly.");
         }
 
-        public void Save (string path)
+        public static Model Deserialize (byte[] data)
         {
-            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            Save (stream);
-        }
-
-        public byte[] Serialize ()
-        {
-            using var stream = new MemoryStream ();
-            Save (stream);
-            return stream.ToArray ();
-        }
-
-        public void Save (Stream stream)
-        {
-            using var ar = new ArchiveWriter (stream);
-            ar.Write (this);
+            return DeserializeObject<Model> (data);
         }
 
         public static Model Load (string path)
         {
             using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return Load (stream);
-        }
-
-        public static Model Deserialize (byte[] data)
-        {
-            using var stream = new MemoryStream (data);
-            return Load (stream);
+            return LoadObject<Model> (stream);
         }
 
         public static Model Load (Stream stream)
         {
-            var ar = new ArchiveReader (stream);
-            return ar.Read<Model> ();
+            return LoadObject<Model> (stream);
         }
     }
 }

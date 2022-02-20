@@ -25,6 +25,37 @@ namespace MetalTensors
         {
             Id = Interlocked.Increment (ref nextId);
         }
+
+        public byte[] Serialize ()
+        {
+            using var stream = new MemoryStream ();
+            Save (stream);
+            return stream.ToArray ();
+        }
+
+        public void Save (string path)
+        {
+            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Save (stream);
+        }
+
+        public void Save (Stream stream)
+        {
+            using var ar = new ArchiveWriter (stream);
+            ar.Write (this);
+        }
+
+        public static T DeserializeObject<T> (byte[] data) where T : Configurable
+        {
+            using var stream = new MemoryStream (data);
+            return LoadObject<T> (stream);
+        }
+
+        public static T LoadObject<T> (Stream stream) where T : Configurable
+        {
+            var ar = new ArchiveReader (stream);
+            return ar.Read<T> ();
+        }
     }
 
     public class ConfigCtorAttribute : Attribute { }

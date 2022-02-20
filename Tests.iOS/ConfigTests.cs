@@ -194,11 +194,11 @@ namespace Tests
         public void ArrayTensor ()
         {
             var ct = new ConstantTensor (24.0f, 2, 3, 5);
-            var t = Deserialize (new ArrayTensor (ct.Shape, ct.ToArray ()));
+            var t = Configurable.DeserializeObject<ArrayTensor> (new ArrayTensor (ct.Shape, ct.ToArray ()).Serialize ());
             Assert.AreEqual (2, t.Shape[0]);
             Assert.AreEqual (3, t.Shape[1]);
             Assert.AreEqual (5, t.Shape[2]);
-            //Assert.AreEqual (24.0f, t[0]); TODO: Save Array values
+            Assert.AreEqual (24.0f, t[0]);
         }
 
         [Test]
@@ -301,7 +301,7 @@ namespace Tests
             Assert.AreEqual (1, m2.Inputs.Length);
             Assert.AreEqual (1, m2.Outputs.Length);
             var m2Output = m2.Predict (testInput);
-            //Assert.AreEqual (testOutput[0], m2Output[0]); TODO: Save Conv weights
+            Assert.AreEqual (testOutput[0], m2Output[0]);
         }
     }
 }

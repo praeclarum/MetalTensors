@@ -21,7 +21,7 @@ namespace MetalTensors.Layers
         public override int MinInputCount => 1;
 
         public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+            : base (name, isTrainable: isTrainable, new[] { "beta", "gamma", "mean", "variance" })
         {
             FeatureChannels = featureChannels;
             Epsilon = epsilon;
@@ -102,10 +102,10 @@ namespace MetalTensors.Layers
             gammaVector = new OptimizableVector (device, vectorDescriptor);
             meanVector = Vector (vectorDescriptor, device);
             varianceVector = Vector (vectorDescriptor, device);
-            batchNormWeights.AddParameter ("Beta", betaVector, initialValue: 0.0f);
-            batchNormWeights.AddParameter ("Gamma", gammaVector, initialValue: 1.0f);
-            batchNormWeights.AddParameter ("Mean", meanVector, initialValue: 0.0f);
-            batchNormWeights.AddParameter ("Variance", varianceVector, initialValue: 1.0f);
+            batchNormWeights.AddParameter ("beta", betaVector, initialValue: 0.0f);
+            batchNormWeights.AddParameter ("gamma", gammaVector, initialValue: 1.0f);
+            batchNormWeights.AddParameter ("mean", meanVector, initialValue: 0.0f);
+            batchNormWeights.AddParameter ("variance", varianceVector, initialValue: 1.0f);
 
             gammaAndBeta = new MPSCnnNormalizationGammaAndBetaState (gammaVector.Value.Data, betaVector.Value.Data);
             meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Data, varianceVector.Data);

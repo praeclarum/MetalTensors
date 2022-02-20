@@ -15,7 +15,7 @@ namespace MetalTensors
         void WriteBuffers (WriteBuffer writer);
     }
 
-    public delegate void ReadBuffer (string name, Span<float> values);
+    public delegate float[]? ReadBuffer (string name);
     public delegate void WriteBuffer (string name, ReadOnlySpan<float> values);
 
     public class ArchiveReader
@@ -40,16 +40,28 @@ namespace MetalTensors
             }
             foreach (var r in references) {
                 var c = r.Value;
+                var oid = r.Key;
                 if (c is IHasBuffers hb) {
-                    hb.ReadBuffers ((x, y) => ReadBuffer (c, x, y));
+                    hb.ReadBuffers ((x) => ReadBuffer (c, oid, x));
                 }
             }
             return value;
         }
 
-        void ReadBuffer (Configurable source, string bufferName, Span<float> values)
+        float[]? ReadBuffer (Configurable bufferOwner, int originalId, string bufferName)
         {
-            throw new NotImplementedException ($"Cannot read weights {source}.{bufferName}");
+            var entryName = $"{bufferOwner.GetType ().Name}.{originalId}.{bufferName}.floats";
+            var entry = archive.GetEntry (entryName);
+            if (entry == null)
+                return null;
+            var numBytes = entry.Length;
+            var numFloats = numBytes / 4;
+            var result = new float[numFloats];
+            var bspan = MemoryMarshal.Cast<float, byte> (result);
+            using (var s = entry.Open ()) {
+                s.Read (bspan);
+            }
+            return result;
         }
     }
 
@@ -83,6 +95,7 @@ namespace MetalTensors
             using (var s = entry.Open ()) {
                 config.Write (s, references);
             }
+            references.Add (root);
             foreach (var r in references) {
                 if (r is IHasBuffers hb) {
                     var c = r;

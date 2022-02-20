@@ -39,7 +39,7 @@ namespace MetalTensors.Layers
             float biasInit,
             string? name,
             bool isTrainable)
-            : base (name, isTrainable: isTrainable)
+            : base (name, isTrainable: isTrainable, bias ? new[] { "weights", "bias" } : new[] { "weights" })
         {
             if (inFeatureChannels <= 0)
                 throw new ArgumentOutOfRangeException (nameof (inFeatureChannels), "Number of convolution input channels must be > 0");
@@ -369,7 +369,7 @@ namespace MetalTensors.Layers
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
                 BiasVectors = new OptimizableVector (device, vDescBiases);
-                layer.AddParameter ("Bias", BiasVectors, layer.BiasInit);
+                layer.AddParameter ("bias", BiasVectors, layer.BiasInit);
             }
             else {
                 BiasVectors = null;
@@ -385,7 +385,7 @@ namespace MetalTensors.Layers
             weightInitTask = Task.Run (async () => {
                 var fanIn = inChannels * kernelSizeX * kernelSizeY;
                 var fanOut = outChannels * kernelSizeX * kernelSizeY;
-                await layer.AddParameterAsync ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
+                await layer.AddParameterAsync ("weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }

@@ -96,10 +96,11 @@ namespace MetalTensors
         [System.Runtime.InteropServices.DllImport (@"__Internal", CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
         static extern void memset_pattern16 (IntPtr b, IntPtr pattern16, nint len);
 
-        public static void Init (this MPSVector vector, Memory<float> values)
+        public static void Init (this MPSVector vector, ReadOnlySpan<float> values)
         {
+            var dest = vector.ToSpan ();
+            values.CopyTo (dest);
             vector.MarkAsModifiedByCpu ();
-            throw new NotImplementedException ();
         }
 
         public static Task UniformInitAsync (this MPSVector vector, float minimum, float maximum, int seed, bool downloadToCpu = true, IMTLCommandQueue? queue = null)
