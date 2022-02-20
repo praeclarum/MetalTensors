@@ -12,14 +12,13 @@ namespace Tests
         public void AddConstants ()
         {
             var x0 = Tensor.Input ("x0");
-            var x1 = Tensor.Constant ("x1", 40);
+            var x1 = Tensor.Constant (40, "x1");
             var y = x0 + x1;
-            var m = y.Model ();
+            var m = y.Model (x0);
 
             Assert.AreEqual (1, m.Outputs.Length);
             Assert.AreEqual (1, m.Inputs.Length);
-            Assert.AreEqual (0, m.Labels.Length);
-            Assert.AreEqual (2, m.Sources.Length);
+            Assert.AreEqual (1, m.Sources.Length);
             Assert.AreEqual (1, m.Layers.Length);
 
             var r = m.Predict (Tensor.Constant (3));

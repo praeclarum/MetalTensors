@@ -12,7 +12,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Tensor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TrainingGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Model.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\LossLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvWeightsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\MaxPoolLayer.cs" />
@@ -50,7 +49,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Applications\Pix2pixApplication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\AvgPoolLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormLayer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Layers\BatchNormWeights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConcatLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\ConvTransposeLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReductionType.cs" />
@@ -62,6 +60,18 @@
     <Compile Include="$(MSBuildThisFileDirectory)InferenceGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\SigmoidLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompiledModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Optimizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Loss.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\AbsLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\ReductionLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\LinearLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MPSVectorExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\WeightsLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\TrainableLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Archive.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

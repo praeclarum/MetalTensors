@@ -7,12 +7,25 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Tensors
 {
-    public class ArrayTensor : Tensor
+    public class ArrayTensor : Tensor, IHasBuffers
     {
-        readonly float[] data;
+        float[] data;
         readonly int[] shape;
 
         public override int[] Shape => shape;
+
+        public override bool IsStatic => true;
+
+        [ConfigCtor]
+        public ArrayTensor (int[] shape)
+        {
+            this.shape = shape;
+            var len = 1;
+            foreach (var s in shape) {
+                len *= s;
+            }
+            data = new float[len];
+        }
 
         public ArrayTensor (int[] shape, float[] data)
         {
@@ -23,10 +36,14 @@ namespace MetalTensors.Tensors
         public ArrayTensor (float[] data)
         {
             this.data = data;
-            this.shape = new int[] { data.Length };
+            shape = new int[] { data.Length };
         }
 
-        public override void Copy (Span<float> destination)
+        public override Config Config => base.Config.Update (new Config {
+            { "shape", Shape },
+        });
+
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
             Span<float> dataSpan = data;
@@ -51,20 +68,23 @@ namespace MetalTensors.Tensors
 
         public override unsafe MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = CreateUninitializedImage (Shape);
+            var image = MetalHelpers.CreateUninitializedImage (Shape);
             fixed (float* dataPtr = data) {
                 image.WriteBytes ((IntPtr)dataPtr, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
             }
-
-#if DEBUG_ARRAY_TENSOR
-            var dt = new MPSImageTensor (image);
-            for (var i = 0; i < Math.Min (5, Shape[0]); i++) {
-                var x = dt[i];
-                Debug.Assert (Math.Abs (x - data[i]) < 1.0e-6f);
-            }
-#endif
-
             return image;
+        }
+
+        public void ReadBuffers (ReadBuffer reader)
+        {
+            if (reader ("values") is float[] d && d.Length == data.Length) {
+                data = d;
+            }
+        }
+
+        public void WriteBuffers (WriteBuffer writer)
+        {
+            writer ("values", data);
         }
     }
 }

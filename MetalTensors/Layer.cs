@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,25 +12,32 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public abstract class Layer
+    public abstract class Layer : Configurable
     {
-        static int nextId = 1;
-        readonly string label;
+        readonly string name;
 
         readonly ConcurrentDictionary<string, MPSNNFilterNode> cachedFilterNodes =
             new ConcurrentDictionary<string, MPSNNFilterNode> ();
 
         public abstract int MinInputCount { get; }
 
-        public string Label => label;
+        public string Name => name;
 
-        protected Layer (string? label = null)
-        {
-            var id = Interlocked.Increment (ref nextId);
-            this.label = string.IsNullOrWhiteSpace (label) ? GetType ().Name + id : label!;
+        public virtual bool IsTrainable {
+            get => false;
+            set { }
         }
 
-        public override string ToString () => Label;
+        protected Layer (string? name = null)
+        {
+            this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + Id : name!;
+        }
+
+        public override string ToString () => Name;
+
+        public override Config Config => base.Config.Update (new Config {
+            { "name", Name },
+        });
 
         public virtual void ValidateInputShapes (params Tensor[] inputs)
         {
@@ -38,14 +46,14 @@ namespace MetalTensors
 
         public abstract int[] GetOutputShape (params Tensor[] inputs);
 
-        public MPSNNImageNode GetMetalImageNode (Tensor[] inputs, MetalImageNodeContext context)
+        public virtual MPSNNImageNode GetImageNode (Tensor[] inputs, MetalImageNodeContext context)
         {
-            var f = GetFilterNode (inputs, context);
+            var filterNode = GetFilterNode (inputs, context);
             //Console.WriteLine (f.ResultImage.DebugDescription);
-            return f.ResultImage;
+            return filterNode.ResultImage;
         }
 
-        public Tensor GetOutput (params Tensor[] inputs)
+        public virtual Tensor Call (params Tensor[] inputs)
         {
             return new LayerTensor (this, inputs);
         }
@@ -62,10 +70,9 @@ namespace MetalTensors
             void StartGraph (object s)
             {
                 try {
-                    var context = new MetalImageNodeContext (label + " Execute", false, device);
-                    var node = GetFilterNode (inputs, context);
-
-                    using var graph = new MPSNNGraph (device, node.ResultImage, true) {
+                    var context = new MetalImageNodeContext (name + " Execute", false, device);
+                    var node = GetImageNode (inputs, context);
+                    using var graph = new MPSNNGraph (device, node, true) {
                         Format = MPSImageFeatureChannelFormat.Float32,
                     };
                     //Console.WriteLine (graph.DebugDescription);
@@ -89,20 +96,9 @@ namespace MetalTensors
             }
         }
 
-        public virtual MPSCnnConvolutionDataSource? GetMetalConvDataSource (IMTLDevice device)
+        public virtual MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
         {
-            return null;
-        }
-
-        static IMTLDevice? FindDevice (Tensor[] tensors)
-        {
-            // TODO: Scan inputs for the correct device to use
-            return null;
-        }
-
-        public MPSNNFilterNode GetFilterNode (Tensor[] inputs, MetalImageNodeContext context)
-        {
-            var inputImageNodes = inputs.Select (x => (x.GetMetalImageNode (context), x.Shape)).ToArray ();
+            var inputImageNodes = inputs.Select (x => (x.GetImageNode (context), x.Shape)).ToArray ();
 
             var key = context.CacheKey + " + (" + string.Join (",", inputImageNodes.Select (x => x.Item1?.MPSHandle?.Label ?? "Unknown")) + ")";
             if (cachedFilterNodes.TryGetValue (key, out var node))
@@ -120,7 +116,7 @@ namespace MetalTensors
             var node = CreateFilterNode (inputs, context.Device);
 
             node.ResultImage.MPSHandle = new LayerHandle (this);
-            node.Label = Label;
+            node.Label = Name;
 
             return node;
         }

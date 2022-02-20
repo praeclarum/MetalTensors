@@ -3,14 +3,14 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors
 {
-    class LayerHandle : NSObject, IMPSHandle
+    public class LayerHandle : NSObject, IMPSHandle
     {
         public string Label { get; }
         public Layer Layer { get; }
 
         public LayerHandle (Layer layer)
         {
-            Label = layer.Label;
+            Label = layer.Name;
             Layer = layer;
         }
 

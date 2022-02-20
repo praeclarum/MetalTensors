@@ -12,64 +12,107 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class InferenceGraph : Graph
+    public class InferenceGraph : Graph
     {
-        public InferenceGraph (string label, MPSNNGraph graph)
-            : base (label, graph, graph.Device)
+        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
+            : base (label, CreateInferenceGraph (label, outputs, device: device), inputs, outputs, device)
         {
         }
 
-        public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches)
+        protected static MPSNNGraph CreateInferenceGraph (string label, Tensor[] outputs, IMTLDevice device)
         {
-            using var q = Device.CreateCommandQueue ();
-            if (q == null)
+            //
+            // Build the graph
+            //
+            var context = new MetalImageNodeContext (label, false, device);
+
+            if (outputs.Length == 0)
+                throw new InvalidOperationException ("Cannot create a graph with no outputs");
+
+
+            //
+            // Create the graph
+            //
+            var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
+            var resultsAreNeeded = outputs.Select (x => true).ToArray ();
+            var infGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
+            infGraph.Format = MPSImageFeatureChannelFormat.Float32;
+
+            return infGraph;
+        }
+
+        public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)
+        {
+            using var pool = new NSAutoreleasePool ();
+
+            using var queue = Device.CreateCommandQueue ();
+            if (queue == null)
                 throw new Exception ("Failed to create command queue");
 
-            var semaphore = new Semaphore (2, 2);
+            using var semaphore = new Semaphore (2, 2);
 
-            return Predict (dataSet, batchSize, numBatches, semaphore, q);
-        }
-
-        public TrainingHistory Predict (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
-        {
-            //
-            // Refresh weights incase they changed since last time
-            //
             MetalGraph.ReloadFromDataSources ();
 
             //
             // Init history
             //
-            var h = new List<TrainingHistory.BatchHistory> ();
+            var h = new List<Tensor[]> ();
             void AddHistory (TrainingHistory.BatchHistory bh)
             {
                 lock (h) {
-                    h.Add (bh);
+                    h.Add (bh.Results);
                 }
             }
 
             //
             // Evaluate
             //
-            var stopwatch = new Stopwatch ();
-            stopwatch.Restart ();
-
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, queue);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
             }
 
-            return new TrainingHistory (h);
+            return h.ToArray ();
         }
 
-        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
+        public Tensor[][] Predict (Tensor[][] inputsBatch)
         {
-            //foreach (var r in batchResults.Results) {
-            //    Console.WriteLine (Label + " Result = " + r);
-            //}
+            var batchSize = inputsBatch.Length;
+
+            using var pool = new NSAutoreleasePool ();
+
+            using var queue = Device.CreateCommandQueue ();
+            if (queue == null)
+                throw new Exception ("Failed to create command queue");
+
+            using var semaphore = new Semaphore (2, 2);
+
+            MetalGraph.ReloadFromDataSources ();
+
+            //
+            // Init history
+            //
+            var h = new Tensor[batchSize][];
+            void AddHistory (TrainingHistory.BatchHistory bh)
+            {
+                var r = bh.Results;
+                for (var bi = 0; bi < r.Length; bi++) {
+                    h[bi] = new[] { r[bi] };
+                }
+            }
+
+            //
+            // Evaluate
+            //
+            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, Array.Empty<Tensor[]>(), AddHistory, semaphore, queue);
+            if (lcb != null) {
+                lcb.WaitUntilCompleted ();
+            }
+
+            return h;
         }
     }
 }

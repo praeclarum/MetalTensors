@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Metal;
 using MetalTensors;
 using NUnit.Framework;
 
@@ -19,27 +20,20 @@ namespace Tests
             var x = Tensor.Input ("x", 2);
             var y = x.Dense (8, biasInit: 0.1f).Tanh ().Dense (1, biasInit: 0.1f).Tanh ();
 
-            var ylabels = Tensor.Labels ("ylabels", 1);
-
-            var loss = y.Loss (ylabels, LossType.MeanSquaredError);
-
             var rand = new Random ();
 
-            var history = loss.Train (DataSet.Generated (GenTrainingData, 100, "x", "ylabels"), learningRate: 0.01f, batchSize: 16, numBatches: 100, validationInterval: 50);
+            var model = new Model (x, y);
+            model.Compile (Loss.MeanSquaredError, learningRate: 0.01f);
+
+            var history = model.Fit (DataSet.Generated (GenTrainingData, 100), batchSize: 16, numBatches: 100, validationInterval: 50);
 
             var batch = history.Batches[^1];
-            Assert.AreEqual (1, batch.Loss[0].Shape[0]);
+            Assert.AreEqual (1, history.Batches[0].Losses.Count);
 
             var belowMinLoss = false;
             for (var bi = 0; bi < history.Batches.Length; bi++) {
                 var b = history.Batches[bi];
-                var sum = 0.0f;
-                var count = 0;
-                foreach (var l in b.Loss) {
-                    sum += l[0];
-                    count++;
-                }
-                var bl = sum / count;
+                var bl = b.AverageLoss;
                 //Console.WriteLine ($"BATCH {bi:#,0} LOSS {bl}");
                 if (bl < minLoss) {
                     belowMinLoss = true;
@@ -48,7 +42,7 @@ namespace Tests
             }
             Assert.IsTrue (belowMinLoss, "Did not train well");
 
-            Tensor[] GenTrainingData (int _)
+            (Tensor[], Tensor[]) GenTrainingData (int _, IMTLDevice device)
             {
                 var r = new Tensor[2];
 
@@ -62,7 +56,7 @@ namespace Tests
 
                 r[0] = Tensor.Array (x0, x1);
                 r[1] = Tensor.Array (y0);
-                return r;
+                return (new[] { r[0] }, new[] { r[1] });
             }
         }
     }

@@ -29,7 +29,7 @@ namespace MetalTensors.Applications
             for (var epoch = 0; epoch < epochs; epoch++) {
                 Console.WriteLine ("MNIST EPOCH");
                 //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                var history = Classifier.Train (trainingData, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
+                var history = Classifier.Fit (trainingData, batchSize: batchSize, epochs: 1, device: device);
                 Console.WriteLine ("MNIST HISTORY: " + history);
             }
         }
@@ -38,17 +38,17 @@ namespace MetalTensors.Applications
         {
             var (height, width) = (28, 28);
             var image = Tensor.InputImage ("image", height, width, 1);
-            var labels = Tensor.Labels ("labels", 1, 1, 10);
             var weights = WeightsInit.Uniform (-0.2f, 0.2f);
             var output =
                 image
-                .Conv (32, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
-                .Conv (64, size: 5, weightsInit: weights).ReLU (a: 0).MaxPool ()
-                .Dense (1024, size: 7, weightsInit: weights).ReLU (a: 0)
+                .Conv (32, size: 5, weightsInit: weights).ReLU ().MaxPool ()
+                .Conv (64, size: 5, weightsInit: weights).ReLU ().MaxPool ()
+                .Dense (1024, size: 7, weightsInit: weights).ReLU ()
                 .Dropout (0.5f)
-                .Dense (10).Loss (labels, LossType.SoftMaxCrossEntropy, ReductionType.Sum);
-            var model = output.Model ("mnist");
-
+                .Dense (10)
+                .SoftMax ();
+            var model = output.Model (image, "mnist");
+            model.Compile (Loss.SumSoftMaxCrossEntropy, new AdamOptimizer (learningRate: 0.0002f));
             return model;
         }
 
@@ -64,11 +64,7 @@ namespace MetalTensors.Applications
             private readonly MPSImageDescriptor trainImageDesc;
             readonly Random random;
 
-            static readonly string[] cols = { "image", "labels" };
-
             public override int Count => numImages;
-
-            public override string[] Columns => cols;
 
             public MnistDataSet ()
             {
@@ -83,10 +79,8 @@ namespace MetalTensors.Applications
                 numImages = labelsData.Length - LabelsPrefixSize;
             }
 
-            public override unsafe Tensor[] GetRow (int index)
+            public override unsafe (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
             {
-                var device = MetalExtensions.Current (null);
-
                 fixed (byte* imagesPointer = imagesData)
                 fixed (byte* labelsPointer = labelsData) {
 
@@ -102,7 +96,7 @@ namespace MetalTensors.Applications
                     labelsValues[*labelPointer] = 1;
                     var labelsTensor = Tensor.Array (labelsValues);
 
-                    return new[] { trainTensor, labelsTensor };
+                    return (new[] { trainTensor }, new[] { labelsTensor });
                 }
             }
 

@@ -14,24 +14,31 @@ namespace MetalTensors.Tensors
 
         public override Tensor[] Inputs => LayerInputs;
 
+        public override bool IsStatic => false;
+
         public LayerTensor (Layer layer, Tensor[] inputs)
-            : base (layer.Label)
+            : base (layer.Name)
         {
             Layer = layer;
             LayerInputs = inputs;
             Layer.ValidateInputShapes (inputs);
         }
 
-        public override void Copy (Span<float> destination)
+        public override Config Config => base.Config.Update (new Config {
+            { "layer", Layer },
+            { "inputs", LayerInputs },
+        });
+
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
-            var device = MetalExtensions.Current (null);
-            var computed = Layer.ExecuteAsync (LayerInputs, device).Result;
-            computed.Copy (destination);
+            var dev = device.Current ();
+            var computed = Layer.ExecuteAsync (LayerInputs, dev).Result;
+            computed.CopyTo (destination, dev);
         }
 
-        public override MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context)
+        public override MPSNNImageNode GetImageNode (MetalImageNodeContext context)
         {
-            return Layer.GetMetalImageNode (LayerInputs, context);
+            return Layer.GetImageNode (LayerInputs, context);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)
@@ -45,6 +52,11 @@ namespace MetalTensors.Tensors
             if (ReferenceEquals (newIns, LayerInputs))
                 return this;
             return new LayerTensor (Layer, newIns);
+        }
+
+        public override MPSImage GetMetalImage (IMTLDevice device)
+        {
+            return ((MPSImageTensor)Layer.ExecuteAsync (LayerInputs, device).Result).MetalImage;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Tests
         [Test]
         public void Defaults ()
         {
-            var image = Tensor.ReadImageResource ("elephant", "jpg");
+            var image = Tensor.ImageResource ("elephant", "jpg");
             var output = image.Dense (32);
 
             Assert.AreEqual (3, output.Shape.Length);
@@ -23,7 +23,7 @@ namespace Tests
         [Test]
         public void NoBias ()
         {
-            var image = Tensor.ReadImageResource ("rgbywb3x2", "png");
+            var image = Tensor.ImageResource ("rgbywb3x2", "png");
             var output = image.Dense (32, bias: false);
 
             Assert.AreEqual (3, output.Shape.Length);

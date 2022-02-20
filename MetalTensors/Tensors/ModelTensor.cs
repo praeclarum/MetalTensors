@@ -15,22 +15,30 @@ namespace MetalTensors.Tensors
 
         public override Tensor[] Inputs => ModelInputs;
 
+        public override bool IsStatic => false;
+
         public ModelTensor (Model model, int outputIndex, params Tensor[] inputs)
-            : base (model.Label)
+            : base (model.Name)
         {
             BaseModel = model;
             OutputIndex = outputIndex;
             ModelInputs = inputs;
         }
 
-        public override void Copy (Span<float> destination)
+        public override Config Config => base.Config.Update (new Config {
+            { "model", BaseModel },
+            { "outputIndex", OutputIndex },
+            { "inputs", ModelInputs },
+        });
+
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
-            BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].Copy (destination);
+            BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].CopyTo (destination, device);
         }
 
-        public override MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context)
+        public override MPSNNImageNode GetImageNode (MetalImageNodeContext context)
         {
-            return BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].GetMetalImageNode (context);
+            return BaseModel.RebuildModelWithInputs (ModelInputs).Outputs[0].GetImageNode (context);
         }
 
         public override Tensor MapInputs (Dictionary<Tensor, Tensor> map)

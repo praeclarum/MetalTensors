@@ -14,13 +14,21 @@ namespace MetalTensors.Layers
 
         public LossType LossType { get; }
         public ReductionType ReductionType { get; }
+        public float Weight { get; }
 
-        public LossLayer (string? label, LossType lossType, ReductionType reductionType)
-            : base (label)
+        public LossLayer (LossType lossType, ReductionType reductionType, float weight, string? name = null)
+            : base (name)
         {
             LossType = lossType;
             ReductionType = reductionType;
+            Weight = weight;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "lossType", LossType },
+            { "reductionType", ReductionType },
+            { "weight", Weight },
+        });
 
         public override void ValidateInputShapes (params Tensor[] inputs)
         {
@@ -44,6 +52,7 @@ namespace MetalTensors.Layers
         {
             var sourceNodes = inputs.Select (x => x.ImageNode).ToArray ();
             var descriptor = MPSCnnLossDescriptor.Create ((MPSCnnLossType)LossType, (MPSCnnReductionType)ReductionType);
+            descriptor.Weight = Weight;
             var ln = new MPSNNForwardLossNode (sourceNodes, descriptor);
             return ln;
         }

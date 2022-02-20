@@ -12,14 +12,42 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    class EvaluationGraph : Graph
+    public class EvaluationGraph : Graph
     {
-        public (LayerTensor Tensor, LossLayer Layer)[] Losses { get; }
+        public Tensor[] Losses { get; }
 
-        public EvaluationGraph (string label, Tensor trainingOutput, bool keepDropoutDuringInference, IMTLDevice device)
-            : base (label, CreateEvaluationGraph (label, trainingOutput, keepDropoutDuringInference, out var losses, device), device)
+        public EvaluationGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
+            : base (label, CreateEvaluationGraph (label, losses, keepDropoutDuringInference, device), inputs, outputs, device)
         {
             Losses = losses;
+        }
+
+        protected static MPSNNGraph CreateEvaluationGraph (string label, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
+        {
+            if (!keepDropoutDuringInference) {
+                losses = losses.Select (x => x.RemoveLayers<DropoutLayer> ()).ToArray ();
+            }
+
+            //
+            // Build the evaluation graph
+            //
+            var context = new MetalImageNodeContext (label, false, device);
+
+            var outputs = losses;
+
+            if (outputs.Length == 0)
+                throw new InvalidOperationException ("Cannot create an evaluation graph without losses");
+
+
+            //
+            // Create the graph
+            //
+            var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
+            var resultsAreNeeded = outputs.Select (x => true).ToArray ();
+            var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
+            evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
+
+            return evalGraph;
         }
 
         public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches)
@@ -36,11 +64,6 @@ namespace MetalTensors
         public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
         {
             //
-            // Refresh weights incase they changed since last time
-            //
-            MetalGraph.ReloadFromDataSources ();
-
-            //
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();
@@ -52,39 +75,17 @@ namespace MetalTensors
             }
 
             //
-            // Train
+            // Run
             //
-            var stopwatch = new Stopwatch ();
-            stopwatch.Restart ();
-
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = BeginBatch (batchIndex, dataSet, batchSize, AddHistory, stopwatch, semaphore, queue);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
             }
 
             return new TrainingHistory (h);
-        }
-
-        protected override TensorHandle[] GetBatchHandles ()
-        {
-            //
-            // Add Labels
-            //
-            var r = base.GetBatchHandles ().ToList ();
-
-            r.AddRange (Losses.Select (x => x.Tensor.Inputs[1].Handle));
-
-            return r.ToArray ();
-        }
-
-        protected override void OnBatchCompleted (TrainingHistory.BatchHistory batchResults)
-        {
-            //foreach (var r in batchResults.Results) {
-            //    Console.WriteLine (Label + " Result = " + r);
-            //}
         }
     }
 }

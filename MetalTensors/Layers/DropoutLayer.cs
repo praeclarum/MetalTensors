@@ -8,12 +8,15 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 1;
 
-        public float KeepProbability { get; }
+        public float DropProbability { get; }
 
-        public DropoutLayer (float keepProbability)
+        public DropoutLayer (float dropProbability, string? name = null)
+            : base (name)
         {
-            KeepProbability = keepProbability;
+            DropProbability = dropProbability;
         }
+
+        public override Config Config => base.Config.Add ("dropProbability", DropProbability);
 
         public override int[] GetOutputShape (params Tensor[] inputs)
         {
@@ -22,7 +25,7 @@ namespace MetalTensors.Layers
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
-            return new MPSCnnDropoutNode (inputs[0].ImageNode, KeepProbability);
+            return new MPSCnnDropoutNode (inputs[0].ImageNode, keepProbability: 1.0f - DropProbability);
         }
     }
 }

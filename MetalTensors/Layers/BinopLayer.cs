@@ -5,6 +5,11 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 2;
 
+        protected BinopLayer (string? name = null)
+            : base (name)
+        {
+        }
+
         public override void ValidateInputShapes (params Tensor[] inputs)
         {
             base.ValidateInputShapes (inputs);

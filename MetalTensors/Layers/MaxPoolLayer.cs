@@ -6,8 +6,8 @@ namespace MetalTensors.Layers
 {
     public class MaxPoolLayer : PoolLayer
     {
-        public MaxPoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
-            : base (sizeX, sizeY, strideX, strideY, padding)
+        public MaxPoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, string? name = null)
+            : base (sizeX, sizeY, strideX, strideY, padding, name: name)
         {
         }
 

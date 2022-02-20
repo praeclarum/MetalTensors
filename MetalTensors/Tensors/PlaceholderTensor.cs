@@ -11,13 +11,17 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
-        protected PlaceholderTensor (string label, int[] shape)
-            : base (label)
+        public override bool IsStatic => false;
+
+        protected PlaceholderTensor (string? name, int[] shape)
+            : base (name)
         {
             this.shape = shape.NormalizeShape ();
-        }        
+        }
 
-        public override void Copy (Span<float> destination)
+        public override Config Config => base.Config.Add ("shape", Shape);
+
+        public override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             var n = ValidateCopyDestination (destination);
             for (var i = 0; i < n; i++) {
@@ -27,7 +31,7 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            var image = CreateConstantImage (Shape, 0.0f);
+            var image = MetalHelpers.CreateConstantImage (Shape, 0.0f);
             return image;
         }
     }

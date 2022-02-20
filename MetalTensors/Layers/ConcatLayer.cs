@@ -9,6 +9,11 @@ namespace MetalTensors.Layers
     {
         public override int MinInputCount => 1;
 
+        public ConcatLayer (string? name = null)
+            : base (name)
+        {
+        }
+
         public override void ValidateInputShapes (params Tensor[] inputs)
         {
             base.ValidateInputShapes (inputs);

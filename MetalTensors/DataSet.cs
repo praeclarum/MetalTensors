@@ -1,21 +1,25 @@
 ﻿using System;
 
+using DataSetRow = System.ValueTuple<MetalTensors.Tensor[], MetalTensors.Tensor[]>;
+using DataSetBatch = System.ValueTuple<MetalTensors.Tensor[][], MetalTensors.Tensor[][]>;
+using System.Collections.Generic;
+using Metal;
+
 namespace MetalTensors
 {
     public abstract class DataSet
     {
         public abstract int Count { get; }
-        public abstract string[] Columns { get; }
-        public abstract Tensor[] GetRow (int index);
+        public abstract (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device);
 
-        public static DataSet Generated (Func<int, Tensor[]> getRow, int count, params string[] columns)
+        public static DataSet Generated (Func<int, IMTLDevice, DataSetRow> getRow, int count)
         {
-            return new GeneratedDataSet (getRow, count, columns);
+            return new GeneratedDataSet (getRow, count);
         }
 
-        public static DataSet Single (string column, Tensor input)
+        public static DataSet Single (Tensor input, Tensor? output = null)
         {
-            return new SingleDataSet (column, input);
+            return new SingleDataSet (input, output);
         }
 
         public DataSet Subset (int index, int length)
@@ -23,37 +27,46 @@ namespace MetalTensors
             return new SubsetDataSet (this, index, length);
         }
 
+        public virtual DataSetBatch GetBatch (int index, int batchSize, IMTLDevice device)
+        {
+            var inputs = new List<Tensor[]> (batchSize);
+            var outputs = new List<Tensor[]> (batchSize);
+            var n = Count;
+            for (var bi = 0; bi < batchSize; bi++) {
+                var i = (index + bi) % n;
+                var (ins, outs) = GetRow (i, device);
+                inputs.Add (ins);
+                outputs.Add (outs);
+            }
+            return (inputs.ToArray(), outputs.ToArray());
+        }
+
         class GeneratedDataSet : DataSet
         {
-            readonly string[] columns;
             readonly int count;
-            readonly Func<int, Tensor[]> getRow;
+            readonly Func<int, IMTLDevice, DataSetRow> getRow;
 
             public override int Count => count;
-            public override string[] Columns => columns;
-            public override Tensor[] GetRow (int index) => getRow (index);
+            public override DataSetRow GetRow (int index, IMTLDevice device) => getRow (index, device);
 
-            public GeneratedDataSet (Func<int, Tensor[]> getRow, int count, string[] columns)
+            public GeneratedDataSet (Func<int, IMTLDevice, DataSetRow> getRow, int count)
             {
                 this.getRow = getRow;
-                this.columns = columns;
                 this.count = count;
             }
         }
 
         class SingleDataSet : DataSet
         {
-            readonly string[] columns;
-            readonly Tensor[] row;
+            readonly DataSetRow row;
 
             public override int Count => 1;
-            public override string[] Columns => columns;
-            public override Tensor[] GetRow (int index) => row;
+            public override DataSetRow GetRow (int index, IMTLDevice device) => row;
 
-            public SingleDataSet (string column, Tensor input)
+            public SingleDataSet (Tensor input, Tensor? output)
             {
-                columns = new[] { column };
-                row = new[] { input };
+                var outputs = output != null ? new[] { output } : Array.Empty<Tensor> ();
+                row = (new[] { input }, outputs);
             }
         }
 
@@ -64,8 +77,7 @@ namespace MetalTensors
             readonly int length;
 
             public override int Count => length;
-            public override string[] Columns => parent.Columns;
-            public override Tensor[] GetRow (int index) => parent.GetRow(this.index + index);
+            public override DataSetRow GetRow (int index, IMTLDevice device) => parent.GetRow(this.index + index, device);
 
             public SubsetDataSet (DataSet parent, int index, int length)
             {

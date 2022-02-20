@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing.Imaging;
 using CoreGraphics;
 using Foundation;
 using Metal;
@@ -14,13 +15,17 @@ namespace MetalTensors.Tensors
 
         public override int[] Shape => shape;
 
-        public MPSImage Image => image;
-        public IMTLDevice Device => image.Device;
+        public MPSImage MetalImage => image;
+        public IMTLDevice? Device => image.Device;
+
+        public override bool IsStatic => true;
 
         public MPSImageTensor (MPSImage image)
         {
+            if (image == null || image.Handle == IntPtr.Zero)
+                throw new ArgumentNullException (nameof(image));
             this.image = image;
-            shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
+            this.shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
         }
 
         public MPSImageTensor (IMTLTexture texture, int featureChannels = 3)
@@ -93,7 +98,7 @@ namespace MetalTensors.Tensors
         //    return newTensor;
         //}
 
-        public unsafe override void Copy (Span<float> destination)
+        public unsafe override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
             var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
@@ -157,9 +162,77 @@ namespace MetalTensors.Tensors
 
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
-            if (device.Handle != image.Device.Handle)
-                throw new ArgumentException ($"Cannot get image for {device.Name} because it was created on {image.Device.Name}");
+            if ((image.Device is IMTLDevice d) && device.Handle != d.Handle)
+                throw new ArgumentException ($"Cannot get image {Label} for {device.Name} because it was created on {image.Device.Name}");
+            if (image.Handle == IntPtr.Zero)
+                throw new ObjectDisposedException ($"The metal image for this tensor ({Label}) was disposed after the tensor was created.");
             return image;
+        }
+
+        public static (Tensor Left, Tensor Right) CreatePair (NSUrl url, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        {
+            if (url is null) {
+                throw new ArgumentNullException (nameof (url));
+            }
+
+            using var pool = new NSAutoreleasePool ();
+            var dev = device.Current ();
+            using var loader = new MTKTextureLoader (dev);
+            using var texture = loader.FromUrl (url, null, out var error);
+            error.ValidateNoError ();
+            if (texture == null)
+                throw new Exception ("Failed to create texture");
+
+            using var image = new MPSImage (texture, (nuint)featureChannels);
+            var height = (int)image.Height;
+            var width = (int)image.Width / 2;
+
+            using var queue = dev.CreateCommandQueue ();
+            if (queue is null)
+                throw new Exception ($"Failed to create queue for image pairs");
+            var regions = new[] {
+                new MPSRegion { Origin = new MPSOrigin{ X = 0, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
+                new MPSRegion { Origin = new MPSOrigin{ X = 0.5, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
+            };
+            MPSNNCropAndResizeBilinear lcrop, rcrop;
+            unsafe {
+                fixed (MPSRegion* regionsP = regions) {
+                    lcrop = new MPSNNCropAndResizeBilinear (dev, (nuint)width, (nuint)height, 1, (IntPtr)regionsP);
+                    rcrop = new MPSNNCropAndResizeBilinear (dev, (nuint)width, (nuint)height, 1, (IntPtr)(regionsP + 1));
+                }
+            }
+            using var commands = MPSCommandBuffer.Create (queue);
+            var hasChannelScale = MathF.Abs (channelScale - 1.0f) > 1.0e-7f || MathF.Abs (channelOffset) > 1.0e-7f;
+            MPSImageDescriptor halfDesc;
+            if (hasChannelScale) {
+                halfDesc = MPSImageDescriptor.GetImageDescriptor (MPSImageFeatureChannelFormat.Float32, (nuint)width, (nuint)height, (nuint)featureChannels);
+            }
+            else {
+                halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+                halfDesc.FeatureChannels = (nuint)featureChannels;
+            }
+            var left = new MPSImage (dev, halfDesc);
+            var right = new MPSImage (dev, halfDesc);
+            var scale = new MPSCnnNeuronLinear (dev, channelScale, channelOffset);
+            lcrop.EncodeToCommandBuffer (commands, image, left);
+            rcrop.EncodeToCommandBuffer (commands, image, right);
+            if (hasChannelScale) {
+                scale.EncodeToCommandBuffer (commands, left, left);
+                scale.EncodeToCommandBuffer (commands, right, right);
+            }
+            left.Synchronize (commands);
+            right.Synchronize (commands);
+            commands.Commit ();
+            commands.WaitUntilCompleted ();
+            commands.Error.ValidateNoError ();
+            var leftT = new MPSImageTensor (left);
+            var rightT = new MPSImageTensor (right);
+            return (leftT, rightT);
+        }
+
+        public static (Tensor Left, Tensor Right) CreatePair (string path, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        {
+            return CreatePair (NSUrl.FromFilename (path), featureChannels, channelScale, channelOffset, device);
         }
     }
 }

@@ -11,7 +11,8 @@ namespace MetalTensors.Layers
 
         public override int MinInputCount => 1;
 
-        public UpsampleLayer (int scaleX, int scaleY)
+        public UpsampleLayer (int scaleX, int scaleY, string? name = null)
+            : base (name)
         {
             if (scaleX < 1)
                 throw new ArgumentException ("Scale must be >= 1 for upsampling", nameof (scaleX));
@@ -20,6 +21,11 @@ namespace MetalTensors.Layers
             ScaleX = scaleX;
             ScaleY = scaleY;
         }
+
+        public override Config Config => base.Config.Update (new Config {
+            { "scaleX", ScaleX },
+            { "scaleY", ScaleY },
+        });
 
         public override void ValidateInputShapes (params Tensor[] inputs)
         {

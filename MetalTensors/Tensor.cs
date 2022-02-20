@@ -3,8 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
+using Accelerate;
+using CoreGraphics;
 using Foundation;
+using ImageIO;
 using Metal;
 using MetalPerformanceShaders;
 using MetalTensors.Layers;
@@ -12,39 +16,57 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public abstract class Tensor
+    public abstract class Tensor : Configurable
     {
-        public const string DefaultLabelsLabel = "Labels";
-
         readonly Lazy<TensorHandle> handle;
         public TensorHandle Handle => handle.Value;
         public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
         public string ShapeString => "(" + string.Join (", ", Shape) + ")";
+        public int Length => Shape.Aggregate (1, (a, x) => a * x);
 
         public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
 
         readonly Lazy<MPSNNImageNode> metalImageNode;
-        public virtual MPSNNImageNode GetMetalImageNode (MetalImageNodeContext context) => metalImageNode.Value;
+        public virtual MPSNNImageNode GetImageNode (MetalImageNodeContext context) => metalImageNode.Value;
+
+        public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
+
+        public override Config Config => base.Config.Add ("name", Label);
 
         protected Tensor (string? label = null)
         {
-            handle = new Lazy<TensorHandle> (() => new TensorHandle (this, label), true);
+            handle = new Lazy<TensorHandle> (() => CreateHandle (label), true);
             metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
         }
 
+        protected virtual TensorHandle CreateHandle (string? label) => new TensorHandle (this, label);
+
         public override string ToString () => Label + " (" + string.Join (", ", Shape) + ") {type=" + GetType ().Name + "}";
+
+        public string Format (IMTLDevice? device = null)
+        {
+            var len = Length;
+            var vals = new float[len];
+            try {
+                CopyTo (vals, device);
+                return "[" + string.Join (", ", vals.Take(100)) + "]";
+            }
+            catch (Exception ex) {
+                return $"[error: {ex.Message}]";
+            }
+        }
 
         //public virtual Tensor Clone () => this;
 
-        public abstract void Copy (Span<float> destination);
+        public abstract void CopyTo (Span<float> destination, IMTLDevice? device = null);
 
-        public float[] ToArray ()
+        public float[] ToArray (IMTLDevice? device = null)
         {
             var r = new float[Shape.GetShapeLength ()];
-            Copy (r);
+            CopyTo (r, device);
             return r;
         }
 
@@ -53,12 +75,12 @@ namespace MetalTensors
                 var shape = Shape;
 
                 // This is pretty slow since the whole tensor is copied
-                // Hopefully derived classes overide this property.
+                // Hopefully derived classes override this property.
                 var len = shape.GetShapeLength ();
                 Span<float> elements = len < 1024 ?
                     stackalloc float[len] :
                     new float[len];
-                Copy (elements);
+                CopyTo (elements);
 
                 var i = 0;
                 var n = Math.Min (shape.Length, indexes.Length);
@@ -74,64 +96,57 @@ namespace MetalTensors
             }
         }
 
-        public static Tensor Input (string label, params int[] shape)
+        protected int ValidateCopyDestination (Span<float> destination)
         {
-            return new InputTensor (label, shape);
+            var neededLength = Shape.GetShapeLength ();
+            if (neededLength > destination.Length) {
+                throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
+            }
+            return neededLength;
         }
 
-        public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
+        public static Tensor operator + (Tensor a, Tensor b) => a.Add (b);
+        public static Tensor operator + (Tensor a, float b) => a.Add (b);
+        public static Tensor operator + (Tensor a, int b) => a.Add (b);
+        public static Tensor operator + (float a, Tensor b) => b.Add (a);
+        public static Tensor operator + (int a, Tensor b) => b.Add (a);
+
+        public static Tensor operator - (Tensor a, Tensor b) => a.Subtract (b);
+        public static Tensor operator - (Tensor a, float b) => a.Subtract (b);
+        public static Tensor operator - (Tensor a, int b) => a.Subtract (b);
+        public static Tensor operator - (float a, Tensor b) => Constant (a, b).Subtract (b);
+        public static Tensor operator - (int a, Tensor b) => Constant (a, b).Subtract (b);
+
+        public static Tensor operator * (Tensor a, Tensor b) => a.Multiply (b);
+        public static Tensor operator * (Tensor a, float b) => a.Multiply (b);
+        public static Tensor operator * (Tensor a, int b) => a.Multiply (b);
+        public static Tensor operator * (float a, Tensor b) => b.Multiply (a);
+        public static Tensor operator * (int a, Tensor b) => b.Multiply (a);
+
+        public static Tensor operator / (Tensor a, Tensor b) => a.Divide (b);
+        public static Tensor operator / (Tensor a, float b) => a.Divide (b);
+        public static Tensor operator / (Tensor a, int b) => a.Divide (b);
+        public static Tensor operator / (float a, Tensor b) => Constant (a, b).Divide (b);
+        public static Tensor operator / (int a, Tensor b) => Constant (a, b).Divide (b);
+
+        public static Tensor Array (params float[] array)
         {
-            return new InputTensor (label, height, width, featureChannels);
+            return new ArrayTensor (array);
         }
 
-        public static Tensor Labels (string label, params int[] shape)
+        public static Tensor Array (int[] shape, params float[] array)
         {
-            return new LabelsTensor (label, shape);
+            return new ArrayTensor (shape, array);
         }
 
-        public static Tensor Labels (params int[] shape)
+        public static Tensor Array (params double[] array)
         {
-            return new LabelsTensor (DefaultLabelsLabel, shape);
+            return new ArrayTensor (array.Select (x => (float)x).ToArray ());
         }
 
-        public Tensor Apply (Model model)
+        public static Tensor Constant (float constant, string name)
         {
-            return model.GetOutput (0, this);
-        }
-
-        public Model Model (string? name = null, bool trainable = true, bool keepDropoutDuringInference = false)
-        {
-            return new Model (name, trainable, keepDropoutDuringInference, this);
-        }
-
-        public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
-        {
-            return this;
-        }
-
-        public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
-        {
-            return this;
-        }
-
-        public Tensor Map (Func<Tensor, Tensor> map)
-        {
-            return map (MapInputs (map));
-        }
-
-        public Tensor RemoveLayers (Func<Layer, bool> predicate)
-        {
-            return Map (t => {
-                if (t is LayerTensor lt && predicate (lt.Layer)) {
-                    return Add (lt.Inputs);
-                }
-                return t;
-            });
-        }
-
-        public Tensor RemoveLayers<T> () where T : Layer
-        {
-            return RemoveLayers (l => l is T);
+            return new ConstantTensor (constant, new[] { 1 }, name);
         }
 
         public static Tensor Constant (float constant, params int[] shape)
@@ -139,14 +154,75 @@ namespace MetalTensors
             return new ConstantTensor (constant, shape);
         }
 
-        public static Tensor Constant (string label, float constant, params int[] shape)
+        public static Tensor Constant (float constant, int[] shape, string name)
         {
-            return new ConstantTensor (label, constant, shape);
+            return new ConstantTensor (constant, shape, name);
         }
 
-        public static Tensor Zeros (params int[] shape)
+        public static Tensor Constant (float constant, Tensor mimic)
         {
-            return new ConstantTensor (0.0f, shape);
+            return new ConstantTensor (constant, mimic);
+        }
+
+        public static Tensor Constant (int constant, Tensor mimic)
+        {
+            return new ConstantTensor (constant, mimic);
+        }
+
+        public static Tensor Image (NSUrl url, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (url, 3, device);
+        }
+
+        public static Tensor Image (NSUrl url, int featureChannels, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (url, featureChannels, device);
+        }
+
+        public static Tensor Image (string path, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (path, 3, device);
+        }
+
+        public static Tensor Image (string path, int featureChannels, IMTLDevice? device = null)
+        {
+            return new MPSImageTensor (path, featureChannels, device);
+        }
+
+        public static (Tensor Left, Tensor Right) ImagePair (string path, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        {
+            return MPSImageTensor.CreatePair (path, 3, channelScale, channelOffset, device);
+        }
+
+        public static Tensor ImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
+        {
+            var b = bundle ?? NSBundle.MainBundle;
+            var url = string.IsNullOrEmpty (subpath) ?
+                b.GetUrlForResource (name, extension) :
+                b.GetUrlForResource (name, extension, subpath);
+            if (url == null)
+                throw new ArgumentException ("Resource not found", nameof (name));
+            return new MPSImageTensor (url, featureChannels, device);
+        }
+
+        public static Tensor Input (string label, params int[] shape)
+        {
+            return new InputTensor (label, shape);
+        }
+
+        public static Tensor Input (params int[] shape)
+        {
+            return new InputTensor (shape);
+        }
+
+        public static Tensor Input (Tensor mimic)
+        {
+            return new InputTensor (mimic.Label, mimic.Shape);
+        }
+
+        public static Tensor InputImage (string label, int height, int width, int featureChannels = 3)
+        {
+            return new InputTensor (label, height, width, featureChannels);
         }
 
         public static Tensor Ones (params int[] shape)
@@ -183,58 +259,7 @@ namespace MetalTensors
             return t;
         }
 
-        public static Tensor Array (params float[] array)
-        {
-            return new ArrayTensor (array);
-        }
-
-        public static Tensor Array (int[] shape, params float[] array)
-        {
-            return new ArrayTensor (shape, array);
-        }
-
-        public static Tensor Array (params double[] array)
-        {
-            return new ArrayTensor (array.Select (x => (float)x).ToArray ());
-        }
-
-        public static Tensor ReadImage (NSUrl url, int featureChannels = 3, IMTLDevice? device = null)
-        {
-            return new MPSImageTensor (url, featureChannels, device);
-        }
-
-        public static Tensor ReadImage (string path, int featureChannels = 3, IMTLDevice? device = null)
-        {
-            return new MPSImageTensor (path, featureChannels, device);
-        }
-
-        public static Tensor ReadImageResource (string name, string extension, string? subpath = null, int featureChannels = 3, NSBundle? bundle = null, IMTLDevice? device = null)
-        {
-            var b = bundle ?? NSBundle.MainBundle;
-            NSUrl? url = string.IsNullOrEmpty (subpath) ?
-                b.GetUrlForResource (name, extension) :
-                b.GetUrlForResource (name, extension, subpath);
-            if (url == null)
-                throw new ArgumentException ("Resource not found", nameof (name));
-            return new MPSImageTensor (url, featureChannels, device);
-        }
-
-        public virtual Tensor Slice (params int[] indexes)
-        {
-            throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
-        }
-
-        public static Tensor operator + (Tensor a, Tensor b)
-        {
-            return a.Add (b);
-        }
-
-        public virtual Tensor Add (Tensor other)
-        {
-            return new AddLayer ().GetOutput (this, other);
-        }
-
-        public static Tensor Add (params Tensor[] tensors)
+        public static Tensor Sum (params Tensor[] tensors)
         {
             if (tensors.Length < 1)
                 throw new ArgumentException ("Must supply at least one tensor to add", nameof (tensors));
@@ -245,131 +270,291 @@ namespace MetalTensors
             return r;
         }
 
-        public static Tensor operator - (Tensor a, Tensor b)
+        public static Tensor Zeros (params int[] shape)
         {
-            return a.Subtract (b);
+            return new ConstantTensor (0.0f, shape);
         }
 
-        public Tensor Subtract (Tensor other)
+        public virtual Tensor Abs ()
         {
-            return new SubtractLayer ().GetOutput (this, other);
+            return new AbsLayer ().Call (this);
         }
 
-        public static Tensor operator * (Tensor a, Tensor b)
+        public virtual Tensor Add (Tensor other)
         {
-            return a.Multiply (b);
+            if (other is ConstantTensor c)
+                return Add (c.ConstantValue);
+            return new AddLayer ().Call (this, other);
         }
 
-        public static Tensor operator * (float a, Tensor b)
+        public virtual Tensor Add (float other)
         {
-            return Constant (a, b.Shape).Multiply (b);
+            return Linear (1.0f, other);
         }
 
-        public static Tensor operator * (Tensor a, float b)
+        public virtual Tensor Add (int other)
         {
-            return a.Multiply (Constant (b, a.Shape));
+            return Linear (1.0f, other);
         }
 
-        public Tensor Multiply (Tensor other)
+        public Tensor Apply (Model model)
         {
-            return new MultiplyLayer ().GetOutput (this, other);
+            return model.GetOutput (0, this);
         }
 
-        public static Tensor operator / (Tensor a, Tensor b)
+        public virtual Tensor ArgMax ()
         {
-            return a.Divide (b);
+            return new ArgMaxLayer ().Call (this);
         }
 
-        public Tensor Divide (Tensor other)
+        public virtual Tensor ArgMin ()
         {
-            return new DivideLayer ().GetOutput (this, other);
+            return new ArgMinLayer ().Call (this);
         }
 
         public Tensor AvgPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new AvgPoolLayer (size, stride, padding).GetOutput (this);
+            return new AvgPoolLayer (size, stride, padding).Call (this);
         }
 
         public Tensor AvgPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
+            return new AvgPoolLayer (sizeX, sizeY, strideX, strideY, padding).Call (this);
         }
 
         public Tensor BatchNorm (float epsilon = BatchNormLayer.DefaultEpsilon)
         {
             var inChannels = Shape[^1];
-            return new BatchNormLayer (inChannels, epsilon).GetOutput (this);
+            return new BatchNormLayer (inChannels, epsilon).Call (this);
         }
 
         public Tensor Concat (params Tensor[] others)
         {
             if (others.Length == 0)
                 return this;
-            return new ConcatLayer ().GetOutput (new[] { this }.Concat (others).ToArray ());
+            return new ConcatLayer ().Call (new[] { this }.Concat (others).ToArray ());
         }
 
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
         public Tensor Conv (int featureChannels, int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvLayer (inChannels, featureChannels, sizeX, sizeY, strideX, strideY, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
+        /// <summary>
+        /// When the stride in any dimension is greater than 1, the convolution transpose puts (stride - 1) zeroes in-between the source 
+        /// image pixels to create an expanded image.Then a convolution is done over the expanded image to generate the output of the
+        /// convolution transpose.
+        /// Intermediate image size = (srcSize - 1) * Stride + 1
+        /// </summary>
         public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
         }
 
         public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
-            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit ?? WeightsInit.Default, biasInit).GetOutput (this);
+            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).Call (this);
         }
 
-        public Tensor Dropout (float keepProbability)
+        public virtual Tensor Divide (Tensor other)
         {
-            return new DropoutLayer (keepProbability).GetOutput (this);
+            if (other is ConstantTensor c)
+                return Divide (c.ConstantValue);
+            return new DivideLayer ().Call (this, other);
         }
 
-        public Tensor ReLU (float a = 0.2f)
+        public virtual Tensor Divide (float other)
         {
-            return new ReLULayer (a).GetOutput (this);
+            return Linear (1.0f / other);
         }
 
-        public Tensor Sigmoid ()
+        public virtual Tensor Divide (int other)
         {
-            return new SigmoidLayer ().GetOutput (this);
+            return Linear (1.0f / other);
         }
 
-        public Tensor SoftMax ()
+        public Tensor Dropout (float dropProbability)
         {
-            return new SoftMaxLayer ().GetOutput (this);
+            return new DropoutLayer (dropProbability).Call (this);
         }
 
-        public Tensor Tanh ()
+        public Tensor LeakyReLU (float a = ReLULayer.DefaultLeakyA)
         {
-            return new TanhLayer ().GetOutput (this);
+            return new ReLULayer (a).Call (this);
+        }
+
+        public Tensor Linear (float scale, float offset = 0.0f)
+        {
+            return new LinearLayer (scale, offset).Call (this);
+        }
+
+        public Tensor Loss (Tensor truth, Loss loss, float weight = 1.0f)
+        {
+            return loss.Call (this, truth, weight);
+        }
+
+        public Tensor Loss (Tensor truth, LossType lossType, ReductionType reductionType, float weight = 1.0f)
+        {
+            return Loss (truth, MetalTensors.Loss.Builtin (lossType, reductionType), weight);
+        }
+
+        public Tensor Map (Func<Tensor, Tensor> map)
+        {
+            return map (MapInputs (map));
+        }
+
+        public virtual Tensor MapInputs (Dictionary<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
+        public virtual Tensor MapInputs (Func<Tensor, Tensor> map)
+        {
+            return this;
+        }
+
+        public virtual Tensor Max ()
+        {
+            return new MaxLayer ().Call (this);
         }
 
         public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
-            return new MaxPoolLayer (size, stride, padding).GetOutput (this);
+            return new MaxPoolLayer (size, stride, padding).Call (this);
         }
 
         public Tensor MaxPool (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding)
         {
-            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).GetOutput (this);
+            return new MaxPoolLayer (sizeX, sizeY, strideX, strideY, padding).Call (this);
+        }
+
+        public virtual Tensor Mean ()
+        {
+            return new MeanLayer ().Call (this);
+        }
+
+        public virtual Tensor Min ()
+        {
+            return new MinLayer ().Call (this);
+        }
+
+        public Model Model (Tensor input, string? name = null, bool trainable = true)
+        {
+            return new Model (input, this, name) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor input1, Tensor input2, string? name = null, bool trainable = true)
+        {
+            return new Model (new[] { input1, input2 }, this, name) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public Model Model (Tensor[] inputs, string? name = null, bool trainable = true)
+        {
+            return new Model (inputs, this, name) {
+                IsTrainable = trainable,
+            };
+        }
+
+        public virtual Tensor Multiply (Tensor other)
+        {
+            if (other is ConstantTensor c)
+                return Multiply (c.ConstantValue);
+            return new MultiplyLayer ().Call (this, other);
+        }
+
+        public virtual Tensor Multiply (float other)
+        {
+            return Linear (other);
+        }
+
+        public virtual Tensor Multiply (int other)
+        {
+            return Linear (other);
+        }
+
+        public Tensor RemoveLayers (Func<Layer, bool> predicate)
+        {
+            return Map (t => {
+                if (t is LayerTensor lt && predicate (lt.Layer)) {
+                    return Sum (lt.Inputs);
+                }
+                return t;
+            });
+        }
+
+        public Tensor RemoveLayers<T> () where T : Layer
+        {
+            return RemoveLayers (l => l is T);
+        }
+
+        public Tensor ReLU ()
+        {
+            return new ReLULayer ().Call (this);
+        }
+
+        public Tensor Sigmoid ()
+        {
+            return new SigmoidLayer ().Call (this);
+        }
+
+        public virtual Tensor Slice (params int[] indexes)
+        {
+            throw new NotSupportedException ($"Cannot slice {GetType ().Name} with {indexes.Length} int indexes");
+        }
+
+        public Tensor SoftMax ()
+        {
+            return new SoftMaxLayer ().Call (this);
+        }
+
+        public Tensor SpatialMean ()
+        {
+            return new SpatialMeanLayer ().Call (this);
+        }
+
+        public virtual Tensor Subtract (Tensor other)
+        {
+            if (other is ConstantTensor c)
+                return Subtract (c.ConstantValue);
+            return new SubtractLayer ().Call (this, other);
+        }
+
+        public virtual Tensor Subtract (float other)
+        {
+            return Linear (1.0f, -other);
+        }
+
+        public virtual Tensor Subtract (int other)
+        {
+            return Linear (1.0f, -other);
+        }
+
+        public Tensor Sum ()
+        {
+            return new SumLayer ().Call (this);
+        }
+
+        public virtual Tensor Tanh (string? name = null)
+        {
+            return new TanhLayer (name).Call (this);
         }
 
         public Tensor Upsample (int scaleX, int scaleY)
         {
-            return new UpsampleLayer (scaleX, scaleY).GetOutput (this);
+            return new UpsampleLayer (scaleX, scaleY).Call (this);
         }
 
         public Tensor Upsample (int scale = 2)
@@ -377,57 +562,40 @@ namespace MetalTensors
             return Upsample (scale, scale);
         }
 
-        public Tensor Loss (Tensor labels, LossType lossType, ReductionType reductionType = ReductionType.None, Tensor? weights = null)
+        public virtual CGImage ToCGImage (float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
         {
-            var layer = new LossLayer (Label + " Loss", lossType, reductionType);
-            return weights != null ?
-                layer.GetOutput (this, labels, weights) :
-                layer.GetOutput (this, labels);
-        }
-
-        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int epochs = MetalTensors.Model.DefaultEpochs, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
-        {
-            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, batchesPerEpoch * epochs, batchesPerEpoch, device);
-        }
-
-        public TrainingHistory Train (DataSet dataSet, float learningRate = MetalTensors.Model.DefaultLearningRate, int batchSize = MetalTensors.Model.DefaultBatchSize, int numBatches = MetalTensors.Model.DefaultNumBatches, int validationInterval = MetalTensors.Model.DefaultValidationInterval, bool keepDropoutDuringInference = false, IMTLDevice? device = null)
-        {
-            return new Model (Label, true, keepDropoutDuringInference, this).Train (dataSet, learningRate, batchSize, numBatches, validationInterval, device);
-        }
-
-        protected int ValidateCopyDestination (Span<float> destination)
-        {
-            var neededLength = Shape.GetShapeLength ();
-            if (neededLength > destination.Length) {
-                throw new ArgumentOutOfRangeException (nameof (destination), "Tensor copy destination memory is too small");
+            var shape = Shape;
+            if (shape.Length != 3)
+                throw new Exception ($"Tensors are required to have the shape [height, width, channels] to be used as images");
+            var dev = device.Current ();
+            var image = GetMetalImage (dev);
+            if (image == null) {
+                throw new Exception ($"Failed to get metal image from {Label}");
             }
-            return neededLength;
+            var needsTransform = MathF.Abs(channelScale-1.0f) > 1e-7f || MathF.Abs(channelOffset) > 1e-7f;
+            if (needsTransform) {
+                using var transformedImage = image.Linear (channelScale, channelOffset, dev);
+                return transformedImage.ToCGImage ();
+            }
+            else {
+                return image.ToCGImage ();
+            }
         }
 
-        protected static MPSImage CreateUninitializedImage (int[] shape)
+        public virtual void SaveImage (NSUrl url, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
         {
-            var imageTensor = shape.Length switch
-            {
-                0 => new MPSImageTensor (height: 1, width: 1, featureChannels: 1),
-                1 => new MPSImageTensor (height: 1, width: 1, featureChannels: shape[0]),
-                2 => new MPSImageTensor (height: 1, width: shape[0], featureChannels: shape[1]),
-                3 => new MPSImageTensor (height: shape[0], width: shape[1], featureChannels: shape[2]),
-                var l => throw new InvalidOperationException ($"Cannot get image for constant data with {l} element shape"),
-            };
-            var image = imageTensor.Image;
-            return image;
-        }
-
-        protected static MPSImage CreateConstantImage (int[] shape, float constantValue)
-        {
-            var image = CreateUninitializedImage (shape);
-            image.Fill (constantValue);
-#if DEBUG
-            var data = new MPSImageTensor (image).ToArray ();
-            Debug.Assert (data[0] == constantValue);
-#endif
-            return image;
+            using var cgimage = ToCGImage (channelScale, channelOffset, device);
+            var contentType = url.PathExtension == "png" ? "public.png" : "public.jpeg";
+            using var dest = CGImageDestination.Create (url, contentType, 1);
+            if (dest == null) {
+                throw new Exception ($"Failed to create image exporter");
+            }
+            dest.AddImage (cgimage, new CGImageDestinationOptions {
+            });
+            var r = dest.Close ();                
+            if (!r) {
+                throw new Exception ($"Failed to save image");
+            }
         }
     }
 }

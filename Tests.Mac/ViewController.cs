@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -25,7 +26,6 @@ namespace Tests.Mac
 
             await Task.Run (() => {
                 try {
-
                     RunTests ();
                 }
                 catch (Exception ex) {
@@ -34,7 +34,7 @@ namespace Tests.Mac
             });
 
             if (allTestsPassed) {
-                await Task.Delay (1000);
+                await Task.Delay (3000);
                 NSApplication.SharedApplication.Terminate (this);
             }
         }
@@ -81,7 +81,7 @@ namespace Tests.Mac
         {
             allTestsPassed = allOK;
 
-            var m = allOK ? $"\n\nALL OK!" : "\n\nFAILED :-(";
+            var m = allOK ? $"\n\n{totalTestCount} TESTS OK!" : "\n\nFAILED :-(";
             Console.WriteLine (m);
             resultsTextView.Value += m;
 
@@ -98,6 +98,8 @@ namespace Tests.Mac
             w.BackgroundColor = (allOK ? NSColor.Green : NSColor.Red).BlendedColor (0.5f, NSColor.WindowBackground);
         }
 
+        int totalTestCount = 0;
+
         void RunTests ()
         {
             var tests = FindTests ();
@@ -108,6 +110,7 @@ namespace Tests.Mac
                 from t in tf.Tests
                 select (tf, t);
             var allTests = allTestsQ.ToArray ();
+            totalTestCount = allTests.Length;
             for (var i = 0; i < allTests.Length; i++) {
                 var (tf, t) = allTests[i];
                 //Parallel.ForEach (tests, tf => {
@@ -124,13 +127,17 @@ namespace Tests.Mac
 
         private TestResult RunTest (TestFixture tf, Test t)
         {
+            var sw = new Stopwatch ();
+            sw.Start ();
             try {
                 //Console.WriteLine (tf.TestObject.GetType().FullName + "." + t.TestMethod.Name);
                 var iresult = t.TestMethod.Invoke (tf.TestObject, Array.Empty<object> ());
-                return new TestResult (tf, t, null);
+                sw.Stop ();
+                return new TestResult (tf, t, null, sw.Elapsed);
             }
             catch (Exception ex) {
-                return new TestResult (tf, t, ex);
+                sw.Stop ();
+                return new TestResult (tf, t, ex, sw.Elapsed);
             }
         }
 
@@ -141,17 +148,19 @@ namespace Tests.Mac
             public TestFixture Fixture { get; }
             public Test Test { get; }
             public Exception? Exception { get; }
+            public TimeSpan Duration { get; }
 
-            public TestResult (TestFixture fixture, Test test, Exception? exception)
+            public TestResult (TestFixture fixture, Test test, Exception? exception, TimeSpan duration)
             {
                 Fixture = fixture;
                 Test = test;
                 Exception = exception;
+                Duration = duration;
             }
 
             public override string ToString ()
             {
-                return $"{Fixture}.{Test}() = {Success}";
+                return $"{Fixture}.{Test}() = {Success} ({Duration})";
             }
         }
 
@@ -185,15 +194,21 @@ namespace Tests.Mac
         {
             var asmPaths = new[] { Assembly.GetCallingAssembly ().Location };
 
-            var asms = asmPaths.Select (x => Assembly.LoadFile (x));
+            var asms = asmPaths.Select (x => Assembly.LoadFile (x)).OrderBy(a => a.FullName);
 
             var testTypes = asms.SelectMany (FindAsmTests).ToArray ();
 
-            return testTypes.Where (x => x != null).Select (x => x!).ToArray ();
+            return testTypes.ToArray ();
 
-            IEnumerable<TestFixture?> FindAsmTests (Assembly asm)
+            IEnumerable<TestFixture> FindAsmTests (Assembly asm)
             {
-                return asm.Modules.SelectMany (x => x.GetTypes ()).Select (GetTestType);
+                return
+                    asm.Modules
+                    .SelectMany (x => x.GetTypes ())
+                    .Select (GetTestType)
+                    .Where (x => x != null)
+                    .Select (x => x!)
+                    .OrderBy(t => t.TestObject.GetType().Name);
             }
 
             TestFixture? GetTestType (Type type)
@@ -205,7 +220,7 @@ namespace Tests.Mac
                     return null;
 
                 var testo = Activator.CreateInstance (type);
-                var tests = tmeths.Select (LoadTest).ToArray ();
+                var tests = tmeths.Select (LoadTest).OrderBy(m => m.TestMethod.Name).ToArray ();
 
                 return new TestFixture (testo, tests);
 

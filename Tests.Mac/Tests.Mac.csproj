@@ -33,8 +33,9 @@
     <UseRefCounting>true</UseRefCounting>
     <Profiling>true</Profiling>
     <HttpClientHandler></HttpClientHandler>
-    <LinkMode></LinkMode>
+    <LinkMode>None</LinkMode>
     <XamMacArch></XamMacArch>
+    <AOTMode>None</AOTMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -52,6 +53,7 @@
     <LinkMode>SdkOnly</LinkMode>
     <HttpClientHandler></HttpClientHandler>
     <XamMacArch></XamMacArch>
+    <AOTMode>None</AOTMode>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -80,7 +82,6 @@
     <None Include="Entitlements.plist" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Tests.iOS\*Tests.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
     <Compile Include="ViewController.cs" />
@@ -88,6 +89,42 @@
       <DependentUpon>ViewController.cs</DependentUpon>
     </Compile>
     <Compile Include="IndexingTests.cs" />
+    <Compile Include="..\Tests.iOS\ModelTests.cs" />
+    <Compile Include="..\Tests.iOS\PredictTests.cs" />
+    <Compile Include="..\Tests.iOS\ReLULayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MPSImageTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\ConstantTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\ConcatLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\TrainTests.cs" />
+    <Compile Include="..\Tests.iOS\ConvTransposeLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MnistApplicationTests.cs" />
+    <Compile Include="..\Tests.iOS\BatchNormLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\PlaceholderTensorTests.cs" />
+    <Compile Include="..\Tests.iOS\TrainBinopTests.cs" />
+    <Compile Include="..\Tests.iOS\DenseLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\BinopLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\Pix2pixApplicationTests.cs" />
+    <Compile Include="..\Tests.iOS\ConvLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\MaxPoolLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\UpsampleLayerTests.cs" />
+    <Compile Include="..\Tests.iOS\LossLayerTests.cs">
+      <Link>LossLayerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Tests.iOS\ReductionLayerTests.cs">
+      <Link>ReductionLayerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Tests.iOS\ImagingTests.cs">
+      <Link>ImagingTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Tests.iOS\MPSVectorTests.cs">
+      <Link>MPSVectorTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Tests.iOS\AutoEncoderTests.cs">
+      <Link>AutoEncoderTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Tests.iOS\ConfigTests.cs">
+      <Link>ConfigTests.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />

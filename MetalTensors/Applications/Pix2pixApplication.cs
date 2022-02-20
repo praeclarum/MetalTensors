@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Metal;
@@ -13,32 +14,42 @@ namespace MetalTensors.Applications
 
         const float lambdaL1 = 100.0f;
 
+        const float gLearningRate = 0.0002f;
+        const float dLearningRate = 0.0002f;
+
+        readonly IMTLDevice device;
+
+        public IMTLDevice Device => device;
         public Model Generator { get; }
         public Model Discriminator { get; }
         public Model Gan { get; }
 
-        public Pix2pixApplication (int height = 256, int width = 256)
+        bool compiled = false;
+
+        public Pix2pixApplication (int height = 256, int width = 256, IMTLDevice? device = null)
         {
-            var generator = CreateGenerator (height, width);
-            var genOut = generator.Outputs[0];
-            Generator = generator;
+            this.device = device.Current ();
+            Generator = CreateGenerator ();
+            Discriminator = CreateDiscriminator (height, width);
 
-            var discriminator = CreateDiscriminator (height, width);
-            var discOut = discriminator.Outputs[0];
-            var discLabels = Tensor.Labels ("discLabels", discOut.Shape);
-            var discLoss = discOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
-            Discriminator = discLoss.Model (discriminator.Label);
-
-            var gan = discriminator.Lock ().Apply (generator);
-            var ganOut = gan.Outputs[0];
-            var genLabels = Tensor.Labels ("genLabels", genOut.Shape);
-            var ganLossD = ganOut.Loss (discLabels, LossType.SigmoidCrossEntropy, ReductionType.Mean);
-            //var ganLossL1 = genOut.Loss (genLabels, LossType.MeanAbsoluteError, ReductionType.Sum);
-            var ganLoss = ganLossD;// + lambdaL1 * ganLossL1;
-            Gan = ganLoss.Model (gan.Label);
+            var ganInputs = Generator.Inputs.Select (Tensor.Input).ToArray ();
+            var genOutput = Generator.Call (ganInputs);
+            var discOutput = Discriminator.Call (genOutput);
+            var ganOutputs = new[] { discOutput, genOutput };
+            Gan = new Model (ganInputs, ganOutputs, name: "GAN");
         }
 
-        static Model CreateGenerator (int height, int width)
+        void CompileIfNeeded ()
+        {
+            if (compiled)
+                return;
+            compiled = true;
+            Discriminator.Compile (Loss.SigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
+            Discriminator.IsTrainable = false;
+            Gan.Compile (new[] { Loss.SigmoidCrossEntropy, Loss.MeanAbsoluteError }, new[] { 1.0f, lambdaL1 }, new AdamOptimizer (learningRate: gLearningRate));
+        }
+
+        static Model CreateGenerator ()
         {
             var useDropout = true;
             var instanceNorm = false;
@@ -64,31 +75,34 @@ namespace MetalTensors.Applications
 
                 var size = submodule != null ? submodule.Outputs[0].Shape[0] * 2 : 2;
                 var input = Tensor.Input ("image", size, size, inNC);
-                var label = "Unet" + size;
+                var name = "Unet" + size;
 
                 if (outermost) {
                     var downconv = input.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
-                    return up.Model (label);
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: true).Tanh ();
+                    //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: true).Tanh ();
+                    return up.Model (input, "Generator");
                 }
                 else if (innermost) {
-                    var downrelu = input.ReLU (a: 0.2f);
+                    var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
                     var down = downconv;
-                    var up = down.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
-                    return input.Concat (up).Model (label);
+                    var up = down.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    //var up = down.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
+                    return input.Concat (up).Model (input, name);
                 }
                 else {
-                    var downrelu = input.ReLU (a: 0.2f);
+                    var downrelu = input.LeakyReLU (a: 0.2f);
                     var downconv = downrelu.Conv (innerNC, size: 4, stride: 2, bias: useBias);
-                    var downnorm = downconv.BatchNorm ();
+                    var downnorm = downconv;//.BatchNorm ();
                     var down = downnorm;
                     var downsub = submodule != null ? down.Apply (submodule) : down;
-                    var up = downsub.ReLU (a: 0).ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    var up = downsub.ReLU ().ConvTranspose (outerNC, size: 4, stride: 2, bias: useBias).BatchNorm ();
+                    //var up = downsub.ReLU ().Upsample ().Conv (outerNC, size: 4, stride: 1, bias: useBias).BatchNorm ();
                     var updrop = useDropout ? up.Dropout (0.5f) : up;
-                    return input.Concat (updrop).Model (label);
+                    return input.Concat (updrop).Model (input, name);
                 }
             }
         }
@@ -105,61 +119,118 @@ namespace MetalTensors.Applications
             var kw = 4;
             var ndf = 64;
 
-            var disc = image.Conv (ndf, size: kw, stride: 2).ReLU (a: 0.2f);
+            var disc =
+                image
+                .Conv (ndf, size: kw, stride: 2)
+                .LeakyReLU (a: 0.2f);
 
             int nf_mult;
             for (var n = 1; n < nlayers; n++) {
                 nf_mult = Math.Min (1 << n, 8);
-                disc = disc.Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
+                disc =
+                    disc
+                    .Conv (ndf * nf_mult, size: kw, stride: 2, bias: useBias)
+                    .BatchNorm ()
+                    .LeakyReLU (a: 0.2f);
             }
 
             nf_mult = Math.Min (1 << nlayers, 8);
-            disc = disc.Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias).BatchNorm ().ReLU (a: 0.2f);
+            disc =
+                disc
+                .Conv (ndf * nf_mult, size: kw, stride: 1, bias: useBias)
+                .BatchNorm ()
+                .LeakyReLU (a: 0.2f);
 
             disc = disc.Conv (1, size: kw, stride: 1, bias: true);
 
-            return disc.Model ();
+            disc = disc.Sigmoid ();
+
+            return disc.Model (image, "Discriminator");
         }
 
-        public void Train (Pix2pixDataSet dataSet, int batchSize = 1, int epochs = 200, IMTLDevice? device = null)
+        public (int TrainedImages, TimeSpan TrainingTime, TimeSpan DataSetTime) Train (Pix2pixDataSet dataSet, int batchSize = 1, float epochs = 200, Action<double>? progress = null)
         {
+            CompileIfNeeded ();
+
+            var trainSW = new Stopwatch ();
+            var dataSW = new Stopwatch ();
+
             var trainImageCount = dataSet.Count;
 
             var numBatchesPerEpoch = trainImageCount / batchSize;
+            var numBatchesToTrain = (int)(epochs * numBatchesPerEpoch) + 1;
+            var numImagesToTrain = numBatchesToTrain * batchSize;
 
-            for (var epoch = 0; epoch < epochs; epoch++) {
-                for (var batch = 0; batch < numBatchesPerEpoch; batch++) {
-                    //var discHistoryFake = Discriminator.Train (dataSet.LoadData, 0.0002f, batchSize: batchSize, numBatches: numBatchesPerEpoch, device);
-                    var index = batch * batchSize;
-                    var subdata = dataSet.Subset (index, batchSize);
-                    //var discHistoryReal = Discriminator.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
-                    var ganHistory = Gan.Train (subdata, 0.0002f, batchSize: batchSize, epochs: 1, device: device);
-                }
+            var ones = Tensor.Ones (Discriminator.Output.Shape);
+            var zeros = Tensor.Zeros (Discriminator.Output.Shape);
+            var zerosBatch = new Tensor[batchSize][];
+            var zerosAndOnesBatch = new Tensor[batchSize * 2][];
+            for (var i = 0; i < batchSize; i++) {
+                zerosBatch[i] = new[] { zeros };
+                zerosAndOnesBatch[i] = zerosBatch[i];
             }
+            for (var i = 0; i < batchSize; i++) {
+                zerosAndOnesBatch[batchSize + i] = new[] { ones };
+            }
+
+            var numTrainedImages = 0;
+
+            for (var batch = 0; batch < numBatchesToTrain; batch++) {
+                dataSW.Start ();
+                var (segments, reals) = dataSet.GetBatch (batch*batchSize, batchSize, device);
+                dataSW.Stop ();
+                trainSW.Start ();
+                var fakes = Generator.Predict (segments);
+                var realsAndFakes = reals.Concat(fakes).ToArray ();
+                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                var zerosAndReals = zerosBatch.Zip (reals, (a, b) => new[] { a[0], b[0] }).ToArray ();
+                var ganh = Gan.Fit (segments, zerosAndReals);
+                Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss} GANLOSS {ganh.AverageLoss}");
+                trainSW.Stop ();
+                ganh.DisposeSourceImages ();
+                dh.DisposeSourceImages ();
+                segments.Dispose ();
+                reals.Dispose ();
+                fakes.Dispose ();
+                numTrainedImages += segments.Length;
+                progress?.Invoke ((double)numTrainedImages / (double)numImagesToTrain);
+            }
+
+            return (numTrainedImages, trainSW.Elapsed, dataSW.Elapsed);
         }
 
         public class Pix2pixDataSet : DataSet
         {
-            static readonly string[] cols = { "image", "discLabels" };
             private readonly string[] filePaths;
+            private readonly bool b2a;
 
             public override int Count => filePaths.Length;
-            public override string[] Columns => cols;
 
-            public Pix2pixDataSet (string[] filePaths)
+            public Pix2pixDataSet (string[] filePaths, bool b2a)
             {
                 this.filePaths = filePaths;
+                this.b2a = b2a;
             }
 
-            public override Tensor[] GetRow (int index)
+            public Tensor GetPairedRow (int index)
             {
-                return new[] { Tensor.Zeros (), Tensor.Ones () };
+                return Tensor.Image (filePaths[index]);
             }
 
-            public static Pix2pixDataSet LoadDirectory (string path)
+            public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
+            {
+                var path = filePaths[index];
+                var (left, right) = Tensor.ImagePair (path, channelScale: 2.0f, channelOffset: -1.0f, device: device);
+                if (b2a)
+                    return (new[] { right }, new[] { left });
+                return (new[] { left }, new[] { right });
+                //return (new[] { Tensor.Zeros (256, 256, 3) }, new[] { Tensor.Ones (256, 256, 3) });
+            }
+
+            public static Pix2pixDataSet LoadDirectory (string path, bool b2a = false)
             {
                 var files = Directory.GetFiles (path, "*.jpg").OrderBy(x => x).ToArray ();
-                return new Pix2pixDataSet (files);
+                return new Pix2pixDataSet (files, b2a);
             }
         }
     }
