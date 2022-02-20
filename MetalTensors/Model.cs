@@ -10,7 +10,7 @@ using MetalTensors.Tensors;
 
 namespace MetalTensors
 {
-    public class Model : Layer
+    public class Model : TrainableLayer
     {
         public const int DefaultBatchSize = 32;
         public const int DefaultNumBatches = -1;

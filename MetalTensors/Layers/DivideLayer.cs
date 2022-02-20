@@ -6,7 +6,8 @@ namespace MetalTensors.Layers
 {
     public class DivideLayer : BinopLayer
     {
-        public DivideLayer (string? name = null, bool isTrainable = true) : base (name, isTrainable: isTrainable)
+        public DivideLayer (string? name = null)
+            : base (name)
         {
         }
 

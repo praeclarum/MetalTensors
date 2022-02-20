@@ -75,7 +75,7 @@ namespace Tests
             Assert.AreEqual (256, output.Shape[2]);
         }
 
-        //[Test]
+        [Test]
         public void Train ()
         {
             var autoEncoder = MakeAutoEncoder ();

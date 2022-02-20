@@ -5,7 +5,7 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public abstract class ConvWeightsLayer : Layer
+    public abstract class ConvWeightsLayer : TrainableLayer
     {
         public override int MinInputCount => 1;
 

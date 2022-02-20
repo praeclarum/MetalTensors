@@ -5,7 +5,8 @@ namespace MetalTensors.Layers
 {
     public class SoftMaxLayer : UnopLayer
     {
-        public SoftMaxLayer (string? name = null, bool isTrainable = true) : base (name, isTrainable: isTrainable)
+        public SoftMaxLayer (string? name = null)
+            : base (name)
         {
         }
 

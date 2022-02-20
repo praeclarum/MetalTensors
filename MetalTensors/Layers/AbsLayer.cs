@@ -5,8 +5,8 @@ namespace MetalTensors.Layers
 {
     public class AbsLayer : UnopLayer
     {
-        public AbsLayer (string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        public AbsLayer (string? name = null)
+            : base (name)
         {
         }
         protected override MPSNNFilterNode CreateUnopNode (MPSNNImageNode imageNode)

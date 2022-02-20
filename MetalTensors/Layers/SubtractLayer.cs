@@ -6,7 +6,8 @@ namespace MetalTensors.Layers
 {
     public class SubtractLayer : BinopLayer
     {
-        public SubtractLayer (string? name = null, bool isTrainable = true) : base (name, isTrainable: isTrainable)
+        public SubtractLayer (string? name = null)
+            : base (name)
         {
         }
 

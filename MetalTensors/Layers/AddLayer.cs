@@ -6,8 +6,8 @@ namespace MetalTensors.Layers
 {
     public class AddLayer : BinopLayer
     {
-        public AddLayer (string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        public AddLayer (string? name = null)
+            : base (name)
         {
         }
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)

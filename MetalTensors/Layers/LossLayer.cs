@@ -16,8 +16,8 @@ namespace MetalTensors.Layers
         public ReductionType ReductionType { get; }
         public float Weight { get; }
 
-        public LossLayer (LossType lossType, ReductionType reductionType, float weight, string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        public LossLayer (LossType lossType, ReductionType reductionType, float weight, string? name = null)
+            : base (name)
         {
             LossType = lossType;
             ReductionType = reductionType;

@@ -17,8 +17,8 @@ namespace MetalTensors.Layers
         public int StrideY { get; }
         public ConvPadding Padding { get; }
 
-        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        protected PoolLayer (int sizeX, int sizeY, int strideX, int strideY, ConvPadding padding, string? name = null)
+            : base (name)
         {
             if (sizeX < 1)
                 throw new ArgumentOutOfRangeException (nameof (sizeX), "Pooling width must be > 0");

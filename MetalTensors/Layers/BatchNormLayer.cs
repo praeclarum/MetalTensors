@@ -9,25 +9,19 @@ using static MetalTensors.MetalHelpers;
 
 namespace MetalTensors.Layers
 {
-    public class BatchNormLayer : Layer
+    public class BatchNormLayer : WeightsLayer
     {
         // https://github.com/apple/turicreate/blob/98b61f551f26429e05025c79785d7b4b0ef50295/src/ml/neural_net/mps_layers.mm#L443
         public const float DefaultEpsilon = 0.001f;
 
-        public override int MinInputCount => 1;
-
         public int FeatureChannels { get; }
-        public Weights Weights { get; }
-
         public float Epsilon { get; }
 
-        readonly ConcurrentDictionary<IntPtr, BatchNormDataSource> deviceDataSources =
-            new ConcurrentDictionary<IntPtr, BatchNormDataSource> ();
+        public override int MinInputCount => 1;
 
         public BatchNormLayer (int featureChannels, float epsilon = DefaultEpsilon, string? name = null, bool isTrainable = true)
             : base (name, isTrainable: isTrainable)
         {
-            Weights = new Weights ();
             FeatureChannels = featureChannels;
             Epsilon = epsilon;
         }
@@ -35,7 +29,6 @@ namespace MetalTensors.Layers
         public override Config Config => base.Config.Update (new Config {
             { "featureChannels", FeatureChannels },
             { "epsilon", Epsilon },
-            { "weights", Weights },
         });
 
         public override int[] GetOutputShape (params Tensor[] inputs)
@@ -45,24 +38,16 @@ namespace MetalTensors.Layers
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
-            return new MPSCnnBatchNormalizationNode (inputs[0].ImageNode, GetDataSource (device));
+            return new MPSCnnBatchNormalizationNode (inputs[0].ImageNode, GetDataSource<BatchNormDataSource> (device));
         }
 
-        MPSCnnBatchNormalizationDataSource GetDataSource (IMTLDevice device)
+        protected override IWeightsDataSource CreateDataSource (IMTLDevice device)
         {
-            var key = device.Handle;
-            if (deviceDataSources.TryGetValue (key, out var w))
-                return w;
-
-            w = new BatchNormDataSource (this, device);
-
-            if (deviceDataSources.TryAdd (key, w))
-                return w;
-            return deviceDataSources[key];
+            return new BatchNormDataSource (this, device);
         }
     }
 
-    class BatchNormDataSource : MPSCnnBatchNormalizationDataSource
+    class BatchNormDataSource : MPSCnnBatchNormalizationDataSource, IWeightsDataSource
     {
         const float bnRunningUpdateMomentum = 0.9f;
 

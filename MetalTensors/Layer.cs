@@ -21,21 +21,22 @@ namespace MetalTensors
 
         public abstract int MinInputCount { get; }
 
-        public bool IsTrainable { get; set; }
-
         public string Name => name;
 
-        protected Layer (string? name = null, bool isTrainable = true)
+        public virtual bool IsTrainable {
+            get => false;
+            set { }
+        }
+
+        protected Layer (string? name = null)
         {
             this.name = string.IsNullOrWhiteSpace (name) ? GetType ().Name + Id : name!;
-            IsTrainable = isTrainable;
         }
 
         public override string ToString () => Name;
 
         public override Config Config => base.Config.Update (new Config {
             { "name", Name },
-            { "isTrainable", IsTrainable },
         });
 
         public virtual void ValidateInputShapes (params Tensor[] inputs)

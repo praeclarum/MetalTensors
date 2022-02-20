@@ -10,8 +10,8 @@ namespace MetalTensors.Layers
 
         public float DropProbability { get; }
 
-        public DropoutLayer (float dropProbability, string? name = null, bool isTrainable = true)
-            : base (name, isTrainable: isTrainable)
+        public DropoutLayer (float dropProbability, string? name = null)
+            : base (name)
         {
             DropProbability = dropProbability;
         }

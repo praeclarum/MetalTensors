@@ -71,6 +71,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)MPSImageExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Config.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Weights.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\WeightsLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Layers\TrainableLayer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />
