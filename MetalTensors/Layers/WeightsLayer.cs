@@ -12,6 +12,7 @@ namespace MetalTensors.Layers
     public interface IWeightsDataSource
     {
         void SetOptimizationOptions (bool trainable, float learningRate);
+        bool DownloadWeightsFromGpu ();
     }
 
     public abstract class WeightsLayer : TrainableLayer

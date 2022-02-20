@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Foundation;
 using Metal;
 using MetalPerformanceShaders;
 using MetalTensors.Layers;
@@ -10,48 +11,72 @@ using static MetalTensors.MetalHelpers;
 namespace MetalTensors
 {
     /// <summary>
-    /// Responsible for storing weights when they are Purged from memory.
-    /// Also, conveniently, can be serialized.
+    /// Stores references to weights used by a layer.
+    /// Responsible for reading and writing weights to archives.
     /// </summary>
-    public class Weights : Configurable
+    public class Weights : Configurable, IHasBuffers
     {
-        public ConcurrentDictionary<string, Memory<float>> Variables { get; } = new ConcurrentDictionary<string, Memory<float>> ();
+        public ConcurrentDictionary<string, Memory<float>> Values { get; } = new ConcurrentDictionary<string, Memory<float>> ();
+        public ConcurrentDictionary<string, MPSVector> Vectors { get; } = new ConcurrentDictionary<string, MPSVector> ();
+
+        public IWeightsDataSource? DataSource { get; set; }
 
         public Weights ()
         {
         }
 
-        public void Read (string variableName, MPSVector vector, float initialValue)
+        public void AddParameter (string parameterName, MPSVector vector, float initialValue)
         {
-            if (Variables.TryGetValue (variableName, out var memory)) {
+            if (Values.TryGetValue (parameterName, out var memory)) {
                 vector.Init (memory);
             }
             else {
                 vector.Fill (initialValue);
-                Variables[variableName] = vector.ToSpan ().ToArray ();
+                Values[parameterName] = vector.ToSpan ().ToArray ();
+                Vectors[parameterName] = vector;
             }
         }
 
-        public void Read (string variableName, OptimizableVector vector, float initialValue)
+        public void AddParameter (string parameterName, OptimizableVector vectors, float initialValue)
         {
-            if (Variables.TryGetValue (variableName, out var memory)) {
-                vector.Value.Init (memory);
+            var vector = vectors.Value;
+            if (Values.TryGetValue (parameterName, out var memory)) {
+                vector.Init (memory);
             }
             else {
-                vector.Value.Fill (initialValue);
-                Variables[variableName] = vector.Value.ToSpan ().ToArray ();
+                vector.Fill (initialValue);
+                Values[parameterName] = vector.ToSpan ().ToArray ();
+                Vectors[parameterName] = vector;
             }
         }
 
-        public async Task ReadAsync (string variableName, OptimizableVector vector, WeightsInit initialValue, int fanIn, int fanOut, IMTLCommandQueue queue)
+        public async Task AddParameter (string parameterName, OptimizableVector vectors, WeightsInit initialValue, int fanIn, int fanOut, IMTLCommandQueue queue)
         {
-            if (Variables.TryGetValue (variableName, out var memory)) {
-                vector.Value.Init (memory);
+            var vector = vectors.Value;
+            if (Values.TryGetValue (parameterName, out var memory)) {
+                vector.Init (memory);
             }
             else {
                 var seed = (int)DateTime.Now.Ticks;
-                await initialValue.InitWeightsAsync (vector.Value, seed, fanIn: fanIn, fanOut: fanOut, queue: queue).ConfigureAwait (false);
-                Variables[variableName] = vector.Value.ToSpan ().ToArray ();
+                await initialValue.InitWeightsAsync (vector, seed, fanIn: fanIn, fanOut: fanOut, queue: queue).ConfigureAwait (false);
+                Values[parameterName] = vector.ToSpan ().ToArray ();
+                Vectors[parameterName] = vector;
+            }
+        }
+
+        public void ReadBuffers (ReadBuffer reader)
+        {
+            throw new NotImplementedException ();
+        }
+
+        public void WriteBuffers (WriteBuffer writer)
+        {
+            var vs = Vectors.ToArray ();
+            if (vs.Length == 0)
+                return;
+            DataSource?.DownloadWeightsFromGpu ();
+            foreach (var v in vs) {
+                writer (v.Key, v.Value.ToSpan ());
             }
         }
     }

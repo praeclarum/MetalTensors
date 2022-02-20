@@ -72,6 +72,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Weights.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\WeightsLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Layers\TrainableLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Archive.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

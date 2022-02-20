@@ -361,8 +361,8 @@ namespace MetalTensors
 
         public void Save (Stream stream)
         {
-            var config = Config;
-            config.Write (stream);
+            using var ar = new ArchiveWriter (stream);
+            ar.Write (this);
         }
 
         public static Model Load (string path)
@@ -379,7 +379,8 @@ namespace MetalTensors
 
         public static Model Load (Stream stream)
         {
-            return Config.Read<Model> (stream);
+            var ar = new ArchiveReader (stream);
+            return ar.Read<Model> ();
         }
     }
 }

@@ -92,19 +92,19 @@ namespace MetalTensors
             return this;
         }
 
-        public void Write (string path)
+        public void Write (string path, HashSet<Configurable>? references = null)
         {
             using var w = new StreamWriter (path, false, Encoding.UTF8);
-            Write (w);
+            Write (w, references);
         }
 
-        public void Write (Stream stream)
+        public void Write (Stream stream, HashSet<Configurable>? references = null)
         {
             using var w = new StreamWriter (stream, Encoding.UTF8);
-            Write (w);
+            Write (w, references);
         }
 
-        public void Write (TextWriter w)
+        public void Write (TextWriter w, HashSet<Configurable>? references = null)
         {
             var settings = new XmlWriterSettings {
                 Indent = true,
@@ -113,13 +113,12 @@ namespace MetalTensors
                 Encoding = Encoding.UTF8,
             };
             using var xw = XmlWriter.Create (w, settings);
-            Write (xw);
+            Write (xw, references);
         }
 
-        public void Write (XmlWriter w)
+        public void Write (XmlWriter w, HashSet<Configurable>? references = null)
         {
-            var references = new HashSet<Configurable> ();
-            WriteConfig (this, w, references);
+            WriteConfig (this, w, references ?? new HashSet<Configurable> ());
         }
 
         static bool ValueGoesInAttribute (object? value)
@@ -211,30 +210,29 @@ namespace MetalTensors
             w.WriteEndElement ();
         }
 
-        public static T Read<T> (string path) where T : Configurable
+        public static T Read<T> (string path, Dictionary<int, Configurable>? references = null) where T : Configurable
         {
-            return Read<T> (XDocument.Load (path));
+            return Read<T> (XDocument.Load (path), references);
         }
 
-        public static T Read<T> (Stream stream) where T : Configurable
+        public static T Read<T> (Stream stream, Dictionary<int, Configurable>? references = null) where T : Configurable
         {
-            return Read<T> (XDocument.Load (stream));
+            return Read<T> (XDocument.Load (stream), references);
         }
 
-        public static T Read<T> (TextReader reader) where T : Configurable
+        public static T Read<T> (TextReader reader, Dictionary<int, Configurable>? references = null) where T : Configurable
         {
-            return Read<T> (XDocument.Load (reader));
+            return Read<T> (XDocument.Load (reader), references);
         }
 
-        public static T Read<T> (XDocument document) where T : Configurable
+        public static T Read<T> (XDocument document, Dictionary<int, Configurable>? references = null) where T : Configurable
         {
-            return Read<T> (document.Root);
+            return Read<T> (document.Root, references);
         }
 
-        public static T Read<T> (XElement element) where T : Configurable
+        public static T Read<T> (XElement element, Dictionary<int, Configurable>? references = null) where T : Configurable
         {
-            var references = new Dictionary<int, Configurable> ();
-            return (T)ReadConfigurable (element, references);
+            return (T)ReadConfigurable (element, references ?? new Dictionary<int, Configurable> ());
         }
 
         static Configurable ReadConfigurable (XElement element, Dictionary<int, Configurable> references)

@@ -264,6 +264,11 @@ namespace MetalTensors.Layers
             }
         }
 
+        public bool DownloadWeightsFromGpu ()
+        {
+            return Load;
+        }
+
         /// <summary>
         /// Alerts the data source that the data is no longer needed.
         /// Each load alert will be balanced by a purge later, when MPS
@@ -368,7 +373,7 @@ namespace MetalTensors.Layers
             if (bias) {
                 var vDescBiases = VectorDescriptor (outChannels);
                 BiasVectors = new OptimizableVector (device, vDescBiases);
-                layer.Weights.Read ("Bias", BiasVectors, layer.BiasInit);
+                layer.Weights.AddParameter ("Bias", BiasVectors, layer.BiasInit);
             }
             else {
                 BiasVectors = null;
@@ -384,7 +389,7 @@ namespace MetalTensors.Layers
             weightInitTask = Task.Run (async () => {
                 var fanIn = inChannels * kernelSizeX * kernelSizeY;
                 var fanOut = outChannels * kernelSizeX * kernelSizeY;
-                await layer.Weights.ReadAsync ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
+                await layer.Weights.AddParameter ("Weights", weightVectors, layer.WeightsInit, fanIn, fanOut, queue).ConfigureAwait (false);
                 convWtsAndBias = new MPSCnnConvolutionWeightsAndBiasesState (weightVectors.Value.Data, BiasVectors?.Value.Data);
             });
         }

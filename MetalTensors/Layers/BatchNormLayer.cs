@@ -102,10 +102,10 @@ namespace MetalTensors.Layers
             gammaVector = new OptimizableVector (device, vectorDescriptor);
             meanVector = Vector (vectorDescriptor, device);
             varianceVector = Vector (vectorDescriptor, device);
-            batchNormWeights.Weights.Read ("Beta", betaVector, initialValue: 0.0f);
-            batchNormWeights.Weights.Read ("Gamma", gammaVector, initialValue: 1.0f);
-            batchNormWeights.Weights.Read ("Mean", meanVector, initialValue: 0.0f);
-            batchNormWeights.Weights.Read ("Variance", varianceVector, initialValue: 1.0f);
+            batchNormWeights.Weights.AddParameter ("Beta", betaVector, initialValue: 0.0f);
+            batchNormWeights.Weights.AddParameter ("Gamma", gammaVector, initialValue: 1.0f);
+            batchNormWeights.Weights.AddParameter ("Mean", meanVector, initialValue: 0.0f);
+            batchNormWeights.Weights.AddParameter ("Variance", varianceVector, initialValue: 1.0f);
 
             gammaAndBeta = new MPSCnnNormalizationGammaAndBetaState (gammaVector.Value.Data, betaVector.Value.Data);
             meanAndVariance = new MPSCnnNormalizationMeanAndVarianceState (meanVector.Data, varianceVector.Data);
@@ -181,6 +181,11 @@ namespace MetalTensors.Layers
                 }
                 return true;
             }
+        }
+
+        public bool DownloadWeightsFromGpu ()
+        {
+            return Load;
         }
 
         public override void Purge ()
