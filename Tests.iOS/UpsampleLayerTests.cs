@@ -5,6 +5,8 @@ using NUnit.Framework;
 using MetalTensors;
 using MetalTensors.Tensors;
 
+using static Tests.Imaging;
+
 namespace Tests
 {
     public class UpsampleLayerTests
@@ -15,6 +17,8 @@ namespace Tests
             var image = Tensor.ImageResource ("rgbywb3x2", "png");
 
             var result = image.Upsample (2, 2);
+
+            result.SaveImage (PngUrl ());
 
             Assert.AreEqual (4, result.Shape[0]);
             Assert.AreEqual (6, result.Shape[1]);
