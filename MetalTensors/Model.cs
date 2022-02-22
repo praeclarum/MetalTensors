@@ -13,9 +13,8 @@ namespace MetalTensors
     public class Model : TrainableLayer
     {
         public const int DefaultBatchSize = 32;
-        public const int DefaultNumBatches = -1;
-        public const int DefaultValidationInterval = 10;
-        public const int DefaultEpochs = 10;
+        //public const int DefaultNumBatches = -1;
+        public const float DefaultEpochs = 10.0f;
 
         public bool KeepDropoutDuringInference { get; }
         public Tensor[] Outputs { get; }
@@ -217,13 +216,7 @@ namespace MetalTensors
             return null;
         }
 
-        public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, int epochs = DefaultEpochs, IMTLDevice? device = null)
-        {
-            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
-            return Fit (dataSet, batchSize, numBatches: batchesPerEpoch * epochs, validationInterval: batchesPerEpoch, device);
-        }
-
-        public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, int numBatches = DefaultNumBatches, int validationInterval = DefaultValidationInterval, IMTLDevice? device = null)
+        public TrainingHistory Fit (DataSet dataSet, int batchSize = DefaultBatchSize, float epochs = DefaultEpochs, Action<TrainingHistory.BatchHistory>? callback = null, IMTLDevice? device = null)
         {
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
                 throw new InvalidOperationException ($"Models must be compiled before being Fit");
@@ -231,16 +224,15 @@ namespace MetalTensors
             if (!(cm.TrainingGraph is TrainingGraph g)) {
                 throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
             }
-            if (numBatches < 0) {
-                numBatches = (dataSet.Count + batchSize - 1) / batchSize;
-            }
+            var batchesPerEpoch = (dataSet.Count + batchSize - 1) / batchSize;
+            var numBatches = (int)MathF.Ceiling (batchesPerEpoch * epochs);
             if (numBatches < 1) {
                 return new TrainingHistory ();
             }
-            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, validationInterval, cm.EvaluationGraph);
+            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, callback);
         }
 
-        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, bool disposeSourceImages = true, IMTLDevice? device = null)
         {
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
                 throw new InvalidOperationException ($"Models must be compiled before being Fit");
@@ -248,7 +240,7 @@ namespace MetalTensors
             if (!(cm.TrainingGraph is TrainingGraph g)) {
                 throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
             }
-            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer);
+            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer, disposeSourceImages: disposeSourceImages);
         }
 
         public Tensor Predict (Tensor input, IMTLDevice? device = null)

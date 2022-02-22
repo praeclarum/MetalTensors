@@ -25,7 +25,7 @@ namespace Tests
             var model = new Model (x, y);
             model.Compile (Loss.MeanSquaredError, learningRate: 0.01f);
 
-            var history = model.Fit (DataSet.Generated (GenTrainingData, 100), batchSize: 16, numBatches: 100, validationInterval: 50);
+            var history = model.Fit (DataSet.Generated (GenTrainingData, 100), batchSize: 16, epochs: 16.0f);
 
             var batch = history.Batches[^1];
             Assert.AreEqual (1, history.Batches[0].Losses.Count);

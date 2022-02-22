@@ -182,9 +182,9 @@ namespace MetalTensors.Applications
                 trainSW.Start ();
                 var fakes = Generator.Predict (segments);
                 var realsAndFakes = reals.Concat(fakes).ToArray ();
-                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
+                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch, disposeSourceImages: false);
                 var zerosAndReals = zerosBatch.Zip (reals, (a, b) => new[] { a[0], b[0] }).ToArray ();
-                var ganh = Gan.Fit (segments, zerosAndReals);
+                var ganh = Gan.Fit (segments, zerosAndReals, disposeSourceImages: false);
                 Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss} GANLOSS {ganh.AverageLoss}");
                 trainSW.Stop ();
                 ganh.DisposeSourceImages ();

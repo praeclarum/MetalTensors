@@ -27,6 +27,15 @@ namespace MetalTensors
             }
         }
 
+        public static void Dispose (this MPSImage[]? images)
+        {
+            if (images != null) {
+                foreach (var imgs in images) {
+                    imgs.Dispose ();
+                }
+            }
+        }
+
         public static unsafe void Fill (this MPSImage image, float constant)
         {
             var dtype = image.PixelFormat;

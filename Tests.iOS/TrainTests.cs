@@ -16,8 +16,6 @@ namespace Tests
             var label = Tensor.Zeros (64, 64, 1);
 
             var batchSize = 5;
-            var numBatches = 10;
-            var valInterval = 2;
 
             var getDataCount = 0;
 
@@ -27,11 +25,10 @@ namespace Tests
             var history = model.Fit (DataSet.Generated ((_, device) => {
                 getDataCount++;
                 return (new Tensor[] { input }, new[]{ label });
-            }, 100), batchSize: batchSize, numBatches: numBatches, validationInterval: valInterval);
+            }, 100), batchSize: batchSize, epochs: 1.0f);
 
-            Assert.AreEqual (batchSize * numBatches + (numBatches / valInterval) * batchSize, getDataCount);
+            Assert.AreEqual (100, getDataCount);
 
-            Assert.AreEqual (numBatches, history.Batches.Length);
             Assert.AreEqual (1, history.Batches[0].Losses.Count);
             Assert.AreEqual (0, history.Batches[0].IntermediateValues.Count);
         }

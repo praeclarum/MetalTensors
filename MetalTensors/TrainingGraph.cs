@@ -84,11 +84,11 @@ namespace MetalTensors
             return trainingGraph;
         }
 
-        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, int validateInterval, EvaluationGraph? evalGraph)
+        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, Action<TrainingHistory.BatchHistory>? callback)
         {
             //Tensor[][] inputsBatch, Tensor[][] outputsBatch
-            if (validateInterval <= 0)
-                throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
+            //if (validateInterval <= 0)
+            //    throw new ArgumentException ($"Invalidate validation interval ({validateInterval}) specified.");
 
             using var pool = new NSAutoreleasePool ();
 
@@ -110,6 +110,7 @@ namespace MetalTensors
                 lock (h) {
                     h.Add (bh);
                 }
+                callback?.Invoke (bh);
             }
 
             //
@@ -124,21 +125,21 @@ namespace MetalTensors
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
                 var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, queue.Device);
-                lcb = EncodeTrainingBatch (inputs, outputs, AddHistory, semaphore, queue);
+                lcb = EncodeTrainingBatch (inputs, outputs, AddHistory, disposeSourceImages: true, semaphore, queue);
 
-                if (evalGraph != null && ((batchIndex + 1) % validateInterval == 0)) {
-                    lcb?.WaitUntilCompleted ();
-                    lcb = null;
-                    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, queue);
-                    //Console.WriteLine (evalHistory);
-                }
+                //if (evalGraph != null && ((batchIndex + 1) % validateInterval == 0)) {
+                //    lcb?.WaitUntilCompleted ();
+                //    lcb = null;
+                //    var evalHistory = evalGraph.Evaluate (dataSet, batchSize, 1, semaphore, queue);
+                //    //Console.WriteLine (evalHistory);
+                //}
             }
             lcb?.WaitUntilCompleted ();
 
             return new TrainingHistory (h);
         }
 
-        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer, bool disposeSourceImages = true)
         {
             var batchSize = inputsBatch.Length;
 
@@ -173,14 +174,14 @@ namespace MetalTensors
 
             using var semaphore = new Semaphore (2, 2);
 
-            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, AddHistory, semaphore, queue);
+            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, AddHistory, disposeSourceImages: disposeSourceImages, semaphore, queue);
 
             lcb.WaitUntilCompleted ();
 
             return h[0];
         }
 
-        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
+        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, bool disposeSourceImages, Semaphore semaphore, IMTLCommandQueue queue)
         {
             if (inputs.Length < 1)
                 throw new ArgumentException ($"At least one input is needed in a batch");
@@ -265,6 +266,15 @@ namespace MetalTensors
                     }
                 }
                 intermediateImages.Dispose ();
+
+                //
+                // Free the source images
+                //
+                if (disposeSourceImages) {
+                    foreach (var i in temporaryBatchImages) {
+                        i.Dispose ();
+                    }
+                }
 
                 //
                 // Broadcast the results to whomever is listening
