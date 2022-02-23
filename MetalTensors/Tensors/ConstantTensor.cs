@@ -56,6 +56,11 @@ namespace MetalTensors.Tensors
             }
         }
 
+        public override void CopyTo (MPSImage image)
+        {
+            image.Fill (ConstantValue);
+        }
+
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
             var image = MetalHelpers.CreateConstantImage (Shape, ConstantValue);

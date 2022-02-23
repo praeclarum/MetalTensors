@@ -10,11 +10,75 @@ using System.Threading.Tasks;
 using CoreGraphics;
 using System.Collections.Generic;
 using System.Linq;
+using System.Buffers;
 
 namespace MetalTensors
 {
     public static class MPSImageExtensions
     {
+        public static unsafe void CopyTo (this MPSImage source, Span<float> destination)
+        {
+            var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
+            var dtype = source.PixelFormat;
+            switch (dtype) {
+                case MTLPixelFormat.R32Float:
+                case MTLPixelFormat.RG32Float:
+                case MTLPixelFormat.RGBA32Float: {
+                        fixed (float* dataPtr = destination) {
+                            source.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);
+                        }
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException ($"Cannot copy image with pixel format {dtype}");
+            }
+        }
+
+        public static void CopyTo (this MPSImage source, MPSImage destination)
+        {
+            //var n = source.FeatureChannels * source.Width * source.Height;
+            //var pool = ArrayPool<float>.Shared;
+            //var a = pool.Rent ((int)n);
+            //try {
+            //    unsafe {
+            //        fixed (float* p = a) {
+            //            if (source.PixelFormat == destination.PixelFormat) {
+            //                source.ReadBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+            //            }
+            //            else {
+            //                using var view = source.Texture.CreateTextureView (destination.PixelFormat);
+            //                if (view == null)
+            //                    throw new Exception ($"Cannot create {destination.PixelFormat} view");
+            //                view.GetBytes ((IntPtr)p, view.Width * destination.PixelSize, MTLRegion.Create2D (0, 0, view.Width, view.Height), 0);
+            //            }
+            //            destination.WriteBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+            //        }
+            //    }
+            //}
+            //finally {
+            //    pool.Return (a);
+            //}
+            IMTLTexture sourceTexture = source.Texture;
+            IMTLTexture destinationTexture = destination.Texture;
+            using var queue = destination.Device.CreateCommandQueue ();
+            if (queue is null)
+                throw new Exception ($"Failed to create queue for image pairs");
+            using var commands = MPSCommandBuffer.Create (queue);
+            //image.Synchronize (commands);
+            destination.Synchronize (commands);
+            using var blit = commands.BlitCommandEncoder;
+//#if !__IOS__
+//            blit.Synchronize (sourceTexture);
+//#endif
+//#if !__IOS__
+//            blit.Synchronize (destinationTexture);
+//#endif
+            blit.Copy (sourceTexture, destinationTexture);
+            blit.EndEncoding ();
+            commands.Commit ();
+            commands.WaitUntilCompleted ();
+        }
+
         public static void Dispose (this NSArray<MPSImage>[]? images)
         {
             if (images != null) {

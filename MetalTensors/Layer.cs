@@ -10,6 +10,8 @@ using MetalPerformanceShaders;
 using MetalTensors.Layers;
 using MetalTensors.Tensors;
 
+using static MetalTensors.MetalHelpers;
+
 namespace MetalTensors
 {
     public abstract class Layer : Configurable
@@ -78,9 +80,24 @@ namespace MetalTensors
                     //Console.WriteLine (graph.DebugDescription);
 
                     var sourceHandles = graph.SourceImageHandles;
-                    var sources = sourceHandles.Select (x => ((TensorHandle)x).Tensor.GetMetalImage (device)).ToArray ();
+                    var sources = new MPSImage[sourceHandles.Length];
+                    for (var i = 0; i < sources.Length; i++) {
+                        if (sourceHandles[i] is TensorHandle th) {
+                            sources[i] = th.Tensor.CreateUninitializedImage ();
+                            th.Tensor.CopyTo (sources[i]);
+                        }
+                        else {
+                            throw new Exception ($"Only Tensors can be used as inputs to the graph");
+                        }
+                    }
 
                     var r = graph.Execute (sources, (image, error) => {
+                        try {
+                            sources.Dispose ();
+                        }
+                        catch (Exception ex) {
+                            Console.WriteLine ("Failed to dispose of source image: " + ex);
+                        }
                         if (error != null) {
                             tcs.SetException (new Exception (error.Description));
                         }

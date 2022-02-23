@@ -33,6 +33,7 @@ namespace MetalTensors
 
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
+        public virtual void CopyTo (MPSImage image) => throw new NotSupportedException ($"Cannot CopyTo metal image for {GetType ().Name}");
 
         public override Config Config => base.Config.Add ("name", Label);
 
@@ -95,6 +96,8 @@ namespace MetalTensors
                 return elements[i];
             }
         }
+
+        public virtual MPSImage CreateUninitializedImage () => MetalHelpers.CreateUninitializedImage (Shape);
 
         protected int ValidateCopyDestination (Span<float> destination)
         {

@@ -23,7 +23,7 @@ namespace MetalTensors.Tensors
         public MPSImageTensor (MPSImage image)
         {
             if (image == null || image.Handle == IntPtr.Zero)
-                throw new ArgumentNullException (nameof(image));
+                throw new ArgumentNullException (nameof (image));
             this.image = image;
             this.shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
         }
@@ -101,20 +101,26 @@ namespace MetalTensors.Tensors
         public unsafe override void CopyTo (Span<float> destination, IMTLDevice? device = null)
         {
             ValidateCopyDestination (destination);
-            var dataLayout = MPSDataLayout.HeightPerWidthPerFeatureChannels;
-            var dtype = image.PixelFormat;
-            switch (dtype) {
-                case MTLPixelFormat.R32Float:
-                case MTLPixelFormat.RG32Float:
-                case MTLPixelFormat.RGBA32Float: {
-                        fixed (float* dataPtr = destination) {
-                            image.ReadBytes ((IntPtr)dataPtr, dataLayout, 0);
-                        }
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException ($"Cannot copy image with pixel format {dtype}");
+            image.CopyTo (destination);
+        }
+
+        public override MPSImage CreateUninitializedImage ()
+        {
+            var c = image.FeatureChannels;
+            if (c <= 4) {
+                var texture = image.Device.CreateTexture (MTLTextureDescriptor.CreateTexture2DDescriptor (image.PixelFormat, image.Width, image.Height, false));
+                if (texture == null)
+                    throw new Exception ("Failed to allocate texture");
+                return new MPSImage (texture, image.FeatureChannels);
             }
+            else {
+                return new MPSImage (image.Device, MPSImageDescriptor.GetImageDescriptor (image.FeatureChannelFormat, image.Width, image.Height, image.FeatureChannels));
+            }
+        }
+
+        public override void CopyTo (MPSImage image)
+        {
+            this.image.CopyTo (image);
         }
 
         public unsafe override Tensor Slice (params int[] indexes)
@@ -143,7 +149,7 @@ namespace MetalTensors.Tensors
                             var dataPtr = stackalloc byte[numChannels];
                             //var rawData = new byte[(int)(numImages * bytesPerImage)];
                             //fixed (byte* dataPtr = rawData) {
-                                image.ReadBytes ((IntPtr)dataPtr, dataLayout, bytesPerRow, bytesPerImage, region, featureChannelInfo, (nuint)imageIndex);
+                            image.ReadBytes ((IntPtr)dataPtr, dataLayout, bytesPerRow, bytesPerImage, region, featureChannelInfo, (nuint)imageIndex);
                             //}
                             var floatScale = 1.0f / 255.0f;
                             if (indexes.Length == 2) {
