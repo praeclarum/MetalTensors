@@ -92,6 +92,8 @@ namespace MetalTensors
 
             using var pool = new NSAutoreleasePool ();
 
+            MetalGraph.ReloadFromDataSources ();
+
             //
             // Set the learning rate
             //
@@ -142,6 +144,8 @@ namespace MetalTensors
             var batchSize = inputsBatch.Length;
 
             using var pool = new NSAutoreleasePool ();
+
+            MetalGraph.ReloadFromDataSources ();
 
             //
             // Set the learning rate
