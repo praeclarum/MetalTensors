@@ -50,6 +50,15 @@ namespace MetalTensors.Tensors
             dataSpan.CopyTo (destination);
         }
 
+        public override void CopyTo (MPSImage image)
+        {
+            unsafe {
+                fixed (float* p = data) {
+                    image.WriteBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+                }
+            }
+        }
+
         public override float this[params int[] indexes] {
             get {
                 var i = 0;

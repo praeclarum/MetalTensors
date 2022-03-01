@@ -67,12 +67,12 @@ namespace MetalTensors
             //image.Synchronize (commands);
             destination.Synchronize (commands);
             using var blit = commands.BlitCommandEncoder;
-//#if !__IOS__
-//            blit.Synchronize (sourceTexture);
-//#endif
-//#if !__IOS__
-//            blit.Synchronize (destinationTexture);
-//#endif
+            //#if !__IOS__
+            //            blit.Synchronize (sourceTexture);
+            //#endif
+            //#if !__IOS__
+            //            blit.Synchronize (destinationTexture);
+            //#endif
             blit.Copy (sourceTexture, destinationTexture);
             blit.EndEncoding ();
             commands.Commit ();

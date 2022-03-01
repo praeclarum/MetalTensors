@@ -194,7 +194,11 @@ namespace MetalTensors
             //
             // Load data
             //
-            var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
+            var batchSize = inputs.Length;
+            //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
+
+            var batchSourceImages = RentSourceImages (batchSize);
+            var cbatch = CopySourceImages (inputs, outputs, batchSourceImages);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
@@ -213,7 +217,7 @@ namespace MetalTensors
             //
             using var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
             var destinationStates = new NSMutableArray<NSArray<MPSState>> ();
-            var returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, null, intermediateImagesMA, null);
+            var returnBatch = MetalGraph.EncodeBatch (commandBuffer, cbatch, null, intermediateImagesMA, null);
             var intermediateImages = intermediateImagesMA.ToArray ();
 
             //
@@ -231,6 +235,11 @@ namespace MetalTensors
             // Setup the completed callback
             //
             commandBuffer.AddCompletedHandler (cmdBuf => {
+
+                //
+                // Keep the source images for the next batch
+                //
+                ReturnSourceImages (batchSourceImages);
 
                 //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 semaphore.Release ();
@@ -271,15 +280,15 @@ namespace MetalTensors
                 // Free the source images
                 //
                 if (disposeSourceImages) {
-                    foreach (var i in temporaryBatchImages) {
-                        i.Dispose ();
-                    }
+                    //foreach (var i in temporaryBatchImages) {
+                    //    i.Dispose ();
+                    //}
                 }
 
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), temporaryBatchImages, cmdBuf.Device);
+                var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), Array.Empty<MPSImage>(), cmdBuf.Device);
                 recordHistory (h);
             });
 

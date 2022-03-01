@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -178,6 +179,87 @@ namespace MetalTensors
             commandBuffer.Commit ();
 
             return commandBuffer;
+        }
+
+        readonly ConcurrentDictionary<int, ConcurrentBag<MPSImage[][]>> availableSourceImages = new ConcurrentDictionary<int, ConcurrentBag<MPSImage[][]>> ();
+
+        protected MPSImage[][] RentSourceImages (int batchSize)
+        {
+            var numSources = sourceHandles.Length;
+            MPSImage[][] images;
+            if (availableSourceImages.TryGetValue (batchSize, out var imageCache)) {
+                if (imageCache.TryTake (out images)) {
+                    return images;
+                }
+                else {
+                    images = new MPSImage[numSources][];
+                }
+            }
+            else {
+                availableSourceImages.TryAdd (batchSize, new ConcurrentBag<MPSImage[][]> ());
+                images = new MPSImage[numSources][];
+            }
+
+            var statics = GetStaticImages ();
+            for (var si = 0; si < numSources; si++) {
+                images[si] = new MPSImage[batchSize];
+                var c = statics[si];
+                if (c != null) {
+                    for (var bi = 0; bi < batchSize; bi++) {
+                        images[si][bi] = c;
+                    }
+                }
+                else {
+                    for (var bi = 0; bi < batchSize; bi++) {
+                        images[si][bi] = sourceHandles[si].Tensor.CreateUninitializedImage ();
+                    }
+                }
+            }
+            return images;
+        }
+
+        protected void ReturnSourceImages (MPSImage[][] images)
+        {
+            var batchSize = images[0].Length;
+            if (availableSourceImages.TryGetValue (batchSize, out var imageCache)) {
+                imageCache.Add (images);
+            }
+        }
+
+        protected NSArray<MPSImage>[] CopySourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images)
+        {
+            var batchSize = inputs.Length;
+
+            var statics = GetStaticImages ();
+            var ns = sourceHandles.Length;
+
+            for (var bi = 0; bi < batchSize; bi++) {
+                for (var si = 0; si < ns; si++) {
+                    if (statics[si] != null)
+                        continue;
+                    var inputIndex = sourceToInputMap[si];
+                    if (0 <= inputIndex && inputIndex < inputs[bi].Length) {
+                        var image = images[si][bi];
+                        inputs[bi][inputIndex].CopyTo (image);
+                    }
+                    else {
+                        var outputIndex = sourceToOutputMap[si];
+                        if (0 <= outputIndex && outputIndex < outputs[bi].Length) {
+                            var image = images[si][bi];
+                            outputs[bi][outputIndex].CopyTo (image);
+                        }
+                        else {
+                            throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}. The model expects {modelInputs.Length} inputs and {modelOutputs.Length} outputs. Provided data has {inputs[0].Length} inputs and {outputs[0].Length} outputs.");
+                        }
+                    }
+                }
+            }
+
+            var imageArrays = new NSArray<MPSImage>[ns];
+            for (var si = 0; si < ns; si++) {
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+            }
+            return imageArrays;
         }
 
         protected (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetSourceImages (Tensor[][] inputs, Tensor[][] outputs)
