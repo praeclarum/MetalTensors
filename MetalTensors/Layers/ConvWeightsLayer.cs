@@ -204,20 +204,25 @@ namespace MetalTensors.Layers
             convWeights = new Lazy<ConvWeightValues> (createWeightValues);
         }
 
-        public void SetOptimizationOptions (bool trainable, float learningRate)
+        public void SetOptimizationOptions (bool trainable, Optimizer newOptimizer)
         {
             this.trainable = trainable;
             if (trainable) {
-                if (optimizer is MPSNNOptimizerAdam adam) {
-                    adam.SetLearningRate (learningRate);
+                if (newOptimizer is AdamOptimizer newAdam) {
+                    if (optimizer is MPSNNOptimizerAdam adam) {
+                        adam.SetLearningRate (newOptimizer.LearningRate);
+                    }
+                    else {
+                        var odesc = new MPSNNOptimizerDescriptor (newOptimizer.LearningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
+                        optimizer = new MPSNNOptimizerAdam (
+                            device,
+                            beta1: newAdam.Beta1, beta2: newAdam.Beta2, epsilon: newAdam.Epsilon,
+                            timeStep: 0,
+                            optimizerDescriptor: odesc);
+                    }
                 }
                 else {
-                    var odesc = new MPSNNOptimizerDescriptor (learningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
-                    optimizer = new MPSNNOptimizerAdam (
-                        device,
-                        beta1: 0.9f, beta2: 0.999f, epsilon: 1e-7f,
-                        timeStep: 0,
-                        optimizerDescriptor: odesc);
+                    throw new NotSupportedException (newOptimizer.GetType().Name + " is not supported");
                 }
             }
         }

@@ -82,7 +82,7 @@ namespace MetalTensors
                 //
                 //evalGraph = new EvaluationGraph (Label + " Evaluation Graph", model.Inputs, flatModel.Outputs, losses, Model.KeepDropoutDuringInference, device);
                 infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, queue, semaphore);
-                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, queue, semaphore);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, optimizer, queue, semaphore);
             }
             else {
                 losses = Array.Empty<Tensor> ();

@@ -18,11 +18,14 @@ namespace MetalTensors
 
         readonly bool[] intermediateIsLoss;
 
-        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLCommandQueue queue, Semaphore semaphore)
+        readonly Optimizer optimizer;
+
+        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, Optimizer optimizer, IMTLCommandQueue queue, Semaphore semaphore)
             : base (label, CreateTrainingGraph (label, losses, trainable, queue.Device, out var cweights), inputs, outputs, queue, semaphore)
         {
             weightDataSources = cweights;
             intermediateIsLoss = new bool[intermediateHandles.Length];
+            this.optimizer = optimizer;
             for (var i = 0; i < intermediateHandles.Length; i++) {
                 var handle = intermediateHandles[i];
                 if (losses.FirstOrDefault (x => x.Label == handle.Label) != null) {
@@ -84,7 +87,7 @@ namespace MetalTensors
             return trainingGraph;
         }
 
-        public TrainingHistory Fit (DataSet dataSet, Optimizer optimizer, int batchSize, int numBatches, Action<TrainingHistory.BatchHistory>? callback)
+        public TrainingHistory Fit (DataSet dataSet, int batchSize, int numBatches, Action<TrainingHistory.BatchHistory>? callback)
         {
             //Tensor[][] inputsBatch, Tensor[][] outputsBatch
             //if (validateInterval <= 0)
@@ -98,7 +101,7 @@ namespace MetalTensors
             // Set the learning rate
             //
             foreach (var c in weightDataSources) {
-                c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
+                c.Weights.SetOptimizationOptions (c.Trainable, optimizer);
             }
 
             //
@@ -130,7 +133,7 @@ namespace MetalTensors
             return new TrainingHistory (h);
         }
 
-        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch)
         {
             var batchSize = inputsBatch.Length;
 
@@ -142,7 +145,7 @@ namespace MetalTensors
             // Set the learning rate
             //
             foreach (var c in weightDataSources) {
-                c.Weights.SetOptimizationOptions (c.Trainable, optimizer.LearningRate);
+                c.Weights.SetOptimizationOptions (c.Trainable, optimizer);
             }
 
             //

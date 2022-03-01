@@ -229,7 +229,7 @@ namespace MetalTensors
             if (numBatches < 1) {
                 return new TrainingHistory ();
             }
-            return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, callback);
+            return g.Fit (dataSet, batchSize, numBatches, callback);
         }
 
         public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
@@ -240,7 +240,7 @@ namespace MetalTensors
             if (!(cm.TrainingGraph is TrainingGraph g)) {
                 throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
             }
-            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer);
+            return g.Fit (inputsBatch, outputsBatch);
         }
 
         public Tensor Predict (Tensor input, IMTLDevice? device = null)

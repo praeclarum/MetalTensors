@@ -14,8 +14,8 @@ namespace MetalTensors.Applications
 
         const float lambdaL1 = 100.0f;
 
-        const float gLearningRate = 0.0002f;
-        const float dLearningRate = 0.0002f;
+        const float gLearningRate = 0.0001f;
+        const float dLearningRate = 0.0004f;
 
         readonly IMTLDevice device;
 
@@ -44,9 +44,11 @@ namespace MetalTensors.Applications
             if (compiled)
                 return;
             compiled = true;
-            Discriminator.Compile (Loss.SigmoidCrossEntropy, new AdamOptimizer (learningRate: dLearningRate));
+            var dopt = new AdamOptimizer (learningRate: dLearningRate, beta1: 0.0f, beta2: 0.999f);
+            Discriminator.Compile (Loss.SigmoidCrossEntropy, dopt);
             Discriminator.IsTrainable = false;
-            Gan.Compile (new[] { Loss.SigmoidCrossEntropy, Loss.MeanAbsoluteError }, new[] { 1.0f, lambdaL1 }, new AdamOptimizer (learningRate: gLearningRate));
+            var gopt = new AdamOptimizer (learningRate: gLearningRate, beta1: 0.0f, beta2: 0.999f);
+            Gan.Compile (new[] { Loss.SigmoidCrossEntropy, Loss.MeanAbsoluteError }, new[] { 1.0f, lambdaL1 }, gopt);
         }
 
         static Model CreateGenerator ()
