@@ -92,8 +92,6 @@ namespace MetalTensors
 
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
-
             //
             // Set the learning rate
             //
@@ -145,8 +143,6 @@ namespace MetalTensors
 
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
-
             //
             // Set the learning rate
             //
@@ -181,6 +177,8 @@ namespace MetalTensors
             return h[0];
         }
 
+        int nextCommandId = 0;
+
         MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, bool disposeSourceImages, Semaphore semaphore, IMTLCommandQueue queue)
         {
             if (inputs.Length < 1)
@@ -197,6 +195,8 @@ namespace MetalTensors
             semaphore.WaitOne ();
 
             var commandBuffer = MPSCommandBuffer.Create (queue);
+            commandBuffer.Label = $"{Label} {nextCommandId}";
+            Interlocked.Increment (ref nextCommandId);
 
             //
             // Load data

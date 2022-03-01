@@ -177,9 +177,9 @@ namespace MetalTensors.Applications
 
             var batchTask = dataSet.GetBatchAsync (0, batchSize, device);
             for (var batch = 0; batch < numBatchesToTrain; batch++) {
+                dataSW.Start ();
                 var (segments, reals) = batchTask.Result;
                 batchTask = dataSet.GetBatchAsync ((batch+1)*batchSize, batchSize, device);
-                dataSW.Start ();
                 dataSW.Stop ();
                 trainSW.Start ();
                 var fakes = Generator.Predict (segments);
