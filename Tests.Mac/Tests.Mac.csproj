@@ -34,7 +34,7 @@
     <Profiling>true</Profiling>
     <HttpClientHandler></HttpClientHandler>
     <LinkMode>None</LinkMode>
-    <XamMacArch></XamMacArch>
+    <XamMacArch>x86_64</XamMacArch>
     <AOTMode>None</AOTMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -50,10 +50,10 @@
     <IncludeMonoRuntime>true</IncludeMonoRuntime>
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
-    <LinkMode>SdkOnly</LinkMode>
+    <LinkMode>None</LinkMode>
     <HttpClientHandler></HttpClientHandler>
-    <XamMacArch></XamMacArch>
-    <AOTMode>None</AOTMode>
+    <XamMacArch>x86_64</XamMacArch>
+    <AOTMode>All</AOTMode>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -64,6 +64,11 @@ namespace MetalTensors.Tensors
             });
         }
 
+        public override void EncodeToCommandBuffer (MPSImage image, MPSCommandBuffer commands)
+        {
+            image.Fill (ConstantValue);
+        }
+
         public override MPSImage GetMetalImage (IMTLDevice device)
         {
             var image = MetalHelpers.CreateConstantImage (Shape, ConstantValue);

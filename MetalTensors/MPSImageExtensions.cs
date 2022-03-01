@@ -70,10 +70,6 @@ namespace MetalTensors
             using var nspool = new NSAutoreleasePool ();
             var tcs = new TaskCompletionSource<object?> ();
             using var commands = MPSCommandBuffer.Create (queue);
-            destination.Synchronize (commands);
-            using var blit = commands.BlitCommandEncoder;
-            blit.Copy (source.Texture, destination.Texture);
-            blit.EndEncoding ();
             commands.AddCompletedHandler (b => {
                 //using var nspool = new NSAutoreleasePool ();
                 if (b.Error is NSError e) {
@@ -95,6 +91,7 @@ namespace MetalTensors
                     tcs.TrySetResult (null);
                 }
             });
+            EncodeToCommandBuffer (source, destination, commands);
             commands.Commit ();
             return tcs.Task;
         }
@@ -118,6 +115,14 @@ namespace MetalTensors
                     imgs.Dispose ();
                 }
             }
+        }
+
+        public static void EncodeToCommandBuffer (this MPSImage source, MPSImage destination, MPSCommandBuffer commands)
+        {
+            destination.Synchronize (commands);
+            using var blit = commands.BlitCommandEncoder;
+            blit.Copy (source.Texture, destination.Texture);
+            blit.EndEncoding ();
         }
 
         public static unsafe void Fill (this MPSImage image, float constant)

@@ -266,6 +266,42 @@ namespace MetalTensors
             return imageArrays;
         }
 
+        protected NSArray<MPSImage>[] EncodeSourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images, MPSCommandBuffer commands)
+        {
+            var batchSize = inputs.Length;
+
+            var statics = GetStaticImages ();
+            var ns = sourceHandles.Length;
+
+            for (var bi = 0; bi < batchSize; bi++) {
+                for (var si = 0; si < ns; si++) {
+                    if (statics[si] != null)
+                        continue;
+                    var inputIndex = sourceToInputMap[si];
+                    if (0 <= inputIndex && inputIndex < inputs[bi].Length) {
+                        var image = images[si][bi];
+                        inputs[bi][inputIndex].EncodeToCommandBuffer (image, commands);
+                    }
+                    else {
+                        var outputIndex = sourceToOutputMap[si];
+                        if (0 <= outputIndex && outputIndex < outputs[bi].Length) {
+                            var image = images[si][bi];
+                            outputs[bi][outputIndex].EncodeToCommandBuffer (image, commands);
+                        }
+                        else {
+                            throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}. The model expects {modelInputs.Length} inputs and {modelOutputs.Length} outputs. Provided data has {inputs[0].Length} inputs and {outputs[0].Length} outputs.");
+                        }
+                    }
+                }
+            }
+
+            var imageArrays = new NSArray<MPSImage>[ns];
+            for (var si = 0; si < ns; si++) {
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+            }
+            return imageArrays;
+        }
+
         protected (NSArray<MPSImage>[] SourceImages, MPSImage[] TemporaryImages) GetSourceImages (Tensor[][] inputs, Tensor[][] outputs)
         {
             var batchSize = inputs.Length;

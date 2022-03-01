@@ -62,6 +62,15 @@ namespace MetalTensors.Tensors
             });
         }
 
+        public override void EncodeToCommandBuffer (MPSImage image, MPSCommandBuffer commands)
+        {
+            unsafe {
+                fixed (float* p = data) {
+                    image.WriteBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+                }
+            }
+        }
+
         public override float this[params int[] indexes] {
             get {
                 var i = 0;

@@ -4,6 +4,7 @@ using DataSetRow = System.ValueTuple<MetalTensors.Tensor[], MetalTensors.Tensor[
 using DataSetBatch = System.ValueTuple<MetalTensors.Tensor[][], MetalTensors.Tensor[][]>;
 using System.Collections.Generic;
 using Metal;
+using System.Threading.Tasks;
 
 namespace MetalTensors
 {
@@ -39,6 +40,11 @@ namespace MetalTensors
                 outputs.Add (outs);
             }
             return (inputs.ToArray(), outputs.ToArray());
+        }
+
+        public virtual Task<DataSetBatch> GetBatchAsync (int index, int batchSize, IMTLDevice device)
+        {
+            return Task.Run (() => GetBatch (index, batchSize, device));
         }
 
         class GeneratedDataSet : DataSet

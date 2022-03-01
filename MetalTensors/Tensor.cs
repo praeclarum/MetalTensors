@@ -34,7 +34,8 @@ namespace MetalTensors
 
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
-        public virtual Task CopyToAsync (MPSImage image, IMTLCommandQueue queue) => throw new NotSupportedException ($"Cannot CopyTo metal image for {GetType ().Name}");
+        public virtual Task CopyToAsync (MPSImage image, IMTLCommandQueue queue) => throw new NotSupportedException ($"Cannot CopyToAsync metal image for {GetType ().Name}");
+        public virtual void EncodeToCommandBuffer (MPSImage image, MPSCommandBuffer commands) => throw new NotSupportedException ($"Cannot EncodeToCommandBuffer metal image for {GetType ().Name}");
 
         public override Config Config => base.Config.Add ("name", Label);
 

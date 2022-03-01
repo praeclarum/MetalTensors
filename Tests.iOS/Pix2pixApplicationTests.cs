@@ -190,7 +190,7 @@ namespace Tests
 
             SampleModel ("Train0");
             var lastP = 0.0;
-            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
+            var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 200.1f, progress: p => {
                 //Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
                 if ((p - lastP) >= 0.02) {
                     lastP = p;

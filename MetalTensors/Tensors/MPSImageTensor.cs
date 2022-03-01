@@ -110,6 +110,11 @@ namespace MetalTensors.Tensors
             return this.image.CopyToAsync (image, queue);
         }
 
+        public override void EncodeToCommandBuffer (MPSImage image, MPSCommandBuffer commands)
+        {
+            this.image.EncodeToCommandBuffer (image, commands);
+        }
+
         public override MPSImage CreateUninitializedImage ()
         {
             var c = image.FeatureChannels;

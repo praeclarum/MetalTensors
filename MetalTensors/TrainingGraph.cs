@@ -196,6 +196,8 @@ namespace MetalTensors
             //
             semaphore.WaitOne ();
 
+            var commandBuffer = MPSCommandBuffer.Create (queue);
+
             //
             // Load data
             //
@@ -203,7 +205,8 @@ namespace MetalTensors
             //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
 
             var batchSourceImages = RentSourceImages (batchSize);
-            var cbatch = CopySourceImages (inputs, outputs, batchSourceImages, queue);
+            //var cbatch = CopySourceImages (inputs, outputs, batchSourceImages, queue);
+            var cbatch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
@@ -211,7 +214,6 @@ namespace MetalTensors
             //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             // No using because it is returned
-            var commandBuffer = MPSCommandBuffer.Create (queue);
 
             //
             // Encode the graph
@@ -291,6 +293,7 @@ namespace MetalTensors
                 //
                 var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), Array.Empty<MPSImage>(), cmdBuf.Device);
                 recordHistory (h);
+                cmdBuf.Dispose ();
             });
 
             //
