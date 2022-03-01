@@ -189,8 +189,6 @@ namespace MetalTensors.Applications
                 var ganh = Gan.Fit (segments, zerosAndReals, disposeSourceImages: false);
                 Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss} GANLOSS {ganh.AverageLoss}");
                 trainSW.Stop ();
-                ganh.DisposeSourceImages ();
-                dh.DisposeSourceImages ();
                 segments.Dispose ();
                 reals.Dispose ();
                 fakes.Dispose ();

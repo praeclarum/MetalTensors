@@ -93,7 +93,6 @@ namespace Tests
                     var h = autoEncoder.Fit (ins, outs);
                     var aloss = h.AverageLoss;
                     Console.WriteLine ($"AUTOENCODER E{si + 1} B{bi + 1}/{batchesPerEpoch} LOSS {aloss}");
-                    h.DisposeSourceImages ();
                     ins.Dispose ();
                     outs.Dispose ();
                 }

@@ -166,7 +166,7 @@ namespace MetalTensors
             return h[0];
         }
 
-        int nextCommandId = 0;
+        
 
         MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory)
         {
@@ -271,7 +271,7 @@ namespace MetalTensors
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), Array.Empty<MPSImage>(), cmdBuf.Device);
+                var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), cmdBuf.Device);
                 recordHistory (h);
                 cmdBuf.Dispose ();
             });

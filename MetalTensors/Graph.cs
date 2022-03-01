@@ -31,6 +31,8 @@ namespace MetalTensors
         readonly Tensor[] modelInputs;
         readonly Tensor[] modelOutputs;
 
+        protected int nextCommandId = 0;
+
         protected Graph (string label, MPSNNGraph graph, Tensor[] inputs, Tensor[] outputs, IMTLCommandQueue queue, Semaphore semaphore)
         {
             this.Device = queue.Device;
@@ -92,21 +94,25 @@ namespace MetalTensors
             using var pool = new NSAutoreleasePool ();
 
             //
-            // Load data
-            //
-            var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
-
-            //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
-
-            //
             // Wait for the last command to finish
             //
             modelSemaphore.WaitOne ();
 
-            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
-
             // No using because it is returned
             var commandBuffer = MPSCommandBuffer.Create (modelQueue);
+            commandBuffer.Label = $"{Label} {nextCommandId}";
+            Interlocked.Increment (ref nextCommandId);
+
+            //
+            // Load data
+            //
+            var batchSize = inputs.Length;
+            var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
+            //var batchSourceImages = RentSourceImages (batchSize);
+            //var batch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
+
+            //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
+            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             //
             // Encode the graph
@@ -131,6 +137,8 @@ namespace MetalTensors
             // Setup the completed callback
             //
             commandBuffer.AddCompletedHandler (cmdBuf => {
+
+                //ReturnSourceImages (batchSourceImages);
 
                 //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 modelSemaphore.Release ();
@@ -179,7 +187,7 @@ namespace MetalTensors
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (results, new Dictionary<string, float>(), bh, temporaryBatchImages, cmdBuf.Device);
+                var h = new TrainingHistory.BatchHistory (results, new Dictionary<string, float>(), bh, cmdBuf.Device);
                 recordHistory (h);
             });
 
