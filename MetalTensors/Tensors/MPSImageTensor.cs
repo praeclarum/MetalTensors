@@ -181,7 +181,7 @@ namespace MetalTensors.Tensors
             return image;
         }
 
-        public static (Tensor Left, Tensor Right) CreatePair (NSUrl url, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        public static (Tensor Left, Tensor Right) CreatePair (NSUrl url, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, float jitter = 1.0f, IMTLDevice? device = null)
         {
             if (url is null) {
                 throw new ArgumentNullException (nameof (url));
@@ -202,9 +202,18 @@ namespace MetalTensors.Tensors
             using var queue = dev.CreateCommandQueue ();
             if (queue is null)
                 throw new Exception ($"Failed to create queue for image pairs");
+            var dx = 0.0;
+            var dy = 0.0;
+            var h = 1.0;
+            if (jitter >= 1.0001f) {
+                h = 1.0 / jitter;
+                dx = (1.0 - h) * StaticRandom.NextDouble (); // h is on purpose since w is 2h
+                dy = (1.0 - h) * StaticRandom.NextDouble ();
+            }
+            var w = h / 2.0;
             var regions = new[] {
-                new MPSRegion { Origin = new MPSOrigin{ X = 0, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
-                new MPSRegion { Origin = new MPSOrigin{ X = 0.5, Y = 0, Z = 0, }, Size = new MPSSize { Width = 0.5, Height = 1, Depth = 1 } },
+                new MPSRegion { Origin = new MPSOrigin{ X = dx, Y = dy, Z = 0, }, Size = new MPSSize { Width = w, Height = h, Depth = 1 } },
+                new MPSRegion { Origin = new MPSOrigin{ X = 0.5+dx, Y = dy, Z = 0, }, Size = new MPSSize { Width = w, Height = h, Depth = 1 } },
             };
             MPSNNCropAndResizeBilinear lcrop, rcrop;
             unsafe {
@@ -242,9 +251,9 @@ namespace MetalTensors.Tensors
             return (leftT, rightT);
         }
 
-        public static (Tensor Left, Tensor Right) CreatePair (string path, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)
+        public static (Tensor Left, Tensor Right) CreatePair (string path, int featureChannels, float channelScale = 1.0f, float channelOffset = 0.0f, float jitter = 1.0f, IMTLDevice? device = null)
         {
-            return CreatePair (NSUrl.FromFilename (path), featureChannels, channelScale, channelOffset, device);
+            return CreatePair (NSUrl.FromFilename (path), featureChannels, channelScale, channelOffset, jitter, device);
         }
     }
 }

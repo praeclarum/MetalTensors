@@ -75,7 +75,35 @@ namespace MetalTensors
         {
         }
 #endif
+    }
 
+    public static class StaticRandom
+    {
+        private static readonly Random seeder = new Random ();
+        [ThreadStatic] private static Random? threadRandom;
 
+        public static int Next ()
+        {
+            if (threadRandom == null) {
+                int seed;
+                lock (seeder) {
+                    seed = seeder.Next ();
+                }
+                threadRandom = new Random (seed);
+            }
+            return threadRandom.Next ();
+        }
+
+        public static double NextDouble ()
+        {
+            if (threadRandom == null) {
+                int seed;
+                lock (seeder) {
+                    seed = seeder.Next ();
+                }
+                threadRandom = new Random (seed);
+            }
+            return threadRandom.NextDouble ();
+        }
     }
 }

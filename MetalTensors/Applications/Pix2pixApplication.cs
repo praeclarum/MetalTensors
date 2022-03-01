@@ -220,7 +220,7 @@ namespace MetalTensors.Applications
             public override (Tensor[] Inputs, Tensor[] Outputs) GetRow (int index, IMTLDevice device)
             {
                 var path = filePaths[index];
-                var (left, right) = Tensor.ImagePair (path, channelScale: 2.0f, channelOffset: -1.0f, device: device);
+                var (left, right) = Tensor.ImagePair (path, channelScale: 2.0f, channelOffset: -1.0f, jitter: 286.0f/256.0f, device: device);
                 if (b2a)
                     return (new[] { right }, new[] { left });
                 return (new[] { left }, new[] { right });
