@@ -232,7 +232,7 @@ namespace MetalTensors
             return g.Fit (dataSet, cm.Optimizer, batchSize, numBatches, callback);
         }
 
-        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, bool disposeSourceImages = true, IMTLDevice? device = null)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, IMTLDevice? device = null)
         {
             if (!(TryGetCompiledModel (device.Current ()) is CompiledModel cm)) {
                 throw new InvalidOperationException ($"Models must be compiled before being Fit");

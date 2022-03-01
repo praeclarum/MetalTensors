@@ -184,9 +184,9 @@ namespace MetalTensors.Applications
                 trainSW.Start ();
                 var fakes = Generator.Predict (segments);
                 var realsAndFakes = reals.Concat(fakes).ToArray ();
-                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch, disposeSourceImages: false);
+                var dh = Discriminator.Fit (realsAndFakes, zerosAndOnesBatch);
                 var zerosAndReals = zerosBatch.Zip (reals, (a, b) => new[] { a[0], b[0] }).ToArray ();
-                var ganh = Gan.Fit (segments, zerosAndReals, disposeSourceImages: false);
+                var ganh = Gan.Fit (segments, zerosAndReals);
                 Console.WriteLine ($"PIX2PIX B{batch+1}/{numBatchesToTrain} DLOSS {dh.AverageLoss} GANLOSS {ganh.AverageLoss}");
                 trainSW.Stop ();
                 segments.Dispose ();

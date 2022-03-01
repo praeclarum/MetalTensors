@@ -205,12 +205,13 @@ namespace MetalTensors.Tensors
             var dx = 0.0;
             var dy = 0.0;
             var h = 1.0;
+            var w = 0.5;
             if (jitter >= 1.0001f) {
                 h = 1.0 / jitter;
-                dx = (1.0 - h) * StaticRandom.NextDouble (); // h is on purpose since w is 2h
+                w = 0.5 / jitter;
+                dx = (0.5 - w) * StaticRandom.NextDouble ();
                 dy = (1.0 - h) * StaticRandom.NextDouble ();
             }
-            var w = h / 2.0;
             var regions = new[] {
                 new MPSRegion { Origin = new MPSOrigin{ X = dx, Y = dy, Z = 0, }, Size = new MPSSize { Width = w, Height = h, Depth = 1 } },
                 new MPSRegion { Origin = new MPSOrigin{ X = 0.5+dx, Y = dy, Z = 0, }, Size = new MPSSize { Width = w, Height = h, Depth = 1 } },
