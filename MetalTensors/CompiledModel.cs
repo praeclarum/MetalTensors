@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Metal;
 using MetalTensors.Layers;
 using MetalTensors.Tensors;
@@ -49,6 +50,11 @@ namespace MetalTensors
             ForTraining = forTraining;
             var (flatModel, trainable) = model.Flatten ();
 
+            var queue = Device.CreateCommandQueue ();
+            if (queue == null)
+                throw new Exception ("Failed to create command queue");
+            var semaphore = new Semaphore (2, 2);
+
             if (forTraining) {
 
                 //
@@ -75,14 +81,12 @@ namespace MetalTensors
                 // Build the graphs
                 //
                 //evalGraph = new EvaluationGraph (Label + " Evaluation Graph", model.Inputs, flatModel.Outputs, losses, Model.KeepDropoutDuringInference, device);
-                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, device);
-                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, device);
-                trainingGraph.MetalGraph.ReloadFromDataSources ();
+                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, queue, semaphore);
+                trainingGraph = new TrainingGraph (Label + " Training Graph", model.Inputs, flatModel.Outputs, losses, trainable, queue, semaphore);
             }
             else {
                 losses = Array.Empty<Tensor> ();
-                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, device);
-                infGraph.MetalGraph.ReloadFromDataSources ();
+                infGraph = new InferenceGraph (Label + " Inference Graph", model.Inputs, flatModel.Outputs, queue, semaphore);
             }
         }
     }

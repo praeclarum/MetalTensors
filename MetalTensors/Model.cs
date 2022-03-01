@@ -240,7 +240,7 @@ namespace MetalTensors
             if (!(cm.TrainingGraph is TrainingGraph g)) {
                 throw new InvalidOperationException ($"Model must be compiled for training before being Fit");
             }
-            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer, disposeSourceImages: disposeSourceImages);
+            return g.Fit (inputsBatch, outputsBatch, cm.Optimizer);
         }
 
         public Tensor Predict (Tensor input, IMTLDevice? device = null)

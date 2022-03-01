@@ -18,7 +18,11 @@ namespace MetalTensors
         public IMTLDevice Device { get; }
 
         public string Label { get; }
+
         public MPSNNGraph MetalGraph { get; }
+        protected readonly IMTLCommandQueue modelQueue;
+        protected readonly Semaphore modelSemaphore;
+
         readonly TensorHandle[] sourceHandles;
         protected readonly LayerHandle[] intermediateHandles;
         readonly int[] sourceToInputMap;
@@ -27,9 +31,9 @@ namespace MetalTensors
         readonly Tensor[] modelInputs;
         readonly Tensor[] modelOutputs;
 
-        protected Graph (string label, MPSNNGraph graph, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
+        protected Graph (string label, MPSNNGraph graph, Tensor[] inputs, Tensor[] outputs, IMTLCommandQueue queue, Semaphore semaphore)
         {
-            this.Device = device;
+            this.Device = queue.Device;
             Label = label;
             this.MetalGraph = graph;
             graph.Label = Label;
@@ -60,18 +64,24 @@ namespace MetalTensors
                 }
             }
 
+            //
+            // Queue and Semaphore
+            //
+            modelQueue = queue;
+            modelSemaphore = semaphore;
+
             //Console.WriteLine (graph.DebugDescription);
         }
 
         public override string ToString () => Label;
 
-        public MPSCommandBuffer EncodeBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
+        public MPSCommandBuffer EncodeBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory)
         {
-            var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, queue.Device);
-            return EncodeBatch (inputs, outputs, recordHistory, semaphore, queue);
+            var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, Device);
+            return EncodeBatch (inputs, outputs, recordHistory);
         }
 
-        public MPSCommandBuffer EncodeBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, Semaphore semaphore, IMTLCommandQueue queue)
+        public MPSCommandBuffer EncodeBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory)
         {
             if (inputs.Length < 1)
                 throw new ArgumentException ($"At least one input is needed in a batch");
@@ -91,12 +101,12 @@ namespace MetalTensors
             //
             // Wait for the last command to finish
             //
-            semaphore.WaitOne ();
+            modelSemaphore.WaitOne ();
 
             //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             // No using because it is returned
-            var commandBuffer = MPSCommandBuffer.Create (queue);
+            var commandBuffer = MPSCommandBuffer.Create (modelQueue);
 
             //
             // Encode the graph
@@ -123,7 +133,7 @@ namespace MetalTensors
             commandBuffer.AddCompletedHandler (cmdBuf => {
 
                 //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
-                semaphore.Release ();
+                modelSemaphore.Release ();
 
                 if (cmdBuf.Error != null) {
                     Console.WriteLine ($"{Label}: Command Buffer Error: {cmdBuf.Error.Description}");
@@ -220,9 +230,14 @@ namespace MetalTensors
 
         protected void ReturnSourceImages (MPSImage[][] images)
         {
-            var batchSize = images[0].Length;
-            if (availableSourceImages.TryGetValue (batchSize, out var imageCache)) {
-                imageCache.Add (images);
+            try {
+                var batchSize = images[0].Length;
+                if (availableSourceImages.TryGetValue (batchSize, out var imageCache)) {
+                    imageCache.Add (images);
+                }
+            }
+            catch (Exception ex) {
+                Console.WriteLine ($"Failed to return image: {ex}");
             }
         }
 

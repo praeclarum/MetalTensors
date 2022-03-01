@@ -16,8 +16,8 @@ namespace MetalTensors
     {
         public Tensor[] Losses { get; }
 
-        public EvaluationGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
-            : base (label, CreateEvaluationGraph (label, losses, keepDropoutDuringInference, device), inputs, outputs, device)
+        public EvaluationGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, bool keepDropoutDuringInference, IMTLCommandQueue queue, Semaphore semaphore)
+            : base (label, CreateEvaluationGraph (label, losses, keepDropoutDuringInference, queue.Device), inputs, outputs, queue, semaphore)
         {
             Losses = losses;
         }
@@ -52,17 +52,6 @@ namespace MetalTensors
 
         public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches)
         {
-            using var q = Device.CreateCommandQueue ();
-            if (q == null)
-                throw new Exception ("Failed to create command queue");
-
-            var semaphore = new Semaphore (2, 2);
-
-            return Evaluate (dataSet, batchSize, numBatches, semaphore, q);
-        }
-
-        public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches, Semaphore semaphore, IMTLCommandQueue queue)
-        {
             //
             // Init history
             //
@@ -79,7 +68,7 @@ namespace MetalTensors
             //
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();

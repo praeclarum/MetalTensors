@@ -18,8 +18,8 @@ namespace MetalTensors
 
         readonly bool[] intermediateIsLoss;
 
-        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLDevice device)
-            : base (label, CreateTrainingGraph (label, losses, trainable, device, out var cweights), inputs, outputs, device)
+        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, IMTLCommandQueue queue, Semaphore semaphore)
+            : base (label, CreateTrainingGraph (label, losses, trainable, queue.Device, out var cweights), inputs, outputs, queue, semaphore)
         {
             weightDataSources = cweights;
             intermediateIsLoss = new bool[intermediateHandles.Length];
@@ -113,19 +113,10 @@ namespace MetalTensors
                 callback?.Invoke (bh);
             }
 
-            //
-            // Train
-            //
-            using var queue = Device.CreateCommandQueue ();
-            if (queue == null)
-                throw new Exception ("Failed to create command queue");
-
-            var semaphore = new Semaphore (2, 2);
-
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, queue.Device);
-                lcb = EncodeTrainingBatch (inputs, outputs, AddHistory, disposeSourceImages: true, semaphore, queue);
+                var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, Device);
+                lcb = EncodeTrainingBatch (inputs, outputs, AddHistory);
 
                 //if (evalGraph != null && ((batchIndex + 1) % validateInterval == 0)) {
                 //    lcb?.WaitUntilCompleted ();
@@ -139,7 +130,7 @@ namespace MetalTensors
             return new TrainingHistory (h);
         }
 
-        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer, bool disposeSourceImages = true)
+        public TrainingHistory.BatchHistory Fit (Tensor[][] inputsBatch, Tensor[][] outputsBatch, Optimizer optimizer)
         {
             var batchSize = inputsBatch.Length;
 
@@ -168,13 +159,7 @@ namespace MetalTensors
             //
             // Train
             //
-            using var queue = Device.CreateCommandQueue ();
-            if (queue == null)
-                throw new Exception ("Failed to create command queue");
-
-            using var semaphore = new Semaphore (2, 2);
-
-            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, AddHistory, disposeSourceImages: disposeSourceImages, semaphore, queue);
+            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, AddHistory);
 
             lcb.WaitUntilCompleted ();
 
@@ -183,7 +168,7 @@ namespace MetalTensors
 
         int nextCommandId = 0;
 
-        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory, bool disposeSourceImages, Semaphore semaphore, IMTLCommandQueue queue)
+        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory)
         {
             if (inputs.Length < 1)
                 throw new ArgumentException ($"At least one input is needed in a batch");
@@ -196,9 +181,9 @@ namespace MetalTensors
             //
             // Wait for the last command to finish
             //
-            semaphore.WaitOne ();
+            modelSemaphore.WaitOne ();
 
-            var commandBuffer = MPSCommandBuffer.Create (queue);
+            var commandBuffer = MPSCommandBuffer.Create (modelQueue);
             commandBuffer.Label = $"{Label} {nextCommandId}";
             Interlocked.Increment (ref nextCommandId);
 
@@ -249,7 +234,7 @@ namespace MetalTensors
                 ReturnSourceImages (batchSourceImages);
 
                 //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
-                semaphore.Release ();
+                modelSemaphore.Release ();
 
                 if (cmdBuf.Error != null) {
                     Console.WriteLine ($"{Label}: Command Buffer Error: {cmdBuf.Error.Description}");
@@ -282,15 +267,6 @@ namespace MetalTensors
                     }
                 }
                 intermediateImages.Dispose ();
-
-                //
-                // Free the source images
-                //
-                if (disposeSourceImages) {
-                    //foreach (var i in temporaryBatchImages) {
-                    //    i.Dispose ();
-                    //}
-                }
 
                 //
                 // Broadcast the results to whomever is listening

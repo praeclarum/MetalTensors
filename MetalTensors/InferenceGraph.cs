@@ -14,8 +14,8 @@ namespace MetalTensors
 {
     public class InferenceGraph : Graph
     {
-        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, IMTLDevice device)
-            : base (label, CreateInferenceGraph (label, outputs, device: device), inputs, outputs, device)
+        public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, IMTLCommandQueue queue, Semaphore semaphore)
+            : base (label, CreateInferenceGraph (label, outputs, device: queue.Device), inputs, outputs, queue, semaphore)
         {
         }
 
@@ -28,7 +28,6 @@ namespace MetalTensors
 
             if (outputs.Length == 0)
                 throw new InvalidOperationException ("Cannot create a graph with no outputs");
-
 
             //
             // Create the graph
@@ -44,12 +43,6 @@ namespace MetalTensors
         public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)
         {
             using var pool = new NSAutoreleasePool ();
-
-            using var queue = Device.CreateCommandQueue ();
-            if (queue == null)
-                throw new Exception ("Failed to create command queue");
-
-            using var semaphore = new Semaphore (2, 2);
 
             MetalGraph.ReloadFromDataSources ();
 
@@ -69,7 +62,7 @@ namespace MetalTensors
             //
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
-                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory, semaphore, queue);
+                lcb = EncodeBatch (batchIndex, dataSet, batchSize, AddHistory);
             }
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
@@ -83,12 +76,6 @@ namespace MetalTensors
             var batchSize = inputsBatch.Length;
 
             using var pool = new NSAutoreleasePool ();
-
-            using var queue = Device.CreateCommandQueue ();
-            if (queue == null)
-                throw new Exception ("Failed to create command queue");
-
-            using var semaphore = new Semaphore (2, 2);
 
             MetalGraph.ReloadFromDataSources ();
 
@@ -107,7 +94,7 @@ namespace MetalTensors
             //
             // Evaluate
             //
-            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, Array.Empty<Tensor[]>(), AddHistory, semaphore, queue);
+            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, Array.Empty<Tensor[]>(), AddHistory);
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
             }
