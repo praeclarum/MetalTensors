@@ -557,14 +557,36 @@ namespace MetalTensors
             return new TanhLayer (name).Call (this);
         }
 
+        /// <summary>
+        /// Nearest-neighbor upsampling
+        /// </summary>
         public Tensor Upsample (int scaleX, int scaleY)
         {
-            return new UpsampleLayer (scaleX, scaleY).Call (this);
+            return new UpsampleNearestLayer (scaleX, scaleY).Call (this);
         }
 
+        /// <summary>
+        /// Nearest-neighbor upsampling
+        /// </summary>
         public Tensor Upsample (int scale = 2)
         {
             return Upsample (scale, scale);
+        }
+
+        /// <summary>
+        /// Bilinear upsampling
+        /// </summary>
+        public Tensor UpsampleBilinear (int scaleX, int scaleY)
+        {
+            return new UpsampleBilinearLayer (scaleX, scaleY).Call (this);
+        }
+
+        /// <summary>
+        /// Bilinear upsampling
+        /// </summary>
+        public Tensor UpsampleBilinear (int scale = 2)
+        {
+            return UpsampleBilinear (scale, scale);
         }
 
         public virtual CGImage ToCGImage (float channelScale = 1.0f, float channelOffset = 0.0f, IMTLDevice? device = null)

@@ -184,7 +184,7 @@ namespace Tests
         [Test]
         public void UpsampleLayer ()
         {
-            var t = Deserialize (new UpsampleLayer (2, 3, name: "Foo"));
+            var t = Deserialize (new UpsampleNearestLayer (2, 3, name: "Foo"));
             Assert.AreEqual ("Foo", t.Name);
             Assert.AreEqual (2, t.ScaleX);
             Assert.AreEqual (3, t.ScaleY);

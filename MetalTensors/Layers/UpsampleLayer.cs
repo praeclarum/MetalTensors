@@ -4,14 +4,14 @@ using MetalPerformanceShaders;
 
 namespace MetalTensors.Layers
 {
-    public class UpsampleLayer : Layer
+    public abstract class UpsampleLayer : Layer
     {
         public int ScaleX { get; }
         public int ScaleY { get; }
 
         public override int MinInputCount => 1;
 
-        public UpsampleLayer (int scaleX, int scaleY, string? name = null)
+        protected UpsampleLayer (int scaleX, int scaleY, string? name = null)
             : base (name)
         {
             if (scaleX < 1)
@@ -45,10 +45,31 @@ namespace MetalTensors.Layers
             var outShape = new[] { h, w, c };
             return outShape;
         }
+    }
+
+    public class UpsampleNearestLayer : UpsampleLayer
+    {
+        public UpsampleNearestLayer (int scaleX, int scaleY, string? name = null)
+            : base (scaleX, scaleY, name)
+        {
+        }
 
         protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
         {
             return new MPSCnnUpsamplingNearestNode (inputs[0].ImageNode, (nuint)ScaleX, (nuint)ScaleY);
+        }
+    }
+
+    public class UpsampleBilinearLayer : UpsampleLayer
+    {
+        public UpsampleBilinearLayer (int scaleX, int scaleY, string? name = null)
+            : base (scaleX, scaleY, name)
+        {
+        }
+
+        protected override MPSNNFilterNode CreateFilterNode ((MPSNNImageNode ImageNode, int[] Shape)[] inputs, IMTLDevice device)
+        {
+            return new MPSCnnUpsamplingBilinearNode (inputs[0].ImageNode, (nuint)ScaleX, (nuint)ScaleY);
         }
     }
 }
