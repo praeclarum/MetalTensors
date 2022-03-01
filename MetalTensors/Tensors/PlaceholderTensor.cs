@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -29,9 +30,11 @@ namespace MetalTensors.Tensors
             }
         }
 
-        public override void CopyTo (MPSImage image)
+        public override Task CopyToAsync (MPSImage image, IMTLCommandQueue queue)
         {
-            image.Fill (0.0f);
+            return Task.Run (() => {
+                image.Fill (0.0f);
+            });
         }
 
         public override MPSImage GetMetalImage (IMTLDevice device)

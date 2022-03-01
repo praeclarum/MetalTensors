@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Metal;
 using MetalPerformanceShaders;
 
@@ -50,13 +51,15 @@ namespace MetalTensors.Tensors
             dataSpan.CopyTo (destination);
         }
 
-        public override void CopyTo (MPSImage image)
+        public override Task CopyToAsync (MPSImage image, IMTLCommandQueue queue)
         {
-            unsafe {
-                fixed (float* p = data) {
-                    image.WriteBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+            return Task.Run (() => {
+                unsafe {
+                    fixed (float* p = data) {
+                        image.WriteBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+                    }
                 }
-            }
+            });
         }
 
         public override float this[params int[] indexes] {

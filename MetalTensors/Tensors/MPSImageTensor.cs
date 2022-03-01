@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing.Imaging;
+using System.Threading.Tasks;
 using CoreGraphics;
 using Foundation;
 using Metal;
@@ -104,6 +105,11 @@ namespace MetalTensors.Tensors
             image.CopyTo (destination);
         }
 
+        public override Task CopyToAsync (MPSImage image, IMTLCommandQueue queue)
+        {
+            return this.image.CopyToAsync (image, queue);
+        }
+
         public override MPSImage CreateUninitializedImage ()
         {
             var c = image.FeatureChannels;
@@ -116,11 +122,6 @@ namespace MetalTensors.Tensors
             else {
                 return new MPSImage (image.Device, MPSImageDescriptor.GetImageDescriptor (image.FeatureChannelFormat, image.Width, image.Height, image.FeatureChannels));
             }
-        }
-
-        public override void CopyTo (MPSImage image)
-        {
-            this.image.CopyTo (image);
         }
 
         public unsafe override Tensor Slice (params int[] indexes)

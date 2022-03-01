@@ -58,25 +58,45 @@ namespace MetalTensors
             //finally {
             //    pool.Return (a);
             //}
-            IMTLTexture sourceTexture = source.Texture;
-            IMTLTexture destinationTexture = destination.Texture;
+            //using var nspool = new NSAutoreleasePool ();
             using var queue = destination.Device.CreateCommandQueue ();
             if (queue is null)
-                throw new Exception ($"Failed to create queue for image pairs");
+                throw new Exception ($"Failed to create queue for image copy to");
+            CopyToAsync (source, destination, queue).Wait ();
+        }
+
+        public static Task CopyToAsync (this MPSImage source, MPSImage destination, IMTLCommandQueue queue)
+        {
+            using var nspool = new NSAutoreleasePool ();
+            var tcs = new TaskCompletionSource<object?> ();
             using var commands = MPSCommandBuffer.Create (queue);
-            //image.Synchronize (commands);
             destination.Synchronize (commands);
             using var blit = commands.BlitCommandEncoder;
-            //#if !__IOS__
-            //            blit.Synchronize (sourceTexture);
-            //#endif
-            //#if !__IOS__
-            //            blit.Synchronize (destinationTexture);
-            //#endif
-            blit.Copy (sourceTexture, destinationTexture);
+            blit.Copy (source.Texture, destination.Texture);
             blit.EndEncoding ();
+            commands.AddCompletedHandler (b => {
+                //using var nspool = new NSAutoreleasePool ();
+                if (b.Error is NSError e) {
+                    try {
+                        b.Dispose ();
+                    }
+                    catch (Exception ex) {
+                        Console.WriteLine ($"Failed to dispose command buffer: {ex}");
+                    }
+                    tcs.TrySetException (new NSErrorException (e));
+                }
+                else {
+                    try {
+                        b.Dispose ();
+                    }
+                    catch (Exception ex) {
+                        Console.WriteLine ($"Failed to dispose command buffer: {ex}");
+                    }
+                    tcs.TrySetResult (null);
+                }
+            });
             commands.Commit ();
-            commands.WaitUntilCompleted ();
+            return tcs.Task;
         }
 
         public static void Dispose (this NSArray<MPSImage>[]? images)

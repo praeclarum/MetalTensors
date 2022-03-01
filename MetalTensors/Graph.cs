@@ -226,12 +226,14 @@ namespace MetalTensors
             }
         }
 
-        protected NSArray<MPSImage>[] CopySourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images)
+        protected NSArray<MPSImage>[] CopySourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images, IMTLCommandQueue queue)
         {
             var batchSize = inputs.Length;
 
             var statics = GetStaticImages ();
             var ns = sourceHandles.Length;
+
+            var tasks = new List<Task> ();
 
             for (var bi = 0; bi < batchSize; bi++) {
                 for (var si = 0; si < ns; si++) {
@@ -240,13 +242,13 @@ namespace MetalTensors
                     var inputIndex = sourceToInputMap[si];
                     if (0 <= inputIndex && inputIndex < inputs[bi].Length) {
                         var image = images[si][bi];
-                        inputs[bi][inputIndex].CopyTo (image);
+                        tasks.Add (inputs[bi][inputIndex].CopyToAsync (image, queue));
                     }
                     else {
                         var outputIndex = sourceToOutputMap[si];
                         if (0 <= outputIndex && outputIndex < outputs[bi].Length) {
                             var image = images[si][bi];
-                            outputs[bi][outputIndex].CopyTo (image);
+                            tasks.Add (outputs[bi][outputIndex].CopyToAsync (image, queue));
                         }
                         else {
                             throw new KeyNotFoundException ($"Cannot find data for {sourceHandles[si].Label}. The model expects {modelInputs.Length} inputs and {modelOutputs.Length} outputs. Provided data has {inputs[0].Length} inputs and {outputs[0].Length} outputs.");
@@ -254,6 +256,8 @@ namespace MetalTensors
                     }
                 }
             }
+
+            Task.WaitAll (tasks.ToArray ());
 
             var imageArrays = new NSArray<MPSImage>[ns];
             for (var si = 0; si < ns; si++) {

@@ -81,15 +81,20 @@ namespace MetalTensors
 
                     var sourceHandles = graph.SourceImageHandles;
                     var sources = new MPSImage[sourceHandles.Length];
+                    using var queue = device.CreateCommandQueue ();
+                    if (queue is null)
+                        throw new Exception ($"Failed to create queue for layer execution");
+                    var copyTasks = new List<Task> ();
                     for (var i = 0; i < sources.Length; i++) {
                         if (sourceHandles[i] is TensorHandle th) {
                             sources[i] = th.Tensor.CreateUninitializedImage ();
-                            th.Tensor.CopyTo (sources[i]);
+                            copyTasks.Add (th.Tensor.CopyToAsync (sources[i], queue));
                         }
                         else {
                             throw new Exception ($"Only Tensors can be used as inputs to the graph");
                         }
                     }
+                    Task.WaitAll (copyTasks.ToArray ());
 
                     var r = graph.Execute (sources, (image, error) => {
                         try {

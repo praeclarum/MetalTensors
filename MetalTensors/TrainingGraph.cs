@@ -192,20 +192,21 @@ namespace MetalTensors
             using var pool = new NSAutoreleasePool ();
 
             //
+            // Wait for the last command to finish
+            //
+            semaphore.WaitOne ();
+
+            //
             // Load data
             //
             var batchSize = inputs.Length;
             //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
 
             var batchSourceImages = RentSourceImages (batchSize);
-            var cbatch = CopySourceImages (inputs, outputs, batchSourceImages);
+            var cbatch = CopySourceImages (inputs, outputs, batchSourceImages, queue);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
-            //
-            // Wait for the last command to finish
-            //
-            semaphore.WaitOne ();
 
             //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 

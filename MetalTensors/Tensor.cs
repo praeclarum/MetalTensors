@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Accelerate;
 using CoreGraphics;
 using Foundation;
@@ -33,7 +34,7 @@ namespace MetalTensors
 
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
-        public virtual void CopyTo (MPSImage image) => throw new NotSupportedException ($"Cannot CopyTo metal image for {GetType ().Name}");
+        public virtual Task CopyToAsync (MPSImage image, IMTLCommandQueue queue) => throw new NotSupportedException ($"Cannot CopyTo metal image for {GetType ().Name}");
 
         public override Config Config => base.Config.Add ("name", Label);
 
