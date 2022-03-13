@@ -57,5 +57,34 @@ namespace Tests
             var output = input.LeakyReLU (0.1f);
             Assert.AreEqual (-0.05f, output[0], 1.0e-6f);
         }
+
+
+        [Test]
+        public void ClipHigh ()
+        {
+            var input = Tensor.Constant (0.42f, 1);
+            var output = input.Clip (-0.2f, 0.2f);
+            Assert.AreEqual (0.2f, output[0], 1.0e-6f);
+            var output2 = input.Clip (-0.2f, 0.5f);
+            Assert.AreEqual (0.42f, output2[0], 1.0e-6f);
+        }
+
+        [Test]
+        public void ClipLow ()
+        {
+            var input = Tensor.Constant (-0.42f, 1);
+            var output = input.Clip (-0.2f, 0.2f);
+            Assert.AreEqual (-0.2f, output[0], 1.0e-6f);
+            var output2 = input.Clip (-0.5f, 0.2f);
+            Assert.AreEqual (-0.42f, output2[0], 1.0e-6f);
+        }
+
+        [Test]
+        public void ClipNone ()
+        {
+            var input = Tensor.Constant (0.12f, 1);
+            var output = input.Clip (-0.2f, 0.2f);
+            Assert.AreEqual (0.12f, output[0], 1.0e-6f);
+        }
     }
 }

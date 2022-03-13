@@ -4,6 +4,7 @@ using MetalTensors;
 using MetalTensors.Applications;
 using NUnit.Framework;
 
+
 using static Tests.Imaging;
 
 namespace Tests
@@ -192,7 +193,7 @@ namespace Tests
             var lastP = 0.0;
             var (imageCount, trainTime, dataTime) = pix2pix.Train (data, batchSize: 16, epochs: 0.1f, progress: p => {
                 //Console.WriteLine ($"Pix2pix {Math.Round (p * 100, 2)}%");
-                if ((p - lastP) >= 0.02) {
+                if ((p - lastP) >= 0.01) {
                     lastP = p;
                     SampleModel ($"Train{(int)(p * 100)}");
                 }

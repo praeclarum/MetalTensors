@@ -333,6 +333,11 @@ namespace MetalTensors
             return new BatchNormLayer (inChannels, epsilon).Call (this);
         }
 
+        public Tensor Clip (float minimum, float maximum)
+        {
+            return this.Max (minimum).Min (maximum);
+        }
+
         public Tensor Concat (params Tensor[] others)
         {
             if (others.Length == 0)
@@ -432,6 +437,12 @@ namespace MetalTensors
             return new MaxLayer ().Call (this);
         }
 
+        public virtual Tensor Max (float constant)
+        {
+            return constant + (-constant + this).ReLU ();
+        }
+
+
         public Tensor MaxPool (int size = 2, int stride = 2, ConvPadding padding = ConvPadding.Valid)
         {
             return new MaxPoolLayer (size, stride, padding).Call (this);
@@ -450,6 +461,11 @@ namespace MetalTensors
         public virtual Tensor Min ()
         {
             return new MinLayer ().Call (this);
+        }
+
+        public virtual Tensor Min (float constant)
+        {
+            return constant - (constant - this).ReLU ();
         }
 
         public Model Model (Tensor input, string? name = null, bool trainable = true)

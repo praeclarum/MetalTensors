@@ -35,7 +35,7 @@ namespace MetalTensors
 
         public void Save (string path)
         {
-            using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.Read);
             Save (stream);
         }
 
