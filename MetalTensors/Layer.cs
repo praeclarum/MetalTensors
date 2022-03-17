@@ -41,6 +41,8 @@ namespace MetalTensors
             { "name", Name },
         });
 
+        public virtual int ParameterCount => 0;
+
         public virtual void ValidateInputShapes (params Tensor[] inputs)
         {
             // All input shapes are OK

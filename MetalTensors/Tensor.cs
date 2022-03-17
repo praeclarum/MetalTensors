@@ -345,6 +345,11 @@ namespace MetalTensors
             return new ConcatLayer ().Call (new[] { this }.Concat (others).ToArray ());
         }
 
+        public Tensor Concat (Tensor other, string? name = null)
+        {
+            return new ConcatLayer (name: name).Call (new[] { this, other });
+        }
+
         public Tensor Conv (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
         {
             var inChannels = Shape[^1];
@@ -363,16 +368,16 @@ namespace MetalTensors
         /// convolution transpose.
         /// Intermediate image size = (srcSize - 1) * Stride + 1
         /// </summary>
-        public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
+        public Tensor ConvTranspose (int featureChannels, int size = 3, int stride = 1, ConvPadding padding = ConvPadding.Same, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f, string? name = null)
         {
             var inChannels = Shape[^1];
-            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit).Call (this);
+            return new ConvTransposeLayer (inChannels, featureChannels, size, size, stride, stride, padding, bias, weightsInit ?? WeightsInit.Default, biasInit, name: name).Call (this);
         }
 
-        public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = 0.0f)
+        public Tensor Dense (int featureChannels, int size = 1, bool bias = true, WeightsInit? weightsInit = null, float biasInit = DenseLayer.DefaultBiasInit, string? name = null)
         {
             var inChannels = Shape[^1];
-            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit).Call (this);
+            return new DenseLayer (inChannels, featureChannels, size, size, bias, weightsInit, biasInit, name: name).Call (this);
         }
 
         public virtual Tensor Divide (Tensor other)
@@ -392,9 +397,9 @@ namespace MetalTensors
             return Linear (1.0f / other);
         }
 
-        public Tensor Dropout (float dropProbability)
+        public Tensor Dropout (float dropProbability, string? name = null)
         {
-            return new DropoutLayer (dropProbability).Call (this);
+            return new DropoutLayer (dropProbability, name: name).Call (this);
         }
 
         public Tensor LeakyReLU (float a = ReLULayer.DefaultLeakyA)
@@ -521,14 +526,14 @@ namespace MetalTensors
             return RemoveLayers (l => l is T);
         }
 
-        public Tensor ReLU ()
+        public Tensor ReLU (string? name = null)
         {
-            return new ReLULayer ().Call (this);
+            return new ReLULayer (name: name).Call (this);
         }
 
-        public Tensor Sigmoid ()
+        public Tensor Sigmoid (string? name = null)
         {
-            return new SigmoidLayer ().Call (this);
+            return new SigmoidLayer (name: name).Call (this);
         }
 
         public virtual Tensor Slice (params int[] indexes)

@@ -94,6 +94,18 @@ namespace MetalTensors
             return threadRandom.Next ();
         }
 
+        public static int Next (int maxValue)
+        {
+            if (threadRandom == null) {
+                int seed;
+                lock (seeder) {
+                    seed = seeder.Next ();
+                }
+                threadRandom = new Random (seed);
+            }
+            return threadRandom.Next (maxValue);
+        }
+
         public static double NextDouble ()
         {
             if (threadRandom == null) {

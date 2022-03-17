@@ -44,6 +44,8 @@ namespace MetalTensors
 
         public void AddLoss (Tensor loss) => losses.Add (loss);
 
+        public override int ParameterCount => Layers.Sum (x => x.ParameterCount);
+
         public Model (Tensor input, Tensor output, string? name = null)
             : this (new[] { input }, new[] { output }, name)
         {
@@ -98,6 +100,8 @@ namespace MetalTensors
                                 layers.Add (lt.Layer);
                         }
                         else if (t is ModelTensor mt) {
+                            if (!layers.Contains (mt.BaseModel))
+                                layers.Add (mt.BaseModel);
                             if (!submodels.Contains (mt.BaseModel))
                                 submodels.Add (mt.BaseModel);
                         }
@@ -122,6 +126,66 @@ namespace MetalTensors
         });
 
         public override string ToString () => $"{Name} {{trainable:{IsTrainable}}}";
+
+        public string Summary {
+            get {
+                var w = new StringWriter ();
+                void DSep () =>
+                    w.WriteLine ("==================================================================================================");
+                void Sep() =>
+                    w.WriteLine ("__________________________________________________________________________________________________");
+                void Cols(string c0, string c1, string c2)
+                {
+                    w.WriteLine ("{0,-32} {1,-16} {2}", c0, c1, c2);
+                }
+                var wrote = new HashSet<int> ();
+                var numParams = 0;
+                var numTrainable = 0;
+                Action head = DSep;
+                void WTensor(Tensor t)
+                {
+                    if (wrote.Contains (t.Id))
+                        return;
+                    wrote.Add (t.Id);
+                    var inputs = t.Inputs;
+                    foreach (var i in inputs)
+                        WTensor (i);
+                    var oshape = t.Shape;
+                    var pcount = 0;
+                    var name = $"Tensor#{t.Id} ({t.GetType().Name})";
+                    if (t is LayerTensor lt) {
+                        var tn = lt.Layer.GetType ().Name.Replace ("Layer", "");
+                        pcount = lt.Layer.ParameterCount;
+                        numParams += pcount;
+                        if (lt.Layer.IsTrainable)
+                            numTrainable += pcount;
+                        name = $"{lt.Layer.Name} ({tn})";
+                    }
+                    else if (t is ModelTensor mt) {
+                        pcount = mt.BaseModel.ParameterCount;
+                        numParams += pcount;
+                        if (mt.BaseModel.IsTrainable)
+                            numTrainable += pcount;
+                        name = $"{mt.BaseModel.Name} ({mt.BaseModel.GetType ().Name})";
+                    }
+                    head ();
+                    head = Sep;
+                    Cols (name, oshape.ToShapeString (), pcount.ToString ());
+                }
+                w.WriteLine ($"Model: {Name}");
+                Sep ();
+                Cols ("Layer (type)", "Output Shape", "Param #");
+                foreach (var o in Outputs) {
+                    WTensor (o);
+                }
+                DSep ();
+                w.WriteLine ($"Total params: {numParams:#,0}");
+                w.WriteLine ($"Trainable params: {numTrainable:#,0}");
+                w.WriteLine ($"Non-trainable params: {(numParams - numTrainable):#,0}");
+                Sep ();
+                return w.ToString ();
+            }
+        }
 
         public Model MapInputs (Dictionary<Tensor, Tensor> map)
         {

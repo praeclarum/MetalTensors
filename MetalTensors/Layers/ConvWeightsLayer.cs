@@ -26,6 +26,8 @@ namespace MetalTensors.Layers
         public WeightsInit WeightsInit { get; }
         public float BiasInit { get; }
 
+        public override int ParameterCount => InFeatureChannels * OutFeatureChannels * SizeX * SizeY + (Bias ? OutFeatureChannels : 0);
+
         protected ConvWeightsLayer (
             int inFeatureChannels,
             int outFeatureChannels,
