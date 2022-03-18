@@ -21,6 +21,15 @@ namespace MetalTensors
             Batches = batches.ToArray ();
         }
 
+        public override string ToString ()
+        {
+            if (Batches.Length < 1)
+                return "Empty history";
+            if (Batches.Length == 1)
+                return $"Ending Loss = {Batches[^1].AverageLoss}";
+            return $"Starting Loss = {Batches[0].AverageLoss}, Ending Loss = {Batches[^1].AverageLoss}";
+        }
+
         /// <summary>
         /// The results of one batched execution of the model
         /// </summary>
@@ -37,6 +46,11 @@ namespace MetalTensors
                 Losses = losses;
                 IntermediateValues = intermediateValues;
                 Device = device;
+            }
+
+            public override string ToString ()
+            {
+                return $"Batch of {Losses.Count}, Loss = {AverageLoss}";
             }
 
             public float AverageLoss {
