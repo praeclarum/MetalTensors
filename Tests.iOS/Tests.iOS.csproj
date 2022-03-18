@@ -140,10 +140,21 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
+    <Folder Include="Resources\facades\" />
   </ItemGroup>
   <ItemGroup>
     <BundleResource Include="Resources\elephant.jpg" />
     <BundleResource Include="Resources\rgbywb3x2.png" />
+    <BundleResource Include="Resources\facades\1.jpg" />
+    <BundleResource Include="Resources\facades\2.jpg" />
+    <BundleResource Include="Resources\facades\3.jpg" />
+    <BundleResource Include="Resources\facades\4.jpg" />
+    <BundleResource Include="Resources\facades\5.jpg" />
+    <BundleResource Include="Resources\facades\6.jpg" />
+    <BundleResource Include="Resources\facades\7.jpg" />
+    <BundleResource Include="Resources\facades\8.jpg" />
+    <BundleResource Include="Resources\facades\9.jpg" />
+    <BundleResource Include="Resources\facades\10.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
 </Project>

@@ -17,12 +17,16 @@ namespace Tests
 
         static Imaging ()
         {
+#if __IOS__
+            OutputDirectory = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
+#else
             var solutionDir = Environment.CurrentDirectory;
             var ibin = solutionDir.LastIndexOf ("/bin/");
             if (ibin > 0) {
                 solutionDir = Path.GetDirectoryName (solutionDir.Substring (0, ibin));
             }
             OutputDirectory = Path.Combine (solutionDir, "TestOutputImages");
+#endif
             Directory.CreateDirectory (OutputDirectory);
         }
 
@@ -90,9 +94,13 @@ namespace Tests
 
         public static MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet GetPix2pixDataSet (bool b2a = false)
         {
+#if __IOS__
+            var trainDataDir = Path.Combine (NSBundle.MainBundle.ResourcePath, "facades");
+#else
             var userDir = Environment.GetFolderPath (Environment.SpecialFolder.MyDocuments);
             var dataDir = Path.Combine (userDir, "Data", "datasets", "facades");
             var trainDataDir = Path.Combine (dataDir, "train");
+#endif
             var data = MetalTensors.Applications.Pix2pixApplication.Pix2pixDataSet.LoadDirectory (trainDataDir, b2a);
             return data;
         }

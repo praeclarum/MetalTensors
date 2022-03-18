@@ -54,8 +54,8 @@ namespace Tests
             Assert.AreEqual (0, result[0, 0, 1]);
             Assert.AreEqual (0, result[0, 0, 2]);
 
-            Assert.AreEqual (0.5f, result[0, 1, 0]);
-            Assert.AreEqual (0.5f, result[0, 1, 1]);
+            Assert.AreEqual (0.5f, result[0, 1, 0], 1e-3f);
+            Assert.AreEqual (0.5f, result[0, 1, 1], 1e-3f);
             Assert.AreEqual (0.0f, result[0, 1, 2]);
 
             Assert.AreEqual (0, result[0, 2, 0]);

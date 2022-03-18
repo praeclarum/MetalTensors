@@ -117,5 +117,19 @@ namespace MetalTensors
             }
             return threadRandom.NextDouble ();
         }
+
+        public static double NextNormal ()
+        {
+            if (threadRandom == null) {
+                int seed;
+                lock (seeder) {
+                    seed = seeder.Next ();
+                }
+                threadRandom = new Random (seed);
+            }
+            var u1 = threadRandom.NextDouble ();
+            var u2 = threadRandom.NextDouble ();
+            return Math.Sqrt (-2.0 * Math.Log (u1)) * Math.Cos (2.0 * Math.PI * u2);
+        }
     }
 }
