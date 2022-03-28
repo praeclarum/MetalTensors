@@ -39,6 +39,10 @@ namespace MetalTensors
             public Tensor[] Results { get; }
             public Dictionary<string, float> Losses { get; }
             public Dictionary<string, Tensor[]> IntermediateValues { get; }
+            /// <summary>
+            /// Set to false to stop training any more batches
+            /// </summary>
+            public bool ContinueTraining { get; set; } = true;
 
             public BatchHistory (Tensor[] results, Dictionary<string, float> losses, Dictionary<string, Tensor[]> intermediateValues, IMTLDevice device)
             {

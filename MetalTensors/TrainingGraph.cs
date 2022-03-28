@@ -108,16 +108,18 @@ namespace MetalTensors
             // Init history
             //
             var h = new List<TrainingHistory.BatchHistory> ();
+            var continueTraining = true;
             void AddHistory (TrainingHistory.BatchHistory bh)
             {
                 lock (h) {
                     h.Add (bh);
                 }
                 callback?.Invoke (bh);
+                continueTraining = bh.ContinueTraining;
             }
 
             MPSCommandBuffer? lcb = null;
-            for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
+            for (int batchIndex = 0; continueTraining && batchIndex < numBatches; batchIndex++) {
                 var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, Device);
                 lcb = EncodeTrainingBatch (inputs, outputs, AddHistory);
 
