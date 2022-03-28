@@ -29,7 +29,7 @@ namespace MetalTensors
         public byte[] Serialize ()
         {
             using var stream = new MemoryStream ();
-            Save (stream);
+            SaveArchive (stream);
             return stream.ToArray ();
         }
 
@@ -40,6 +40,18 @@ namespace MetalTensors
         }
 
         public void Save (Stream stream)
+        {
+            var config = Config;
+            config.Write (stream);
+        }
+
+        public void SaveArchive (string path)
+        {
+            using var stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.Read);
+            SaveArchive (stream);
+        }
+
+        public void SaveArchive (Stream stream)
         {
             using var ar = new ArchiveWriter (stream);
             ar.Write (this);
@@ -157,6 +169,7 @@ namespace MetalTensors
             return value switch {
                 null => true,
                 string s => s.Length < 256 && !(s.Contains ('\r') || s.Contains ('\n') || s.Contains ('\t')),
+                DateTime _ => true,
                 IConvertible _ => true,
                 Config _ => false,
                 int[] _ => true,
@@ -169,6 +182,7 @@ namespace MetalTensors
             return value switch {
                 null => "null",
                 string s => s,
+                DateTime d => d.ToString ("O", CultureInfo.InvariantCulture),
                 IConvertible co => co.ToString (CultureInfo.InvariantCulture),
                 int[] ints => string.Join (", ", ints),
                 var x => x.ToString (),
@@ -239,6 +253,11 @@ namespace MetalTensors
                 w.WriteEndElement ();
             }
             w.WriteEndElement ();
+        }
+
+        public static void EnableReading<T> () where T : Configurable
+        {
+            ConfigurableReaders.EnableReading (typeof (T));
         }
 
         public static T Read<T> (string path, Dictionary<int, Configurable>? references = null) where T : Configurable
@@ -320,6 +339,8 @@ namespace MetalTensors
                 return bool.Parse (value);
             if (valueType == typeof (int[]))
                 return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
+            if (valueType == typeof (DateTime))
+                return DateTime.ParseExact (value, "O", System.Globalization.CultureInfo.InvariantCulture);
             if (typeof (Enum).IsAssignableFrom (valueType)) {
                 return Enum.Parse (valueType, value, ignoreCase: true);
             }
@@ -349,6 +370,13 @@ namespace MetalTensors
                 if (readers.TryGetValue (typeName, out var r))
                     return r;
                 return null;
+            }
+
+            public static void EnableReading (Type type)
+            {
+                if (readers.TryGetValue (type.Name, out var r))
+                    return;
+                readers[type.Name] = new ConfigurableReader (type);
             }
         }
 
