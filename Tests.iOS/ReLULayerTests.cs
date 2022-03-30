@@ -86,5 +86,25 @@ namespace Tests
             var output = input.Clip (-0.2f, 0.2f);
             Assert.AreEqual (0.12f, output[0], 1.0e-6f);
         }
+
+        [Test]
+        public void NegateClip0 ()
+        {
+            var input = Tensor.Input (1);
+            var output = (0.0f - input).Clip (0.0f, 0.06f);
+            var model = new Model (input, output);
+            Assert.AreEqual (0.06f, model.Predict (Tensor.Constant (-0.12f))[0], 1.0e-6f);
+            Assert.AreEqual (0.0f, model.Predict (Tensor.Constant (0.12f))[0], 1.0e-6f);
+        }
+
+        [Test]
+        public void NegateClip0Tiny ()
+        {
+            var input = Tensor.Input (1);
+            var output = (0.0f - input).Clip (0.0f, 1e-4f);
+            var model = new Model (input, output);
+            Assert.AreEqual (1e-4f, model.Predict (Tensor.Constant (-0.12f))[0], 1.0e-6f);
+            Assert.AreEqual (0.0f, model.Predict (Tensor.Constant (0.12f))[0], 1.0e-6f);
+        }
     }
 }
