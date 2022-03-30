@@ -19,8 +19,17 @@ namespace MetalTensors
 {
     public abstract class Tensor : Configurable
     {
-        readonly Lazy<TensorHandle> handle;
-        public TensorHandle Handle => handle.Value;
+        TensorHandle? handle;
+        public TensorHandle Handle {
+            get {
+                var h = handle;
+                if (h != null)
+                    return h;
+                var nh = CreateHandle (userLabel);
+                Interlocked.CompareExchange (ref handle, nh, null);
+                return handle!;
+            }
+        }
         public string Label => Handle.Label;
 
         public abstract int[] Shape { get; }
@@ -29,8 +38,18 @@ namespace MetalTensors
 
         public virtual Tensor[] Inputs => System.Array.Empty<Tensor> ();
 
-        readonly Lazy<MPSNNImageNode> metalImageNode;
-        public virtual MPSNNImageNode GetImageNode (MetalImageNodeContext context) => metalImageNode.Value;
+        MPSNNImageNode? metalImageNode;
+        private readonly string? userLabel;
+
+        public virtual MPSNNImageNode GetImageNode (MetalImageNodeContext context)
+        {
+            var n = metalImageNode;
+            if (n != null)
+                return n;
+            var nn = new MPSNNImageNode (Handle);
+            Interlocked.CompareExchange (ref metalImageNode, nn, null);
+            return metalImageNode!;
+        }
 
         public abstract bool IsStatic { get; }
         public virtual MPSImage GetMetalImage (IMTLDevice device) => throw new NotSupportedException ($"Cannot get metal image for {GetType ().Name}");
@@ -41,8 +60,7 @@ namespace MetalTensors
 
         protected Tensor (string? label = null)
         {
-            handle = new Lazy<TensorHandle> (() => CreateHandle (label), true);
-            metalImageNode = new Lazy<MPSNNImageNode> (() => new MPSNNImageNode (Handle), true);
+            userLabel = label;
         }
 
         protected virtual TensorHandle CreateHandle (string? label) => new TensorHandle (this, label);
