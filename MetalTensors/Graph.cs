@@ -107,9 +107,9 @@ namespace MetalTensors
             // Load data
             //
             var batchSize = inputs.Length;
-            var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
-            //var batchSourceImages = RentSourceImages (batchSize);
-            //var batch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
+            //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
+            var batchSourceImages = RentSourceImages (batchSize);
+            var batch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
             //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
@@ -119,8 +119,9 @@ namespace MetalTensors
             //
             var intermediateImagesMA = new NSMutableArray<NSArray<MPSImage>> ();
             var destinationStates = new NSMutableArray<NSArray<MPSState>> ();
-            NSArray<MPSImage>? returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, null, intermediateImagesMA, null);
-            var intermediateImages = intermediateImagesMA.ToArray ();
+            var returnBatch = MetalGraph.EncodeBatch (commandBuffer, batch, null, intermediateImagesMA, null);
+            if (intermediateImagesMA.Count > 0)
+                throw new Exception ("Not expecting intermediate images");
 
             //
             // Synchronize needed images
@@ -128,17 +129,13 @@ namespace MetalTensors
             if (returnBatch != null) {
                 MPSImageBatch.Synchronize (returnBatch, commandBuffer);
             }
-            foreach (var imBatch in intermediateImages) {
-                //Console.WriteLine (ims);
-                MPSImageBatch.Synchronize (imBatch, commandBuffer);
-            }
 
             //
             // Setup the completed callback
             //
             commandBuffer.AddCompletedHandler (cmdBuf => {
 
-                //ReturnSourceImages (batchSourceImages);
+                ReturnSourceImages (batchSourceImages);
 
                 //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 modelSemaphore.Release ();
@@ -155,35 +152,9 @@ namespace MetalTensors
                     Array.Empty<Tensor> ();
 
                 //
-                // Record the loss history
-                //
-                //Console.WriteLine ($"{intermediateImages.Length} ims");                
-                var loss = intermediateImages.Length > 0 ?
-                    intermediateImages[0].Select (x => new MPSImageTensor (x)).ToArray () :
-                    Array.Empty<Tensor> ();
-
-                //
                 // Record the intermediates
                 //
                 var bh = new Dictionary<string, Tensor[]> ();
-                if (intermediateImages.Length > 0) {
-                    if (intermediateImages.Length == intermediateHandles.Length) {
-                        for (var imi = 0; imi < intermediateImages.Length; imi++) {
-                            var key = intermediateHandles[imi].Label;
-                            bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
-                        }
-                    }
-                    else if (intermediateImages.Length - 1 != intermediateHandles.Length) {
-                        Console.WriteLine ($"! Intermediate images without handles {intermediateImages.Length} vs {intermediateHandles.Length}");
-                    }
-                    else {
-                        for (var imi = 1; imi < intermediateImages.Length; imi++) {
-                            var key = intermediateHandles[imi - 1].Label;
-                            bh[key] = intermediateImages[imi].Select (x => new MPSImageTensor (x)).ToArray ();
-                        }
-                    }
-                }
-
                 //
                 // Broadcast the results to whomever is listening
                 //
