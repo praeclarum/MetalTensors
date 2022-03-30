@@ -80,10 +80,10 @@ namespace MetalTensors
         public MPSCommandBuffer EncodeBatch (int batchIndex, DataSet dataSet, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory)
         {
             var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, Device);
-            return EncodeBatch (inputs, outputs, recordHistory);
+            return EncodeBatch (inputs, outputs, batchSize, recordHistory);
         }
 
-        public MPSCommandBuffer EncodeBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory)
+        public MPSCommandBuffer EncodeBatch (Tensor[][] inputs, Tensor[][] outputs, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory)
         {
             if (inputs.Length < 1)
                 throw new ArgumentException ($"At least one input is needed in a batch");
@@ -93,11 +93,6 @@ namespace MetalTensors
             //
             using var pool = new NSAutoreleasePool ();
 
-            //
-            // Wait for the last command to finish
-            //
-            modelSemaphore.WaitOne ();
-
             // No using because it is returned
             var commandBuffer = MPSCommandBuffer.Create (modelQueue);
             commandBuffer.Label = $"{Label} {nextCommandId}";
@@ -106,13 +101,17 @@ namespace MetalTensors
             //
             // Load data
             //
-            var batchSize = inputs.Length;
             //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
             var batchSourceImages = RentSourceImages (batchSize);
-            var batch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
+            var batch = EncodeSourceImages (inputs, outputs, batchSourceImages, batchSize, commandBuffer);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
             //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
+
+            //
+            // Wait for the last command to finish
+            //
+            modelSemaphore.WaitOne ();
 
             //
             // Encode the graph
@@ -281,10 +280,8 @@ namespace MetalTensors
             return imageArrays;
         }
 
-        protected NSArray<MPSImage>[] EncodeSourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images, MPSCommandBuffer commands)
+        protected NSArray<MPSImage>[] EncodeSourceImages (Tensor[][] inputs, Tensor[][] outputs, MPSImage[][] images, int batchSize, MPSCommandBuffer commands)
         {
-            var batchSize = inputs.Length;
-
             var statics = GetStaticImages ();
             var ns = sourceHandles.Length;
 

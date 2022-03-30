@@ -121,7 +121,7 @@ namespace MetalTensors
             MPSCommandBuffer? lcb = null;
             for (int batchIndex = 0; continueTraining && batchIndex < numBatches; batchIndex++) {
                 var (inputs, outputs) = dataSet.GetBatch (batchIndex * batchSize, batchSize, Device);
-                lcb = EncodeTrainingBatch (inputs, outputs, AddHistory);
+                lcb = EncodeTrainingBatch (inputs, outputs, batchSize, AddHistory);
 
                 //if (evalGraph != null && ((batchIndex + 1) % validateInterval == 0)) {
                 //    lcb?.WaitUntilCompleted ();
@@ -164,29 +164,26 @@ namespace MetalTensors
             //
             // Train
             //
-            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, AddHistory);
+            MPSCommandBuffer lcb = EncodeTrainingBatch (inputsBatch, outputsBatch, batchSize, AddHistory);
 
             lcb.WaitUntilCompleted ();
 
             return h[0];
         }
 
-        
+        int numBatches = 0;
 
-        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, Action<TrainingHistory.BatchHistory> recordHistory)
+        MPSCommandBuffer EncodeTrainingBatch (Tensor[][] inputs, Tensor[][] outputs, int batchSize, Action<TrainingHistory.BatchHistory> recordHistory)
         {
             if (inputs.Length < 1)
                 throw new ArgumentException ($"At least one input is needed in a batch");
+
+            var batchIndex = Interlocked.Increment (ref numBatches);
 
             //
             // This pool is necessary for Metal to clean up its objects
             //
             using var pool = new NSAutoreleasePool ();
-
-            //
-            // Wait for the last command to finish
-            //
-            modelSemaphore.WaitOne ();
 
             var commandBuffer = MPSCommandBuffer.Create (modelQueue);
             commandBuffer.Label = $"{Label} {nextCommandId}";
@@ -195,17 +192,23 @@ namespace MetalTensors
             //
             // Load data
             //
-            var batchSize = inputs.Length;
             //var (batch, temporaryBatchImages) = GetSourceImages (inputs, outputs);
 
+            //Console.WriteLine ($"DATA BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
             var batchSourceImages = RentSourceImages (batchSize);
             //var cbatch = CopySourceImages (inputs, outputs, batchSourceImages, queue);
-            var cbatch = EncodeSourceImages (inputs, outputs, batchSourceImages, commandBuffer);
+            var cbatch = EncodeSourceImages (inputs, outputs, batchSourceImages, batchSize, commandBuffer);
 
             //Console.WriteLine ($"BATCH BYTE SIZE {batchSize*(2+1)*4:#,0}");
 
 
-            //Console.WriteLine ($"{stopwatch.Elapsed} START BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
+            //
+            // Wait for the last command to finish
+            //
+            //Console.WriteLine ($"WAIT BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
+            modelSemaphore.WaitOne ();
+
+            //Console.WriteLine ($"ENCODE BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             // No using because it is returned
 
@@ -238,7 +241,7 @@ namespace MetalTensors
                 //
                 ReturnSourceImages (batchSourceImages);
 
-                //Console.WriteLine ($"{stopwatch.Elapsed} END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
+                //Console.WriteLine ($"END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 modelSemaphore.Release ();
 
                 if (cmdBuf.Error != null) {
@@ -285,6 +288,7 @@ namespace MetalTensors
             // Run the batch
             //
             commandBuffer.Commit ();
+            //Console.WriteLine ($"COMMIT BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
 
             return commandBuffer;
         }

@@ -71,10 +71,8 @@ namespace MetalTensors
             return h.ToArray ();
         }
 
-        public Tensor[][] Predict (Tensor[][] inputsBatch)
+        public Tensor[][] Predict (Tensor[][] inputsBatch, int batchSize)
         {
-            var batchSize = inputsBatch.Length;
-
             using var pool = new NSAutoreleasePool ();
 
             MetalGraph.ReloadFromDataSources ();
@@ -94,7 +92,7 @@ namespace MetalTensors
             //
             // Evaluate
             //
-            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, Array.Empty<Tensor[]>(), AddHistory);
+            MPSCommandBuffer lcb = EncodeBatch (inputsBatch, Array.Empty<Tensor[]>(), batchSize, AddHistory);
             if (lcb != null) {
                 lcb.WaitUntilCompleted ();
             }

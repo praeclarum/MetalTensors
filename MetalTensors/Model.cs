@@ -326,7 +326,7 @@ namespace MetalTensors
             return batchedResults[0][0];
         }
 
-        public Tensor[][] Predict (Tensor[][] inputsBatch, IMTLDevice? device = null)
+        public Tensor[][] Predict (Tensor[][] inputsBatch, int batchSize, IMTLDevice? device = null)
         {
             if (Inputs.Length != 1)
                 throw new InvalidOperationException ($"Prediction with one input requires a model with one input (model has {Inputs.Length} inputs)");
@@ -338,10 +338,12 @@ namespace MetalTensors
 
             var g = cm.InferenceGraph;
 
-            var batchedResults = g.Predict (inputsBatch);
+            var batchedResults = g.Predict (inputsBatch, batchSize);
 
             return batchedResults;
         }
+
+        public Tensor[][] Predict (Tensor[][] inputsBatch, IMTLDevice? device = null) => Predict (inputsBatch, inputsBatch.Length, device);
 
         public (Model, Dictionary<Layer, bool>) Flatten ()
         {
