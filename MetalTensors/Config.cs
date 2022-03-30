@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -173,11 +174,13 @@ namespace MetalTensors
                 IConvertible _ => true,
                 Config _ => false,
                 int[] _ => true,
+                Vector3 _ => true,
+                Vector4 _ => true,
                 _ => false
             };
         }
 
-        static string GetValueString (object? value)
+        static string GetAttributeString (object? value)
         {
             return value switch {
                 null => "null",
@@ -185,6 +188,8 @@ namespace MetalTensors
                 DateTime d => d.ToString ("O", CultureInfo.InvariantCulture),
                 IConvertible co => co.ToString (CultureInfo.InvariantCulture),
                 int[] ints => string.Join (", ", ints),
+                Vector3 v3 => string.Format (CultureInfo.InvariantCulture, "{0}, {1}, {2}", v3.X, v3.Y, v3.Z),
+                Vector4 v4 => string.Format (CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", v4.X, v4.Y, v4.Z, v4.W),
                 var x => x.ToString (),
             };
         }
@@ -241,7 +246,7 @@ namespace MetalTensors
                 if (a.Key == "id" || a.Key == "type")
                     continue;
                 if (ValueGoesInAttribute (a.Value)) {
-                    w.WriteAttributeString (a.Key, GetValueString (a.Value));
+                    w.WriteAttributeString (a.Key, GetAttributeString (a.Value));
                 }
                 else {
                     rem.Add (a);
@@ -339,6 +344,21 @@ namespace MetalTensors
                 return bool.Parse (value);
             if (valueType == typeof (int[]))
                 return value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries).Select (x => int.Parse (x)).ToArray ();
+            if (valueType == typeof (Vector3)) {
+                var parts = value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries);
+                var x = float.Parse (parts[0], CultureInfo.InvariantCulture);
+                var y = float.Parse (parts[1], CultureInfo.InvariantCulture);
+                var z = float.Parse (parts[2], CultureInfo.InvariantCulture);
+                return new Vector3 (x, y, z);
+            }
+            if (valueType == typeof (Vector4)) {
+                var parts = value.Split (arraySplits, StringSplitOptions.RemoveEmptyEntries);
+                var x = float.Parse (parts[0], CultureInfo.InvariantCulture);
+                var y = float.Parse (parts[1], CultureInfo.InvariantCulture);
+                var z = float.Parse (parts[2], CultureInfo.InvariantCulture);
+                var w = float.Parse (parts[3], CultureInfo.InvariantCulture);
+                return new Vector4 (x, y, z, w);
+            }
             if (valueType == typeof (DateTime))
                 return DateTime.ParseExact (value, "O", System.Globalization.CultureInfo.InvariantCulture);
             if (typeof (Enum).IsAssignableFrom (valueType)) {
