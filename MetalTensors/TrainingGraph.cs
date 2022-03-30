@@ -260,18 +260,18 @@ namespace MetalTensors
                 // Record the loss history
                 //
                 //Console.WriteLine ($"{intermediateImages.Length} ims");                
-                var loss = intermediateImages.Length > 0 ?
-                    intermediateImages[0].Select (x => new MPSImageTensor (x)).ToArray () :
-                    Array.Empty<Tensor> ();
                 var losses = new Dictionary<string, float> ();
                 for (var i = 0; i < intermediateHandles.Length; i++) {
                     if (i < intermediateImages.Length) {
                         if (intermediateIsLoss[i]) {
-                            losses[intermediateHandles[i].Label] = intermediateImages[i].ReduceMeanValue ();
+                            var image = intermediateImages[i];
+                            losses[intermediateHandles[i].Label] = image.ReduceMeanValueAndDispose ();
+                        }
+                        else {
+                            intermediateImages[i].Dispose ();
                         }
                     }
                 }
-                intermediateImages.Dispose ();
 
                 //
                 // Broadcast the results to whomever is listening

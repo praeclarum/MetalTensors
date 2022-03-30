@@ -96,18 +96,6 @@ namespace MetalTensors
             return tcs.Task;
         }
 
-        public static void Dispose (this NSArray<MPSImage>[]? images)
-        {
-            if (images != null) {
-                foreach (var imgs in images) {
-                    foreach (var i in imgs) {
-                        i.Dispose ();
-                    }
-                    imgs.Dispose ();
-                }
-            }
-        }
-
         public static void Dispose (this MPSImage[]? images)
         {
             if (images != null) {
@@ -174,14 +162,17 @@ namespace MetalTensors
             return Filter (image, neuron, dev);
         }
 
-        public static float ReduceMeanValue (this IEnumerable<MPSImage> images)
+        public static float ReduceMeanValueAndDispose (this NSArray<MPSImage>? images)
         {
+            if (images == null)
+                return 0.0f;
             var sum = 0.0f;
-            var n = 0;
-            foreach (var i in images) {
-                sum += i.ReduceMeanValue ();
-                n += 1;
+            var n = images.Count;
+            for (nuint i = 0; i < n; i++) {
+                using var image = images.GetItem<MPSImage> (i);
+                sum += image.ReduceMeanValue ();
             }
+            images.Dispose ();
             if (n > 0)
                 return sum / n;
             return 0.0f;
@@ -190,14 +181,23 @@ namespace MetalTensors
         public static float ReduceMeanValue (this MPSImage image)
         {
             var n = image.FeatureChannels * image.Width * image.Height;
-            var floats = new float[n];
+            if (n == 0)
+                return 0.0f;
+            Span<float> floats = n <= 64 ?
+                stackalloc float[(int)n] :
+                new float[n];
             unsafe {
                 fixed (float* p = floats) {
                     image.ReadBytes ((IntPtr)p, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
                 }
             }
-            if (n > 0)
-                return floats.Sum() / n;
+            if (n > 0) {
+                var sum = 0.0f;
+                for (nuint i = 0; i < n; i++) {
+                    sum += floats[(int)i];
+                }
+                return sum / n;
+            }
             return 0.0f;
         }
 
