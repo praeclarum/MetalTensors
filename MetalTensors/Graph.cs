@@ -147,9 +147,30 @@ namespace MetalTensors
                 //
                 // Record results
                 //
-                var results = returnBatch != null && returnBatch.Count > 0 ?
-                    returnBatch.Select (x => (Tensor)new MPSImageTensor (x)).ToArray () :
-                    Array.Empty<Tensor> ();
+                var results = Array.Empty<Tensor> ();                
+                if (returnBatch != null) {
+                    var returnBatchCount = returnBatch.Count;
+                    results = new Tensor[returnBatchCount];
+                    for (nuint bi = 0; bi < returnBatchCount; bi++) {
+                        var image = returnBatch.GetItem<MPSImage> (bi);
+                        var ih = image.Height;
+                        var iw = image.Width;
+                        var ic = image.FeatureChannels;
+                        var n = ih * iw * ic;
+                        if (n == 1) {
+                            unsafe {
+                                var vs = stackalloc float[1];
+                                image.ReadBytes ((IntPtr)vs, MPSDataLayout.HeightPerWidthPerFeatureChannels, 0);
+                                results[bi] = new ConstantTensor (vs[0], Shapes.GetShape (ih, iw, ic));
+                            }
+                            image.Dispose ();
+                        }
+                        else {
+                            results[bi] = new MPSImageTensor (image);
+                        }                            
+                    }
+                    returnBatch.Dispose ();
+                }
 
                 //
                 // Record the intermediates

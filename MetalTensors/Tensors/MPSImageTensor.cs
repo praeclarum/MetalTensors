@@ -26,7 +26,7 @@ namespace MetalTensors.Tensors
             if (image == null || image.Handle == IntPtr.Zero)
                 throw new ArgumentNullException (nameof (image));
             this.image = image;
-            this.shape = new[] { (int)image.Height, (int)image.Width, (int)image.FeatureChannels };
+            this.shape = Shapes.GetShape ((int)image.Height, (int)image.Width, (int)image.FeatureChannels);
         }
 
         public MPSImageTensor (IMTLTexture texture, int featureChannels = 3)
