@@ -117,6 +117,22 @@ namespace MetalTensors
             }
         }
 
+        public virtual float this[int index] {
+            get {
+                var shape = Shape;
+
+                // This is pretty slow since the whole tensor is copied
+                // Hopefully derived classes override this property.
+                var len = shape.GetShapeLength ();
+                Span<float> elements = len < 1024 ?
+                    stackalloc float[len] :
+                    new float[len];
+                CopyTo (elements);
+
+                return elements[index];
+            }
+        }
+
         public virtual MPSImage CreateUninitializedImage () => MetalHelpers.CreateUninitializedImage (Shape);
 
         protected int ValidateCopyDestination (Span<float> destination)

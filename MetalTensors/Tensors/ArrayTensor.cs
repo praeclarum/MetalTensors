@@ -37,7 +37,7 @@ namespace MetalTensors.Tensors
         public ArrayTensor (float[] data)
         {
             this.data = data;
-            shape = new int[] { data.Length };
+            shape = Shapes.GetShape (data.Length);
         }
 
         public override Config Config => base.Config.Update (new Config {
