@@ -16,6 +16,7 @@ namespace Tests
         const float DenseOutputPrecision = SphereRadius * 0.04f;
 
         const float DenseLossClip = 1.0e-2f;
+        const float DenseFreeLossClip = DenseLossClip / 100.0f;
         const float DenseSampleDistance = 1.0e-3f;
 
         private static Model CreateDenseModel ()
@@ -40,7 +41,7 @@ namespace Tests
         private static DataSet CreateDenseData ()
         {
             return DataSet.Generated ((index, dev) => {
-                GetRow (index, out var input, out var output);
+                GetRow (index, out var input, out var output, out var free);
                 var inputs = new[] { input };
                 var outputs = new[] { output };
                 return (inputs, outputs);
@@ -50,8 +51,8 @@ namespace Tests
         static DataSet CreateDenseAddLossData ()
         {
             return DataSet.Generated ((index, dev) => {
-                GetRow (index, out var input, out var output);
-                var inputs = new[] { input, output };
+                GetRow (index, out var input, out var output, out var free);
+                var inputs = new[] { input, free, output };
                 var outputs = Array.Empty<Tensor> ();
                 return (inputs, outputs);
             }, DenseDataCount);
@@ -59,7 +60,7 @@ namespace Tests
 
         static readonly float InsideScale = 2.0f * MathF.Sqrt (SphereRadius * SphereRadius / 3.0f);
 
-        static void GetRow (int index, out Tensor input, out Tensor output)
+        static void GetRow (int index, out Tensor input, out Tensor output, out Tensor free)
         {
             var inside = (index % 2) == 0;
             var x = (float)StaticRandom.NextDouble () - 0.5f;
@@ -70,6 +71,7 @@ namespace Tests
             y *= r;
             z *= r;
             float depth;
+            float fr = 0.0f;
             if (inside) {
                 depth = (float)Math.Abs (StaticRandom.NextNormal () * DenseSampleDistance);
             }
@@ -78,6 +80,7 @@ namespace Tests
                     depth = (float)-Math.Abs (StaticRandom.NextNormal () * DenseSampleDistance);
                 }
                 else {
+                    fr = 1.0f;
                     depth = (float)-StaticRandom.NextDouble ();
                 }
             }
@@ -88,6 +91,7 @@ namespace Tests
             //Console.WriteLine ($"X={x}, Y={y}, Z={z}, D={signedDistance}");
             input = Tensor.Array (x, y, z);
             output = Tensor.Array (signedDistance);
+            free = Tensor.Array (fr);
         }
 
         static void ValidateDense (Model model)
@@ -139,21 +143,23 @@ namespace Tests
             var history = model.Fit (data, batchSize: DenseBatchSize, epochs: 1.0f);
             Assert.True (history.Batches[^1].AverageLoss < DenseMaxTrainedLoss);
             ValidateDense (smodel);
-        }
-
-        
+        }        
 
         [Test]
         public void DenseSubModelAddClippedLoss ()
         {
             var input = Tensor.Input (3);
+            var free = Tensor.Input (1);
             var expected = Tensor.Input (1);
             var smodel = CreateDenseModel ();
             var output = smodel.Call (input);
-            var model = new Model (new[]{input,expected}, new[] { output });
+            var model = new Model (new[]{input,free,expected}, new[] { output });
             var clipOutput = output.Clip (-DenseLossClip, DenseLossClip);
             var clipExpected = expected.Clip (-DenseLossClip, DenseLossClip);
-            var totalLoss = clipOutput.Loss (clipExpected, Loss.MeanAbsoluteError);
+            var surfaceLoss = clipOutput.Loss (clipExpected, Loss.MeanAbsoluteError);
+            var freeLoss = (0.0f - clipOutput).Clip (0.0f, DenseLossClip);
+            var totalLoss = surfaceLoss * (1.0f - free) +
+                            freeLoss * free;    
             model.AddLoss (totalLoss);
             model.Compile (new AdamOptimizer (DenseLearningRate));
             var data = CreateDenseAddLossData ();
