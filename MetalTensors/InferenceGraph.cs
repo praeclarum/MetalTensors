@@ -14,6 +14,8 @@ namespace MetalTensors
 {
     public class InferenceGraph : Graph
     {
+        bool needsReloadWeights = true;
+
         public InferenceGraph (string label, Tensor[] inputs, Tensor[] outputs, IMTLCommandQueue queue, Semaphore semaphore)
             : base (label, CreateInferenceGraph (label, outputs, device: queue.Device), inputs, outputs, queue, semaphore)
         {
@@ -44,7 +46,10 @@ namespace MetalTensors
         {
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
+            if (needsReloadWeights) {
+                MetalGraph.ReloadFromDataSources ();
+                needsReloadWeights = false;
+            }
 
             //
             // Init history
@@ -75,7 +80,10 @@ namespace MetalTensors
         {
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
+            if (needsReloadWeights) {
+                MetalGraph.ReloadFromDataSources ();
+                needsReloadWeights = false;
+            }
 
             //
             // Init history
@@ -98,6 +106,11 @@ namespace MetalTensors
             }
 
             return h;
+        }
+
+        public void SetNeedsReloadWeights ()
+        {
+            needsReloadWeights = true;
         }
     }
 }

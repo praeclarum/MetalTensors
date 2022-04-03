@@ -345,6 +345,21 @@ namespace MetalTensors
 
         public Tensor[][] Predict (Tensor[][] inputsBatch, IMTLDevice? device = null) => Predict (inputsBatch, inputsBatch.Length, device);
 
+        public void SetNeedsReloadWeights ()
+        {
+            foreach (var sm in Submodels) {
+                sm.SetNeedsReloadWeights ();
+            }
+            var ms = compiledModels.ToArray ();
+            foreach (var m in ms) {
+                var cm = m.Value;
+                if (cm.TrainingGraph is { } tg) {
+                    tg.SetNeedsReloadWeights ();
+                }
+                cm.InferenceGraph.SetNeedsReloadWeights ();
+            }
+        }
+
         public (Model, Dictionary<Layer, bool>) Flatten ()
         {
             var trainable = new Dictionary<Layer, bool> ();

@@ -19,13 +19,20 @@ namespace MetalTensors
         readonly bool[] intermediateIsLoss;
 
         readonly Optimizer optimizer;
+        readonly InferenceGraph inferenceGraph;
 
-        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, Optimizer optimizer, IMTLCommandQueue queue, Semaphore semaphore)
+        bool needsReloadWeights = true;
+
+        readonly Model model;
+
+        public TrainingGraph (string label, Tensor[] inputs, Tensor[] outputs, Tensor[] losses, Dictionary<Layer, bool> trainable, Optimizer optimizer, IMTLCommandQueue queue, Semaphore semaphore, InferenceGraph inferenceGraph, Model model)
             : base (label, CreateTrainingGraph (label, losses, trainable, queue.Device, out var cweights), inputs, outputs, queue, semaphore)
         {
             weightDataSources = cweights;
             intermediateIsLoss = new bool[intermediateHandles.Length];
             this.optimizer = optimizer;
+            this.inferenceGraph = inferenceGraph;
+            this.model = model;
             for (var i = 0; i < intermediateHandles.Length; i++) {
                 var handle = intermediateHandles[i];
                 if (losses.FirstOrDefault (x => x.Label == handle.Label) != null) {
@@ -87,6 +94,11 @@ namespace MetalTensors
             return trainingGraph;
         }
 
+        public void SetNeedsReloadWeights ()
+        {
+            needsReloadWeights = true;
+        }
+
         public TrainingHistory Fit (DataSet dataSet, int batchSize, int numBatches, Action<TrainingHistory.BatchHistory>? callback)
         {
             //Tensor[][] inputsBatch, Tensor[][] outputsBatch
@@ -95,7 +107,10 @@ namespace MetalTensors
 
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
+            if (needsReloadWeights) {
+                MetalGraph.ReloadFromDataSources ();
+                needsReloadWeights = false;
+            }
 
             //
             // Set the learning rate
@@ -141,7 +156,10 @@ namespace MetalTensors
 
             using var pool = new NSAutoreleasePool ();
 
-            MetalGraph.ReloadFromDataSources ();
+            if (needsReloadWeights) {
+                MetalGraph.ReloadFromDataSources ();
+                needsReloadWeights = false;
+            }
 
             //
             // Set the learning rate
@@ -243,6 +261,11 @@ namespace MetalTensors
 
                 //Console.WriteLine ($"END BATCH {batchIndex} (thread {Thread.CurrentThread.ManagedThreadId})");
                 modelSemaphore.Release ();
+
+                inferenceGraph.SetNeedsReloadWeights ();
+                foreach (var sm in model.Submodels) {
+                    sm.SetNeedsReloadWeights ();
+                }
 
                 if (cmdBuf.Error != null) {
                     Console.WriteLine ($"{Label}: Command Buffer Error: {cmdBuf.Error.Description}");
