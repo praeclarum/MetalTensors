@@ -92,7 +92,7 @@ namespace MetalTensors
             void AddHistory (TrainingHistory.BatchHistory bh)
             {
                 var r = bh.Results;
-                for (var bi = 0; bi < r.Length; bi++) {
+                for (var bi = 0; bi < batchSize; bi++) {
                     h[bi] = new[] { r[bi] };
                 }
             }

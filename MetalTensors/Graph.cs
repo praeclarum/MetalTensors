@@ -194,9 +194,10 @@ namespace MetalTensors
 
         protected MPSImage[][] RentSourceImages (int batchSize)
         {
+            int batchSize2 = 1 << (int)Math.Ceiling (Math.Log (batchSize, 2));
             var numSources = sourceHandles.Length;
             MPSImage[][] images;
-            if (availableSourceImages.TryGetValue (batchSize, out var imageCache)) {
+            if (availableSourceImages.TryGetValue (batchSize2, out var imageCache)) {
                 if (imageCache.TryTake (out images)) {
                     return images;
                 }
@@ -205,21 +206,21 @@ namespace MetalTensors
                 }
             }
             else {
-                availableSourceImages.TryAdd (batchSize, new ConcurrentBag<MPSImage[][]> ());
+                availableSourceImages.TryAdd (batchSize2, new ConcurrentBag<MPSImage[][]> ());
                 images = new MPSImage[numSources][];
             }
 
             var statics = GetStaticImages ();
             for (var si = 0; si < numSources; si++) {
-                images[si] = new MPSImage[batchSize];
+                images[si] = new MPSImage[batchSize2];
                 var c = statics[si];
                 if (c != null) {
-                    for (var bi = 0; bi < batchSize; bi++) {
+                    for (var bi = 0; bi < batchSize2; bi++) {
                         images[si][bi] = c;
                     }
                 }
                 else {
-                    for (var bi = 0; bi < batchSize; bi++) {
+                    for (var bi = 0; bi < batchSize2; bi++) {
                         images[si][bi] = sourceHandles[si].Tensor.CreateUninitializedImage ();
                     }
                 }
