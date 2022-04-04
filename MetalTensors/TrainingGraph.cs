@@ -302,7 +302,7 @@ namespace MetalTensors
                 //
                 // Broadcast the results to whomever is listening
                 //
-                var h = new TrainingHistory.BatchHistory (Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), cmdBuf.Device);
+                var h = new TrainingHistory.BatchHistory (batchSize, Array.Empty<Tensor> (), losses, new Dictionary<string, Tensor[]>(), cmdBuf.Device);
                 recordHistory (h);
                 cmdBuf.Dispose ();
             });

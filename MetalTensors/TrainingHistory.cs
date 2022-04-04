@@ -36,6 +36,7 @@ namespace MetalTensors
         public class BatchHistory
         {
             public IMTLDevice Device { get; }
+            public int BatchSize { get; }
             public Tensor[] Results { get; }
             public Dictionary<string, float> Losses { get; }
             public Dictionary<string, Tensor[]> IntermediateValues { get; }
@@ -44,8 +45,9 @@ namespace MetalTensors
             /// </summary>
             public bool ContinueTraining { get; set; } = true;
 
-            public BatchHistory (Tensor[] results, Dictionary<string, float> losses, Dictionary<string, Tensor[]> intermediateValues, IMTLDevice device)
+            public BatchHistory (int batchSize, Tensor[] results, Dictionary<string, float> losses, Dictionary<string, Tensor[]> intermediateValues, IMTLDevice device)
             {
+                BatchSize = batchSize;
                 Results = results;
                 Losses = losses;
                 IntermediateValues = intermediateValues;
@@ -54,7 +56,7 @@ namespace MetalTensors
 
             public override string ToString ()
             {
-                return $"Batch of {Losses.Count}, Loss = {AverageLoss}";
+                return $"Batch of {BatchSize}, Loss = {AverageLoss}";
             }
 
             public float AverageLoss {
