@@ -72,6 +72,14 @@ namespace MetalTensors
     }
 
     public class ConfigCtorAttribute : Attribute { }
+    public class ConfigDefaultAttribute : Attribute {
+        public int DefaultInt { get; }
+        public object DefaultObject => DefaultInt;
+        public ConfigDefaultAttribute (int intValue)
+        {
+            DefaultInt = intValue;
+        }
+    }
 
     public class Config : IEnumerable
     {
@@ -405,6 +413,8 @@ namespace MetalTensors
             public Type ObjectType { get; }
             public ConstructorInfo Constructor { get; }
             public ParameterInfo[] Parameters { get; }
+            public object?[] ParameterDefault { get; }
+            public bool[] ParameterHasDefault { get; }
             public Dictionary<string, int> ParameterIndex { get; } = new Dictionary<string, int> ();
             public string TypeName => ObjectType.Name;
 
@@ -417,8 +427,16 @@ namespace MetalTensors
                     ctors.FirstOrDefault (x => x.GetCustomAttribute (typeof (ConfigCtorAttribute)) != null) ??
                     ctors.OrderByDescending (x => x.GetParameters ().Length).First ();
                 Parameters = Constructor.GetParameters ();
+                ParameterHasDefault = new bool[Parameters.Length];
+                ParameterDefault = new object?[Parameters.Length];
                 for (var i = 0; i < Parameters.Length; i++) {
-                    ParameterIndex[Parameters[i].Name] = i;
+                    var p = Parameters[i];
+                    ParameterIndex[p.Name] = i;
+                    var da = p.GetCustomAttribute<ConfigDefaultAttribute> ();
+                    if (da != null) {
+                        ParameterHasDefault[i] = true;
+                        ParameterDefault[i] = da.DefaultObject;
+                    }
                 }
             }
 
@@ -429,14 +447,14 @@ namespace MetalTensors
 
             public Configurable Read (XElement element, Dictionary<int, Configurable> references)
             {
-                var arguments = new object[Parameters.Length];
+                object?[] arguments = new object?[Parameters.Length];
                 var hasArg = new bool[Parameters.Length];
                 var numArgs = 0;
                 foreach (var a in element.Attributes ()) {
                     var name = a.Name.LocalName;
                     if (name == "id" || name == "refid")
                         continue;
-                    if (ParameterIndex.TryGetValue (name, out var pindex) && arguments[pindex] is null) {
+                    if (ParameterIndex.TryGetValue (name, out var pindex) && !hasArg[pindex]) {
                         arguments[pindex] = ReadValueString (a.Value, Parameters[pindex].ParameterType);
                         hasArg[pindex] = true;
                         numArgs++;
@@ -444,9 +462,16 @@ namespace MetalTensors
                 }
                 foreach (var c in element.Elements ()) {
                     var name = c.Name.LocalName;
-                    if (ParameterIndex.TryGetValue (name, out var pindex) && arguments[pindex] is null) {
+                    if (ParameterIndex.TryGetValue (name, out var pindex) && !hasArg[pindex]) {
                         arguments[pindex] = ReadValueElement (c.Elements ().First (), Parameters[pindex].ParameterType, references);
                         hasArg[pindex] = true;
+                        numArgs++;
+                    }
+                }
+                for (var pi = 0; pi < Parameters.Length; pi++) {
+                    if (!hasArg[pi] && ParameterHasDefault[pi]) {
+                        arguments[pi] = ParameterDefault[pi];
+                        hasArg[pi] = true;
                         numArgs++;
                     }
                 }
