@@ -74,6 +74,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Archive.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Tensors\Vector4Tensor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shapes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegularzationType.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Applications\" />

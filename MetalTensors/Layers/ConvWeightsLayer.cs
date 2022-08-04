@@ -215,7 +215,7 @@ namespace MetalTensors.Layers
                         adam.SetLearningRate (newOptimizer.LearningRate);
                     }
                     else {
-                        var odesc = new MPSNNOptimizerDescriptor (newOptimizer.LearningRate, 1.0f, MPSNNRegularizationType.None, 1.0f);
+                        var odesc = new MPSNNOptimizerDescriptor (newOptimizer.LearningRate, newOptimizer.GradientRescale, (MPSNNRegularizationType)newOptimizer.RegularizationType, newOptimizer.RegularizationScale);
                         optimizer = new MPSNNOptimizerAdam (
                             device,
                             beta1: newAdam.Beta1, beta2: newAdam.Beta2, epsilon: newAdam.Epsilon,

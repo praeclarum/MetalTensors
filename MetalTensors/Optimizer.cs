@@ -5,8 +5,13 @@ namespace MetalTensors
     public abstract class Optimizer : Configurable
     {
         public const float DefaultLearningRate = 1e-3f;
+        public const float DefaultGradientRescale = 1.0f;
+        public const float DefaultRegularizationScale = 1.0f;
 
         public float LearningRate = DefaultLearningRate;
+        public float GradientRescale = DefaultGradientRescale;
+        public RegularizationType RegularizationType = RegularizationType.None;
+        public float RegularizationScale = DefaultRegularizationScale;
     }
 
     public class AdamOptimizer : Optimizer
