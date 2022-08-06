@@ -24,6 +24,8 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.301
+    - name: Install iOS and Mac Catalyst Support
+      run: dotnet workload install ios maccatalyst
     - name: Restore dependencies
       run: dotnet restore MetalTensors6.sln
     - name: Build
