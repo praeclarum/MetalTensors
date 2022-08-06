@@ -213,7 +213,11 @@ namespace MetalTensors
 
             var disposeByteTexture = false;
             var byteTexture = image.Texture;
+#if NET6_0_OR_GREATER
+            var storageMode = byteTexture.StorageMode;
+#else
             var storageMode = byteTexture.GetStorageMode ();
+#endif
             if (storageMode == MTLStorageMode.Private)
                 throw new InvalidOperationException ($"Cannot create images from private textures");
             nint bitsPerComponent = 8;

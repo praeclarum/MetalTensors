@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <PackageId>MetalTensors</PackageId>
+    <Version>1.0.0</Version>
+    <PackageTitle>MetalTensors</PackageTitle>
+    <PackageDescription>Neural Network library for .NET apps on Apple platforms.</PackageDescription>
+    <PackageAuthors>Frank A. Krueger</PackageAuthors>
+    <PackageOwners>Frank A. Krueger</PackageOwners>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/praeclarum/MetalTensors</PackageProjectUrl>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">13.1</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,43 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Update Versions
+      env:
+        VERSION_PREFIX: '1.0'
+        VERSION_SUFFIX: ${{github.run_number}}
+      run: |
+        VERSION=$VERSION_PREFIX.$VERSION_SUFFIX
+        sed -i bak "s:<Version>1.0.0</Version>:<Version>$VERSION</Version>:g" MetalTensors/MetalTensors.csproj
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.301
+    - name: Install iOS and Mac Catalyst Support
+      run: dotnet workload install ios maccatalyst
+    - name: Restore dependencies
+      run: dotnet restore MetalTensors6.sln
+    - name: Build
+      run: dotnet build --no-restore -c Release MetalTensors6.sln
+    - name: Test
+      if: false
+      run: dotnet test --no-build --verbosity normal -c Release MetalTensors6.sln
+    - name: Pack
+      run: |
+        mkdir -p artifacts
+        dotnet pack --no-build -c Release --include-symbols -o artifacts MetalTensors6.sln
+    - name: Archive
+      uses: actions/upload-artifact@master
+      with:
+        path: artifacts

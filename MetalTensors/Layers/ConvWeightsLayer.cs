@@ -193,9 +193,9 @@ namespace MetalTensors.Layers
             device = weightsQueue.Device;
 
             descriptor = MPSCnnConvolutionDescriptor.CreateCnnConvolutionDescriptor (
-                (System.nuint)layer.SizeX, (System.nuint)layer.SizeY,
-                (System.nuint)layer.InFeatureChannels,
-                (System.nuint)layer.OutFeatureChannels);
+                (nuint)layer.SizeX, (nuint)layer.SizeY,
+                (nuint)layer.InFeatureChannels,
+                (nuint)layer.OutFeatureChannels);
             descriptor.StrideInPixelsX = (nuint)layer.StrideX;
             descriptor.StrideInPixelsY = (nuint)layer.StrideY;
 
@@ -245,8 +245,12 @@ namespace MetalTensors.Layers
         /// files or mark memory no longer purgeable.
         /// </summary>
         [DebuggerHidden]
+#if NET6_0_OR_GREATER
+        public override bool Load () {
+#else
         public override bool Load {
             get {
+#endif
                 // convWeights is always ready to load data. Even after a Purge().
                 // Don't force its value here because sometimes Load is called
                 // just to get the descriptor :-(
@@ -264,12 +268,18 @@ namespace MetalTensors.Layers
                     }
                 }
                 return true;
+#if !NET6_0_OR_GREATER
             }
+#endif
         }
 
         public bool DownloadWeightsFromGpu ()
         {
+#if NET6_0_OR_GREATER
+            return Load();
+#else
             return Load;
+#endif
         }
 
         /// <summary>
