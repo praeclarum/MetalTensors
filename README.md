@@ -1,5 +1,7 @@
 # MetalTensors
 
+[![Build and Test](https://github.com/praeclarum/MetalTensors/actions/workflows/build.yml/badge.svg)](https://github.com/praeclarum/MetalTensors/actions/workflows/build.yml) 
+
 MetalTensors provides a high-level API over Apple's Metal Performance Shaders
 neural network library. It allows you to train and execute neural networks
 on iPhones, iPads, and Macs.
