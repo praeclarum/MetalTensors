@@ -250,7 +250,10 @@ namespace MetalTensors
             for (var i = 0; i < intermediateHandles.Length; i++) {
                 if (i < intermediateImages.Length) {
                     if (intermediateIsLoss[i]) {
-                        MPSImageBatch.Synchronize ((NSArray<MPSImage>)intermediateImages[i], commandBuffer);
+                        var image = (NSArray)intermediateImages[i];
+                        var batch = image.OfType<MPSImage>().ToArray();
+                        NSArray<MPSImage> imageTA = NSArray<MPSImage>.FromNSObjects(batch)!;
+                        MPSImageBatch.Synchronize (imageTA, commandBuffer);
                     }
                 }
             }
@@ -296,8 +299,10 @@ namespace MetalTensors
                 for (var i = 0; i < intermediateHandles.Length; i++) {
                     if (i < intermediateImages.Length) {
                         if (intermediateIsLoss[i]) {
-                            var image = (NSArray<MPSImage>)intermediateImages[i];
-                            losses[intermediateHandles[i].Label] = image.ReduceMeanValueAndDispose ();
+                            var image = (NSArray)intermediateImages[i];
+                            var batch = image.OfType<MPSImage>().ToArray();
+                            NSArray<MPSImage> imageTA = NSArray<MPSImage>.FromNSObjects(batch)!;
+                            losses[intermediateHandles[i].Label] = imageTA.ReduceMeanValueAndDispose ();
                         }
                         else {
                             intermediateImages[i].Dispose ();
