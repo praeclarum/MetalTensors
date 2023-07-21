@@ -276,7 +276,7 @@ namespace MetalTensors
 
             var imageArrays = new NSArray<MPSImage>[ns];
             for (var si = 0; si < ns; si++) {
-                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si])!;
             }
             return imageArrays;
         }
@@ -310,7 +310,7 @@ namespace MetalTensors
 
             var imageArrays = new NSArray<MPSImage>[ns];
             for (var si = 0; si < ns; si++) {
-                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si])!;
             }
             return imageArrays;
         }
@@ -363,7 +363,7 @@ namespace MetalTensors
 
             var imageArrays = new NSArray<MPSImage>[ns];
             for (var si = 0; si < ns; si++) {
-                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si]);
+                imageArrays[si] = NSArray<MPSImage>.FromNSObjects (images[si])!;
             }
 
             return (imageArrays, temps.ToArray ());

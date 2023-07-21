@@ -88,10 +88,16 @@ namespace MetalTensors
             //
             // Create the graph
             //
-            var trainingGraph = MPSNNGraph.Create (device, trainingGraphTerminiImageNodes, resultsNeeded);
-            trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            if (MPSNNGraph.Create(device, trainingGraphTerminiImageNodes, resultsNeeded) is { } trainingGraph)
+            {
+                trainingGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
-            return trainingGraph;
+                return trainingGraph;
+            }
+            else
+            {
+                throw new Exception("Failed to create training graph");
+            }
         }
 
         public void SetNeedsReloadWeights ()
@@ -244,7 +250,7 @@ namespace MetalTensors
             for (var i = 0; i < intermediateHandles.Length; i++) {
                 if (i < intermediateImages.Length) {
                     if (intermediateIsLoss[i]) {
-                        MPSImageBatch.Synchronize (intermediateImages[i], commandBuffer);
+                        MPSImageBatch.Synchronize ((NSArray<MPSImage>)intermediateImages[i], commandBuffer);
                     }
                 }
             }
@@ -275,7 +281,7 @@ namespace MetalTensors
                 // Don't need the returnBatch
                 //
                 if (returnBatch != null) {
-                    foreach (var i in returnBatch) {
+                    foreach (var i in returnBatch.ToArray()) {
                         i.Dispose ();
                     }
                     returnBatch.Dispose ();
@@ -290,7 +296,7 @@ namespace MetalTensors
                 for (var i = 0; i < intermediateHandles.Length; i++) {
                     if (i < intermediateImages.Length) {
                         if (intermediateIsLoss[i]) {
-                            var image = intermediateImages[i];
+                            var image = (NSArray<MPSImage>)intermediateImages[i];
                             losses[intermediateHandles[i].Label] = image.ReduceMeanValueAndDispose ();
                         }
                         else {

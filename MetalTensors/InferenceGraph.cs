@@ -36,10 +36,16 @@ namespace MetalTensors
             //
             var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
             var resultsAreNeeded = outputs.Select (x => true).ToArray ();
-            var infGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
-            infGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            if (MPSNNGraph.Create(device, outputImageNodes, resultsAreNeeded) is { } infGraph)
+            {
+                infGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
-            return infGraph;
+                return infGraph;
+            }
+            else
+            {
+                throw new Exception("Failed to create inference graph");
+            }
         }
 
         public Tensor[][] Predict (DataSet dataSet, int batchSize, int numBatches)

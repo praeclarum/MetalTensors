@@ -146,7 +146,7 @@ namespace MetalTensors
             if (queue is null)
                 throw new Exception ($"Failed to create queue to filter image");
             using var commands = MPSCommandBuffer.Create (queue);
-            var desc = neuron.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+            var desc = neuron.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image)!, null);
             var result = new MPSImage (dev, desc);
             neuron.EncodeToCommandBuffer (commands, image, result);
             result.Synchronize (commands);

@@ -393,11 +393,11 @@ namespace MetalTensors.Layers
             }
 
             momentumVectors = BiasVectors != null ?
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, BiasVectors.Momentum) :
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum);
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum, BiasVectors.Momentum)! :
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Momentum)!;
             velocityVectors = BiasVectors != null ?
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, BiasVectors.Velocity) :
-                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity);
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity, BiasVectors.Velocity)! :
+                NSArray<MPSVector>.FromNSObjects (weightVectors.Velocity)!;
 
             weightInitTask = Task.Run (async () => {
                 var fanIn = inChannels * kernelSizeX * kernelSizeY;

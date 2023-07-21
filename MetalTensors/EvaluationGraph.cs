@@ -22,32 +22,38 @@ namespace MetalTensors
             Losses = losses;
         }
 
-        protected static MPSNNGraph CreateEvaluationGraph (string label, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
+        protected static MPSNNGraph CreateEvaluationGraph(string label, Tensor[] losses, bool keepDropoutDuringInference, IMTLDevice device)
         {
             if (!keepDropoutDuringInference) {
-                losses = losses.Select (x => x.RemoveLayers<DropoutLayer> ()).ToArray ();
+                losses = losses.Select(x => x.RemoveLayers<DropoutLayer>()).ToArray();
             }
 
             //
             // Build the evaluation graph
             //
-            var context = new MetalImageNodeContext (label, false, device);
+            var context = new MetalImageNodeContext(label, false, device);
 
             var outputs = losses;
 
             if (outputs.Length == 0)
-                throw new InvalidOperationException ("Cannot create an evaluation graph without losses");
+                throw new InvalidOperationException("Cannot create an evaluation graph without losses");
 
 
             //
             // Create the graph
             //
-            var outputImageNodes = outputs.Select (x => x.GetImageNode (context)).ToArray ();
-            var resultsAreNeeded = outputs.Select (x => true).ToArray ();
-            var evalGraph = MPSNNGraph.Create (device, outputImageNodes, resultsAreNeeded);
-            evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
+            var outputImageNodes = outputs.Select(x => x.GetImageNode(context)).ToArray();
+            var resultsAreNeeded = outputs.Select(x => true).ToArray();
+            if (MPSNNGraph.Create(device, outputImageNodes, resultsAreNeeded) is { } evalGraph)
+            {
+                evalGraph.Format = MPSImageFeatureChannelFormat.Float32;
 
-            return evalGraph;
+                return evalGraph;
+            }
+            else
+            {
+                throw new Exception("Failed to create evaluation graph");
+            }
         }
 
         public TrainingHistory Evaluate (DataSet dataSet, int batchSize, int numBatches)

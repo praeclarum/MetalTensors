@@ -230,7 +230,7 @@ namespace MetalTensors.Tensors
                 halfDesc = MPSImageDescriptor.GetImageDescriptor (MPSImageFeatureChannelFormat.Float32, (nuint)width, (nuint)height, (nuint)featureChannels);
             }
             else {
-                halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image), null);
+                halfDesc = lcrop.GetDestinationImageDescriptor (NSArray<MPSImage>.FromNSObjects (image)!, null);
                 halfDesc.FeatureChannels = (nuint)featureChannels;
             }
             var left = new MPSImage (dev, halfDesc);
